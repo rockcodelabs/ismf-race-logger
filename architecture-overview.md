@@ -179,7 +179,125 @@ class Role < ApplicationRecord
 end
 ```
 
-### **3. Competition**
+### **3. CompetitionTemplate**
+
+```ruby
+# == Schema Information
+#
+# Table name: competition_templates
+#
+# id          :bigint           not null, primary key
+# name        :string           not null, unique
+# description :text
+# created_at  :datetime         not null
+# updated_at  :datetime         not null
+#
+class CompetitionTemplate < ApplicationRecord
+  has_many :stage_templates, -> { order(:position) }, dependent: :destroy
+  has_many :competition_template_race_types, dependent: :destroy
+  has_many :race_types, through: :competition_template_race_types
+
+  validates :name, presence: true, uniqueness: true
+
+  # Create a new competition from this template
+  def create_competition!(attributes = {})
+    Competition.transaction do
+      competition = Competition.create!(attributes)
+
+      stage_templates.each do |stage_template|
+        stage = competition.stages.create!(
+          name: stage_template.name,
+          description: stage_template.description,
+          position: stage_template.position
+        )
+
+        stage_template.race_templates.each do |race_template|
+          next unless race_types.include?(race_template.race_type)
+
+          stage.races.create!(
+            name: race_template.name,
+            race_type: race_template.race_type,
+            position: race_template.position
+          )
+        end
+      end
+
+      competition
+    end
+  end
+end
+```
+
+### **3a. StageTemplate**
+
+```ruby
+# == Schema Information
+#
+# Table name: stage_templates
+#
+# id                      :bigint           not null, primary key
+# competition_template_id :bigint           not null, foreign_key
+# name                    :string           not null
+# description             :text
+# position                :integer          not null, default: 0
+# created_at              :datetime         not null
+# updated_at              :datetime         not null
+#
+class StageTemplate < ApplicationRecord
+  belongs_to :competition_template
+  has_many :race_templates, -> { order(:position) }, dependent: :destroy
+
+  validates :name, presence: true
+  validates :position, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+end
+```
+
+### **3b. RaceTemplate**
+
+```ruby
+# == Schema Information
+#
+# Table name: race_templates
+#
+# id                :bigint           not null, primary key
+# stage_template_id :bigint           not null, foreign_key
+# race_type_id      :bigint           not null, foreign_key
+# name              :string           not null
+# position          :integer          not null, default: 0
+# created_at        :datetime         not null
+# updated_at        :datetime         not null
+#
+class RaceTemplate < ApplicationRecord
+  belongs_to :stage_template
+  belongs_to :race_type
+
+  validates :name, presence: true
+  validates :position, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+end
+```
+
+### **3c. CompetitionTemplateRaceType**
+
+```ruby
+# == Schema Information
+#
+# Table name: competition_template_race_types
+#
+# id                      :bigint           not null, primary key
+# competition_template_id :bigint           not null, foreign_key
+# race_type_id            :bigint           not null, foreign_key
+# created_at              :datetime         not null
+# updated_at              :datetime         not null
+#
+class CompetitionTemplateRaceType < ApplicationRecord
+  belongs_to :competition_template
+  belongs_to :race_type
+
+  validates :race_type_id, uniqueness: { scope: :competition_template_id }
+end
+```
+
+### **4. Competition**
 
 ```ruby
 # == Schema Information
@@ -198,12 +316,15 @@ end
 # updated_at  :datetime         not null
 #
 class Competition < ApplicationRecord
-  has_many :stages, dependent: :destroy
+  has_many :stages, -> { order(:position) }, dependent: :destroy
   has_many :races, through: :stages
 
   has_one_attached :logo
 
   validates :name, presence: true
+  validates :position, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+
+  default_scope { order(:position) }
   validates :place, presence: true
   validates :country, presence: true
   validates :start_date, presence: true
@@ -214,6 +335,86 @@ class Competition < ApplicationRecord
   scope :ongoing, -> { where("start_date <= ? AND end_date >= ?", Date.current, Date.current) }
   scope :past, -> { where("end_date < ?", Date.current).order(start_date: :desc) }
 
+  # Duplicate this competition with new attributes
+  # Options:
+  #   - race_type_ids: Array of race type IDs to include (default: all)
+  #   - include_locations: Copy custom locations (default: false, only template locations)
+  def duplicate!(new_attributes = {}, race_type_ids: nil, include_locations: false)
+    Competition.transaction do
+      new_competition = Competition.create!(
+        attributes.except("id", "created_at", "updated_at").merge(new_attributes)
+      )
+
+      stages.each do |stage|
+        new_stage = new_competition.stages.create!(
+          name: stage.name,
+          description: stage.description,
+          date: stage.date,
+          position: stage.position
+        )
+
+        stage.races.each do |race|
+          next if race_type_ids.present? && !race_type_ids.include?(race.race_type_id)
+
+          new_race = new_stage.races.create!(
+            name: race.name,
+            race_type: race.race_type,
+            scheduled_at: race.scheduled_at,
+            position: race.position
+          )
+
+          # Copy custom locations if requested
+          if include_locations
+            race.race_locations.custom.each do |location|
+              new_race.race_locations.create!(
+                name: location.name,
+                location_type: location.location_type,
+                has_camera: location.has_camera,
+                from_template: false,
+                position: location.position
+              )
+            end
+          end
+        end
+      end
+
+      new_competition
+    end
+  end
+
+  # Create competition from template with selected race types
+  def self.create_from_template!(template, attributes, race_type_ids: nil)
+    selected_race_types = if race_type_ids.present?
+      template.race_types.where(id: race_type_ids)
+    else
+      template.race_types
+    end
+
+    Competition.transaction do
+      competition = Competition.create!(attributes)
+
+      template.stage_templates.each do |stage_template|
+        stage = competition.stages.create!(
+          name: stage_template.name,
+          description: stage_template.description,
+          position: stage_template.position
+        )
+
+        stage_template.race_templates.each do |race_template|
+          next unless selected_race_types.include?(race_template.race_type)
+
+          stage.races.create!(
+            name: race_template.name,
+            race_type: race_template.race_type,
+            position: race_template.position
+          )
+        end
+      end
+
+      competition
+    end
+  end
+
   private
 
   def end_date_after_start_date
@@ -223,7 +424,7 @@ class Competition < ApplicationRecord
 end
 ```
 
-### **4. Stage**
+### **5. Stage**
 
 ```ruby
 # == Schema Information
@@ -323,6 +524,7 @@ end
 # race_type_id :bigint           not null, foreign_key
 # name         :string           not null
 # scheduled_at :datetime
+# position     :integer          not null, default: 0
 # status       :enum             values: [:scheduled, :in_progress, :completed, :cancelled]
 # created_at   :datetime         not null
 # updated_at   :datetime         not null
@@ -404,7 +606,7 @@ class RaceLocation < ApplicationRecord
 end
 ```
 
-### **8. Incident**
+### **10. Incident**
 
 ```ruby
 # == Schema Information
@@ -437,7 +639,7 @@ class Incident < ApplicationRecord
 end
 ```
 
-### **9. Report**
+### **11. Report**
 
 ```ruby
 # == Schema Information
@@ -478,7 +680,7 @@ class Report < ApplicationRecord
 end
 ```
 
-### **10. Rule**
+### **12. Rule**
 
 ```ruby
 # == Schema Information
@@ -915,31 +1117,43 @@ Enables passwordless authentication via email. Magic links are single-use, time-
 ### **2. Role**
 Defines user roles (e.g., national referee, jury president). It is associated with users and determines their authorization level via Pundit policies.
 
-### **3. Competition**
-Represents a specific competition event (e.g., "Verbier Sprint Weekend 2024") with place, dates, description, logo, and webpage URL. Replaces the old WorldCupEdition model.
+### **3. CompetitionTemplate**
+Reusable template for creating competitions. Defines the structure (stages, races) and which race types are available. Use `create_competition!` to instantiate a new competition from this template.
 
-### **4. Stage**
+### **3a. StageTemplate**
+Defines a stage within a CompetitionTemplate. Has a name, description, and position.
+
+### **3b. RaceTemplate**
+Defines a race within a StageTemplate. Links to a RaceType to determine which location templates to use.
+
+### **3c. CompetitionTemplateRaceType**
+Join table linking CompetitionTemplate to RaceType. Defines which race types are available when creating a competition from this template.
+
+### **4. Competition**
+Represents a specific competition event (e.g., "Verbier Sprint Weekend 2024") with place, dates, description, logo, and webpage URL. Can be created from a template or duplicated from an existing competition with `duplicate!` method. Supports filtering by race types when duplicating.
+
+### **5. Stage**
 Represents a stage within a Competition (e.g., "Qualification", "Semi-Finals", "Finals"). Each stage includes multiple races and has a position for ordering.
 
-### **5. RaceType**
+### **6. RaceType**
 Defines the general type of a race (e.g., sprint, vertical, individual, relay). Contains location templates that define the default locations for races of this type.
 
-### **6. RaceTypeLocationTemplate**
+### **7. RaceTypeLocationTemplate**
 Defines default locations for a RaceType. When a new Race is created, these templates are automatically copied to create the race's actual locations. Examples: sprint type has start, finish, top, walk, platform_1, platform_2.
 
-### **7. Race**
+### **8. Race**
 Represents a specific race within a stage, linked to a race type. When created, automatically copies locations from the RaceType's templates. Has a status (scheduled, in_progress, completed, cancelled).
 
-### **8. RaceLocation**
+### **9. RaceLocation**
 Represents an actual location within a specific race. Created automatically from templates when a race is created (`from_template: true`), plus custom locations can be added (`from_template: false`). Tracks camera availability and stream URLs.
 
-### **9. Incident**
+### **10. Incident**
 Handles grouped violations or race-related issues that may involve multiple reports and statuses (e.g., unofficial and official statuses).
 
-### **10. Report**
+### **11. Report**
 Tracks individual referee-reported incidents during a race. Includes details like rule violations, videos, and penalties. Now includes `user_id` to track the reporter.
 
-### **11. Rule**
+### **12. Rule**
 Defines the rules of the competition, which are referenced in reports to clarify the violated rule.
 
 ---
@@ -979,4 +1193,43 @@ end
 incident = Incident.create!(race: race, description: "Multiple incidents reported")
 report1.update!(incident: incident)
 report2.update!(incident: incident)
+```
+
+### Creating Competition from Template
+```ruby
+# Find template and select race types
+template = CompetitionTemplate.find_by!(name: "Standard ISMF Event")
+sprint = RaceType.find_by!(name: "sprint")
+vertical = RaceType.find_by!(name: "vertical")
+
+# Create competition with only sprint and vertical races
+competition = Competition.create_from_template!(
+  template,
+  {
+    name: "Verbier Sprint Weekend 2025",
+    place: "Verbier",
+    country: "CH",
+    start_date: Date.new(2025, 2, 15),
+    end_date: Date.new(2025, 2, 16)
+  },
+  race_type_ids: [sprint.id, vertical.id]
+)
+```
+
+### Duplicating an Existing Competition
+```ruby
+# Duplicate with all race types
+new_competition = existing_competition.duplicate!(
+  name: "Verbier Sprint Weekend 2026",
+  start_date: Date.new(2026, 2, 14),
+  end_date: Date.new(2026, 2, 15)
+)
+
+# Duplicate with only individual races
+individual = RaceType.find_by!(name: "individual")
+new_competition = existing_competition.duplicate!(
+  { name: "Individual Championship 2026" },
+  race_type_ids: [individual.id],
+  include_locations: true  # Also copy custom locations
+)
 ```
