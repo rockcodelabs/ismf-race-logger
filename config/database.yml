@@ -1,0 +1,38 @@
+# PostgreSQL configuration for ISMF Race Logger
+# Supports both Docker and local development environments
+
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  host: <%= ENV.fetch("DB_HOST") { "localhost" } %>
+  port: <%= ENV.fetch("DB_PORT") { 5432 } %>
+  username: <%= ENV.fetch("POSTGRES_USER") { "ismf_dev" } %>
+  password: <%= ENV.fetch("POSTGRES_PASSWORD") { "ismf_dev_password" } %>
+
+development:
+  <<: *default
+  database: ismf_race_logger_development
+
+test:
+  <<: *default
+  database: ismf_race_logger_test
+
+production:
+  primary: &primary_production
+    <<: *default
+    database: <%= ENV.fetch("POSTGRES_DB") { "ismf_race_logger_production" } %>
+    username: <%= ENV.fetch("POSTGRES_USER") { "ismf_user" } %>
+    password: <%= ENV["POSTGRES_PASSWORD"] %>
+  cache:
+    <<: *primary_production
+    database: ismf_race_logger_production_cache
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *primary_production
+    database: ismf_race_logger_production_queue
+    migrations_paths: db/queue_migrate
+  cable:
+    <<: *primary_production
+    database: ismf_race_logger_production_cable
+    migrations_paths: db/cable_migrate
