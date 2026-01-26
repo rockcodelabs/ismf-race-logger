@@ -12,10 +12,15 @@ This feature adds the `Athlete` model (the person) and `RaceParticipation` model
 |------------|-------|--------|
 | **Max athletes per race** | 200 | Client-side bib grid trivial |
 | **Active bibs vary by stage** | Quali=all (200), Sprint Finals=8 | Heat-based filtering |
-| **Team races** | Pairs (MM, MW, WW) | Two athletes share one bib |
+| **Team races** | Pairs (MM, MW, WW) | Two athletes from same country share one bib |
 | **Duplicate reports** | Allowed, grouped into incidents | No uniqueness constraint |
 | **Stale reports** | Hidden after ~5 min | Background job cleanup |
 | **Video upload** | Multiple files per report, V1 file upload only | No in-app recording |
+| **MSO format** | CSV of athletes still active | Simple bib list import |
+| **Country codes** | Known ISMF member countries only | Validated against list |
+| **Bib display** | Bib number + 3-letter country code | Text for performance |
+| **Team names** | Auto-generated from athlete names | DUPONT/GARCIA format |
+| **License number** | Free text, optional | No format validation |
 | **MSO format** | CSV of athletes still in play | Simple active bib list |
 
 ---
@@ -35,8 +40,8 @@ This feature adds the `Athlete` model (the person) and `RaceParticipation` model
 │  │ id            | Primary key                                       │  │
 │  │ first_name    | String, required                                  │  │
 │  │ last_name     | String, required                                  │  │
-│  │ country       | String (ISO 3166-1 alpha-3: SUI, FRA, ITA)       │  │
-│  │ license_number| String, optional (ISMF license)                   │  │
+│  │ country       | String, validated against ISMF_COUNTRIES          │  │
+│  │ license_number| String, optional, free text                       │  │
 │  │ gender        | Enum: male, female                                │  │
 │  └──────────────────────────────────────────────────────────────────┘  │
 │                    │                              │                     │
@@ -87,25 +92,44 @@ This feature adds the `Athlete` model (the person) and `RaceParticipation` model
 
 ### Bib Selector Display
 
+**Performance choice**: Use 3-letter country codes (text) instead of emoji flags for consistent rendering and faster display.
+
+**Team constraint**: Both athletes in a team are always from the same country.
+
+**Team reports target specific athlete**: In team races, reports are created for a specific athlete (12.1 or 12.2), not the team. Gender is indicated by color:
+- 🔵 **Blue** = Male
+- 🔴 **Pink** = Female
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  BIB SELECTOR - Shows bib + country flag/code                           │
+│  BIB SELECTOR                                                           │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
-│  Individual Race:                                                       │
+│  Individual Race (tap bib):                                             │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐                   │
 │  │    12    │ │    34    │ │    56    │ │    78    │                   │
-│  │   🇨🇭    │ │   🇫🇷    │ │   🇮🇹    │ │   🇦🇹    │                   │
+│  │   SUI    │ │   FRA    │ │   ITA    │ │   AUT    │                   │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────┘                   │
 │                                                                         │
-│  Team Race (pairs):                                                     │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐                   │
-│  │    12    │ │    34    │ │    56    │ │    78    │                   │
-│  │  🇨🇭 🇫🇷  │ │  🇮🇹 🇮🇹  │ │  🇦🇹 🇩🇪  │ │  🇪🇸 🇪🇸  │                   │
-│  │   (MW)   │ │   (WW)   │ │   (MM)   │ │   (MM)   │                   │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘                   │
+│  Team Race (tap specific athlete - 12.1 or 12.2):                       │
+│                                                                         │
+│  ┌─────────────────────┐ ┌─────────────────────┐ ┌─────────────────────┐│
+│  │ 12  FRA             │ │ 34  SUI             │ │ 56  ITA             ││
+│  │ ┌────────┐┌────────┐│ │ ┌────────┐┌────────┐│ │ ┌────────┐┌────────┐││
+│  │ │  12.1  ││  12.2  ││ │ │  34.1  ││  34.2  ││ │ │  56.1  ││  56.2  │││
+│  │ │ BLUE   ││ PINK   ││ │ │ BLUE   ││ BLUE   ││ │ │ PINK   ││ PINK   │││
+│  │ │ Male   ││ Female ││ │ │ Male   ││ Male   ││ │ │ Female ││ Female │││
+│  │ └────────┘└────────┘│ │ └────────┘└────────┘│ │ └────────┘└────────┘││
+│  │        MW           │ │        MM           │ │        WW           ││
+│  └─────────────────────┘ └─────────────────────┘ └─────────────────────┘│
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
+
+Color Legend:
+┌────────┐  ┌────────┐
+│  BLUE  │  │  PINK  │
+│  Male  │  │ Female │
+└────────┘  └────────┘
 ```
 
 ### Penalty Flow
@@ -172,7 +196,7 @@ This feature adds the `Athlete` model (the person) and `RaceParticipation` model
     
     validates :first_name, presence: true
     validates :last_name, presence: true
-    validates :country, length: { is: 3 }, allow_blank: true
+    validates :country, inclusion: { in: ISMF_COUNTRIES }, allow_blank: true
     validates :license_number, uniqueness: true, allow_nil: true
     
     def full_name
@@ -183,25 +207,18 @@ This feature adds the `Athlete` model (the person) and `RaceParticipation` model
       "#{last_name.upcase} #{first_name}"
     end
     
-    def flag_emoji
-      return nil if country.blank?
-      # Convert ISO 3166-1 alpha-3 to alpha-2 for flag emoji
-      # SUI → CH → 🇨🇭
-      COUNTRY_FLAGS[country] || country
-    end
-    
     def teams
       Team.where("athlete_1_id = ? OR athlete_2_id = ?", id, id)
     end
     
-    COUNTRY_FLAGS = {
-      "SUI" => "🇨🇭", "FRA" => "🇫🇷", "ITA" => "🇮🇹", "AUT" => "🇦🇹",
-      "GER" => "🇩🇪", "ESP" => "🇪🇸", "NOR" => "🇳🇴", "SWE" => "🇸🇪",
-      "USA" => "🇺🇸", "CAN" => "🇨🇦", "JPN" => "🇯🇵", "KOR" => "🇰🇷",
-      "POL" => "🇵🇱", "CZE" => "🇨🇿", "SVK" => "🇸🇰", "SLO" => "🇸🇮",
-      "AND" => "🇦🇩", "GBR" => "🇬🇧", "BEL" => "🇧🇪", "NED" => "🇳🇱",
-      # Add more as needed
-    }.freeze
+    # ISMF Member Countries (ISO 3166-1 alpha-3)
+    # https://www.ismf-ski.org/member-federations
+    ISMF_COUNTRIES = %w[
+      AND ARG AUS AUT BEL BGR BIH CAN CHI CHN CRO CZE
+      ESP FIN FRA GBR GER GRE HUN IND IRN ISR ITA JPN
+      KAZ KOR LIE LTU MDA MKD NED NOR NZL POL POR ROU
+      RSA RUS SLO SRB SUI SVK SWE TUR UKR USA
+    ].freeze
   end
   ```
 - **Dependencies**: None
@@ -237,23 +254,34 @@ This feature adds the `Athlete` model (the person) and `RaceParticipation` model
     validates :bib_number, presence: true, uniqueness: { scope: :race_id }
     validate :team_type_matches_genders
     
+    # Auto-generated team name: DUPONT/GARCIA
     def display_name
-      name.presence || "#{athlete_1.last_name}/#{athlete_2.last_name}"
+      "#{athlete_1.last_name.upcase}/#{athlete_2.last_name.upcase}"
     end
     
-    def countries
-      [athlete_1.country, athlete_2.country].compact.uniq
+    # Both athletes must be from same country
+    def country
+      athlete_1.country
     end
     
-    def flags
-      [athlete_1.flag_emoji, athlete_2.flag_emoji].compact
+    # Returns "SUI MM" or "FRA WW" for display
+    def country_display
+      "#{country} #{team_type.upcase}"
     end
+    
+    validate :athletes_same_country
     
     def athletes
       [athlete_1, athlete_2]
     end
     
     private
+    
+    def athletes_same_country
+      if athlete_1.country != athlete_2.country
+        errors.add(:base, "Both athletes must be from the same country")
+      end
+    end
     
     def team_type_matches_genders
       case team_type
@@ -338,32 +366,55 @@ This feature adds the `Athlete` model (the person) and `RaceParticipation` model
       end
     end
     
+    # Returns country code
     def country
       if team.present?
-        team.countries.join("/")
+        team.country
       else
         athlete&.country
       end
     end
     
-    def flags
-      if team.present?
-        team.flags
-      else
-        [athlete&.flag_emoji].compact
-      end
-    end
-    
-    # JSON for bib selector
+    # JSON for bib selector (optimized for performance)
+    # For teams, returns two entries (one per athlete: 12.1, 12.2)
     def as_bib_json
-      {
-        bib: bib_number,
-        name: display_name,
-        country: country,
-        flags: flags,
-        team_type: team&.team_type,
-        status: status
-      }
+      if team.present?
+        # Team race: return array with both athletes
+        [
+          {
+            bib: "#{bib_number}.1",
+            bib_number: bib_number,
+            athlete_position: 1,
+            name: team.athlete_1.display_name,
+            country: country,
+            gender: team.athlete_1.gender,  # for color coding
+            team_type: team.team_type,
+            status: status
+          },
+          {
+            bib: "#{bib_number}.2",
+            bib_number: bib_number,
+            athlete_position: 2,
+            name: team.athlete_2.display_name,
+            country: country,
+            gender: team.athlete_2.gender,  # for color coding
+            team_type: team.team_type,
+            status: status
+          }
+        ]
+      else
+        # Individual race: single entry
+        {
+          bib: bib_number.to_s,
+          bib_number: bib_number,
+          athlete_position: nil,
+          name: display_name,
+          country: country,
+          gender: athlete&.gender,
+          team_type: nil,
+          status: status
+        }
+      end
     end
     
     private
@@ -386,11 +437,14 @@ This feature adds the `Athlete` model (the person) and `RaceParticipation` model
 - **Migration**:
   ```ruby
   add_reference :reports, :race_participation, foreign_key: true
-  add_column :reports, :bib_number, :integer  # Denormalized
+  add_reference :reports, :athlete, foreign_key: true  # Specific athlete (for team races)
+  add_column :reports, :bib_number, :integer  # Denormalized (e.g., 12)
+  add_column :reports, :athlete_position, :integer  # 1 or 2 for team races (12.1, 12.2)
   add_column :reports, :status, :integer, default: 0
   add_column :reports, :stale_at, :datetime
   
   add_index :reports, :bib_number
+  add_index :reports, :athlete_id
   add_index :reports, :status
   add_index :reports, :stale_at
   
@@ -404,6 +458,7 @@ This feature adds the `Athlete` model (the person) and `RaceParticipation` model
     
     belongs_to :race
     belongs_to :race_participation, optional: true
+    belongs_to :athlete, optional: true  # Specific athlete (required for team races)
     belongs_to :incident, optional: true
     belongs_to :rule, optional: true
     belongs_to :user
@@ -423,6 +478,7 @@ This feature adds the `Athlete` model (the person) and `RaceParticipation` model
     before_create :set_stale_at
     
     validates :bib_number, presence: true
+    validate :athlete_required_for_team_race
     
     scope :active, -> { where(status: [:pending, :reviewed]) }
     scope :for_desktop_view, -> { active.order(created_at: :desc) }
@@ -433,14 +489,17 @@ This feature adds the `Athlete` model (the person) and `RaceParticipation` model
       became_stale.update_all(status: :stale)
     end
     
-    # Get athlete(s) from participation
-    def athletes
-      return [] unless race_participation
-      
-      if race_participation.team.present?
-        race_participation.team.athletes
+    # Get the specific athlete this report is about
+    def reported_athlete
+      athlete || race_participation&.athlete
+    end
+    
+    # Display bib with position for teams: "12.1" or just "12" for individual
+    def bib_display
+      if athlete_position.present?
+        "#{bib_number}.#{athlete_position}"
       else
-        [race_participation.athlete].compact
+        bib_number.to_s
       end
     end
     
@@ -448,6 +507,12 @@ This feature adds the `Athlete` model (the person) and `RaceParticipation` model
     
     def set_bib_number_from_participation
       self.bib_number ||= race_participation&.bib_number
+    end
+    
+    def athlete_required_for_team_race
+      if race_participation&.team.present? && athlete_id.blank?
+        errors.add(:athlete, "must be specified for team race reports")
+      end
     end
     
     def set_stale_at
@@ -726,11 +791,14 @@ This feature adds the `Athlete` model (the person) and `RaceParticipation` model
         @location = location
       end
       
+      # Pre-load participations for client-side rendering
+      # Returns minimal JSON for performance
+      # For team races, each participation returns 2 entries (one per athlete)
       def participations_json
         race.race_participations
             .for_bib_selector
             .includes(:athlete, team: [:athlete_1, :athlete_2])
-            .map(&:as_bib_json)
+            .flat_map(&:as_bib_json)  # flat_map because teams return arrays
             .to_json
       end
       
@@ -744,6 +812,18 @@ This feature adds the `Athlete` model (the person) and `RaceParticipation` model
       
       def is_team_race?
         race.race_participations.joins(:team).exists?
+      end
+      
+      # "8 athletes in Final" or "156 athletes"
+      def participation_label
+        count = participation_count
+        heat = race.current_heat
+        
+        if heat.present? && heat != "all"
+          "#{count} athletes in #{heat.titleize}"
+        else
+          "#{count} athletes"
+        end
       end
     end
   end
@@ -846,23 +926,33 @@ This feature adds the `Athlete` model (the person) and `RaceParticipation` model
       this.gridTarget.innerHTML = html
     }
     
-    renderBibButton(participation) {
-      const flags = participation.flags.join(" ")
-      const teamType = participation.team_type 
-        ? `<span class="text-xs text-gray-500">(${participation.team_type.toUpperCase()})</span>` 
-        : ""
+    renderBibButton(entry) {
+      // Gender color: blue for male, pink for female
+      const genderColor = entry.gender === "male" 
+        ? "border-blue-400 bg-blue-50 hover:bg-blue-100" 
+        : "border-pink-400 bg-pink-50 hover:bg-pink-100"
+      
+      const activeColor = entry.gender === "male"
+        ? "active:bg-blue-500"
+        : "active:bg-pink-500"
+      
+      // For teams, show position indicator
+      const isTeam = entry.athlete_position != null
+      const bibDisplay = isTeam ? entry.bib : entry.bib_number
       
       return `
         <button class="bib-button flex flex-col items-center justify-center 
-                       min-h-[72px] p-2 bg-white border-2 border-gray-200 
+                       min-h-[72px] p-2 border-2 
                        rounded-xl font-semibold transition-all
-                       hover:border-ismf-red hover:bg-red-50
-                       active:scale-95 active:bg-ismf-red active:text-white"
+                       ${genderColor} ${activeColor}
+                       active:scale-95 active:text-white"
                 data-action="click->bib-selector#selectBib"
-                data-bib="${participation.bib}">
-          <span class="text-2xl font-bold">${participation.bib}</span>
-          <span class="text-lg">${flags}</span>
-          ${teamType}
+                data-bib="${entry.bib}"
+                data-bib-number="${entry.bib_number}"
+                data-athlete-position="${entry.athlete_position || ''}"
+                data-gender="${entry.gender}">
+          <span class="text-2xl font-bold">${bibDisplay}</span>
+          <span class="text-sm text-gray-600">${entry.country}</span>
         </button>
       `
     }
@@ -882,25 +972,31 @@ This feature adds the `Athlete` model (the person) and `RaceParticipation` model
     }
     
     async selectBib(event) {
-      const bib = parseInt(event.currentTarget.dataset.bib)
-      const participation = this.participationsMap.get(bib)
+      const btn = event.currentTarget
+      const bibDisplay = btn.dataset.bib  // "12" or "12.1"
+      const bibNumber = parseInt(btn.dataset.bibNumber)
+      const athletePosition = btn.dataset.athletePosition 
+        ? parseInt(btn.dataset.athletePosition) 
+        : null
+      const country = btn.closest('.bib-button')?.querySelector('.text-gray-600')?.textContent || ''
       
       // Immediate feedback
-      this.showSuccessToast(bib, participation.flags.join(" "))
+      this.showSuccessToast(bibDisplay, country)
       this.closeModal()
       
       // Save to recent
-      this.saveRecentBib(bib)
+      this.saveRecentBib(bibDisplay)
       
       // Create report (optimistic, background sync)
-      await this.createReport(bib)
+      await this.createReport(bibNumber, athletePosition)
     }
     
-    async createReport(bibNumber) {
+    async createReport(bibNumber, athletePosition) {
       const report = {
         race_id: this.raceIdValue,
         race_location_id: this.currentLocationId,
-        bib_number: bibNumber
+        bib_number: bibNumber,
+        athlete_position: athletePosition || null  // 1 or 2 for teams, null for individual
       }
       
       try {
@@ -922,10 +1018,10 @@ This feature adds the `Athlete` model (the person) and `RaceParticipation` model
       }
     }
     
-    showSuccessToast(bib, flags) {
+    showSuccessToast(bib, country) {
       // Dispatch event for toast controller
       this.dispatch("reportCreated", { 
-        detail: { bib, flags, message: `Report created for bib ${bib}` }
+        detail: { bib, country, message: `Report: bib ${bib} (${country})` }
       })
     }
   }
@@ -1019,11 +1115,13 @@ bib,first_name,last_name,country,gender,license,status
 
 ### Team Race (Pairs)
 
+**Note**: Both athletes must be from the same country.
+
 ```csv
-bib,first_name_1,last_name_1,country_1,gender_1,first_name_2,last_name_2,country_2,gender_2,team_type,status
-1,Jean,DUPONT,FRA,M,Maria,GARCIA,ESP,F,MW,racing
-2,Hans,MUELLER,SUI,M,Peter,SCHMIDT,GER,M,MM,racing
-3,Anna,ROSSI,ITA,F,Sophie,BERNARD,FRA,F,WW,racing
+bib,first_name_1,last_name_1,gender_1,first_name_2,last_name_2,gender_2,country,team_type,status
+1,Jean,DUPONT,M,Marie,MARTIN,F,FRA,MW,racing
+2,Hans,MUELLER,M,Peter,SCHMIDT,M,SUI,MM,racing
+3,Anna,ROSSI,F,Giulia,BIANCHI,F,ITA,WW,racing
 ```
 
 ### Field Reference
