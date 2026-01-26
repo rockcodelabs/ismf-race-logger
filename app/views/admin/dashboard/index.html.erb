@@ -91,7 +91,7 @@
       <div class="bg-gray-50 px-6 py-3 border-t border-gray-100">
         <%= link_to new_admin_user_path, class: "text-sm font-medium text-ismf-red hover:text-ismf-blue inline-flex items-center gap-1.5" do %>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
           </svg>
           Create user
         <% end %>
@@ -100,8 +100,8 @@
   </div>
 
   <!-- Recent Users -->
-  <div class="card">
-    <div class="card-header flex items-center justify-between">
+  <div class="card overflow-hidden">
+    <div class="px-6 py-4 flex items-center justify-between border-b border-gray-100">
       <h2 class="text-lg font-semibold text-ismf-navy">Recent Users</h2>
       <%= link_to admin_users_path, class: "text-sm font-medium text-ismf-red hover:text-ismf-blue inline-flex items-center gap-1.5" do %>
         View all
@@ -110,7 +110,7 @@
         </svg>
       <% end %>
     </div>
-    <div class="table-container border-0 rounded-none">
+    <div class="overflow-x-auto">
       <table class="table">
         <thead>
           <tr>
