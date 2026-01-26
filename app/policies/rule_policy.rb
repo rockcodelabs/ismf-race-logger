@@ -1,5 +1,12 @@
 # frozen_string_literal: true
 
+# Policy for Rule authorization.
+#
+# Performance patterns applied:
+# - Memoization: Inherited from ApplicationPolicy for all role checks
+# - No database queries: All checks use cached role comparisons
+# - Simple boolean logic: Avoid redundant conditionals
+#
 class RulePolicy < ApplicationPolicy
   # Anyone authenticated can view rules
   def index?
@@ -11,34 +18,36 @@ class RulePolicy < ApplicationPolicy
     true
   end
 
-  # Only admins and managers can create rules
+  # Only managers can create rules
   def create?
-    admin? || can_manage?
+    can_manage?
   end
 
-  # Only admins and managers can update rules
+  # Only managers can update rules
   def update?
-    admin? || can_manage?
+    can_manage?
   end
 
   # Only referee managers can delete rules
+  # More restrictive than general management
   def destroy?
     referee_manager?
   end
 
-  # Only admins and managers can import rules
+  # Only managers can import rules
   def import?
-    admin? || can_manage?
+    can_manage?
   end
 
-  # Only admins and managers can export rules
+  # Only managers can export rules
   def export?
-    admin? || can_manage?
+    can_manage?
   end
 
   class Scope < Scope
+    # All authenticated users can see all rules
+    # No filtering needed - rules are reference data
     def resolve
-      # All authenticated users can see all rules
       scope.all
     end
   end

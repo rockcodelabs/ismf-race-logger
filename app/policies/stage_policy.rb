@@ -1,5 +1,12 @@
 # frozen_string_literal: true
 
+# Policy for Stage authorization.
+#
+# Performance patterns applied:
+# - Memoization: Inherited from ApplicationPolicy for all role checks
+# - No database queries: All checks use cached role comparisons
+# - Simple boolean logic: Avoid redundant conditionals
+#
 class StagePolicy < ApplicationPolicy
   # Anyone authenticated can view stages
   def index?
@@ -11,34 +18,36 @@ class StagePolicy < ApplicationPolicy
     true
   end
 
-  # Only admins and managers can create stages
+  # Only managers can create stages
   def create?
-    admin? || can_manage?
+    can_manage?
   end
 
-  # Only admins and managers can update stages
+  # Only managers can update stages
   def update?
-    admin? || can_manage?
+    can_manage?
   end
 
-  # Only admins and managers can delete stages
+  # Only admins and referee managers can delete stages
+  # More restrictive than general management
   def destroy?
     admin? || referee_manager?
   end
 
-  # Only admins and managers can reorder stages
+  # Only managers can reorder stages
   def reorder?
-    admin? || can_manage?
+    can_manage?
   end
 
-  # Only admins and managers can manage races within a stage
+  # Only managers can manage races within a stage
   def manage_races?
-    admin? || can_manage?
+    can_manage?
   end
 
   class Scope < Scope
+    # All authenticated users can see all stages
+    # No filtering needed - stages are part of competition structure
     def resolve
-      # All authenticated users can see all stages
       scope.all
     end
   end

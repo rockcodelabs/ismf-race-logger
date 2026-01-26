@@ -1,5 +1,12 @@
 # frozen_string_literal: true
 
+# Policy for Competition authorization.
+#
+# Performance patterns applied:
+# - Memoization: Inherited from ApplicationPolicy for all role checks
+# - No database queries: All checks use cached role comparisons
+# - Simple boolean logic: Avoid redundant conditionals
+#
 class CompetitionPolicy < ApplicationPolicy
   # Anyone authenticated can view competitions
   def index?
@@ -11,44 +18,46 @@ class CompetitionPolicy < ApplicationPolicy
     true
   end
 
-  # Only admins and managers can create competitions
+  # Only managers can create competitions
   def create?
-    admin? || can_manage?
+    can_manage?
   end
 
-  # Only admins and managers can update competitions
+  # Only managers can update competitions
   def update?
-    admin? || can_manage?
+    can_manage?
   end
 
   # Only referee managers can delete competitions
+  # More restrictive than general management
   def destroy?
     referee_manager?
   end
 
-  # Only admins and managers can duplicate competitions
+  # Only managers can duplicate competitions
   def duplicate?
-    admin? || can_manage?
+    can_manage?
   end
 
-  # Only admins and managers can archive competitions
+  # Only managers can archive competitions
   def archive?
-    admin? || can_manage?
+    can_manage?
   end
 
-  # Only admins and managers can create competitions from templates
+  # Only managers can create competitions from templates
   def create_from_template?
-    admin? || can_manage?
+    can_manage?
   end
 
-  # Only admins and managers can manage stages within a competition
+  # Only managers can manage stages within a competition
   def manage_stages?
-    admin? || can_manage?
+    can_manage?
   end
 
   class Scope < Scope
+    # All authenticated users can see all competitions
+    # No filtering needed - competitions are public within the system
     def resolve
-      # All authenticated users can see all competitions
       scope.all
     end
   end
