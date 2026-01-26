@@ -20,7 +20,9 @@ What do you need to do?
 ├─ Review implementation            → @review
 ├─ Security audit                   → @security
 ├─ Accessibility patterns           → @accessibility
-└─ Performance optimization         → @performance
+├─ Performance optimization         → @performance
+├─ File uploads & NAS storage       → @active-storage
+└─ Rich text editing                → @action-text
 ```
 
 ---
@@ -52,6 +54,8 @@ What do you need to do?
 |-------|----------|---------------|
 | **[@accessibility](.agents/accessibility.md)** | ARIA, keyboard nav, screen readers | "Add accessible dialog pattern" |
 | **[@performance](.agents/performance.md)** | N+1, caching, video optimization | "Optimize report list loading" |
+| **[@active-storage](.agents/active-storage.md)** | File uploads, NAS storage, video validation | "Configure NAS video storage" |
+| **[@action-text](.agents/action-text.md)** | Rich text, sanitization, attachments | "Add rich text description field" |
 
 ### 🔧 Maintenance
 
@@ -121,6 +125,8 @@ Reference guides extracted from 37signals' Fizzy codebase:
 
 - **[@accessibility](.agents/accessibility.md)** - ARIA patterns, keyboard navigation, focus management, screen reader support
 - **[@performance](.agents/performance.md)** - CSS performance, database optimization, Active Storage, video handling
+- **[@active-storage](.agents/active-storage.md)** - NAS storage, video validation (size/duration), direct uploads, variants
+- **[@action-text](.agents/action-text.md)** - Rich text editing, sanitizer config, auto-linking, custom attachables
 
 ---
 

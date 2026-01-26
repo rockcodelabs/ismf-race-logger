@@ -53,19 +53,96 @@ This follows the 37signals philosophy of **building small, focused components** 
 
 ---
 
+## Storage Configuration (Local NAS)
+
+Videos are stored on a local NAS for fast read/write access with optional cloud backup.
+
+### Storage Configuration
+
+```yaml
+# config/storage.yml
+
+# Development - local disk
+local:
+  service: Disk
+  root: <%= Rails.root.join("storage") %>
+
+# Production - NAS mount
+nas:
+  service: Disk
+  root: /mnt/nas/ismf-race-logger/storage
+  public: false
+
+# Optional: Mirror to cloud for backup
+mirror:
+  service: Mirror
+  primary: nas
+  mirrors: [s3_backup]
+
+# S3-compatible backup (MinIO, Backblaze, etc.)
+s3_backup:
+  service: S3
+  bucket: ismf-race-logger-backups
+  access_key_id: <%= Rails.application.credentials.dig(:s3, :access_key_id) %>
+  secret_access_key: <%= Rails.application.credentials.dig(:s3, :secret_access_key) %>
+  region: us-east-1
+  endpoint: https://s3.example.com
+  force_path_style: true
+```
+
+```ruby
+# config/environments/production.rb
+config.active_storage.service = :nas
+# Or use mirror for redundancy:
+# config.active_storage.service = :mirror
+```
+
+### NAS Mount (fstab)
+
+```bash
+# /etc/fstab entry (NFS)
+nas.local:/volume1/rails-storage /mnt/nas/ismf-race-logger/storage nfs defaults,_netdev 0 0
+
+# Or for SMB/CIFS
+//nas.local/rails-storage /mnt/nas/ismf-race-logger/storage cifs credentials=/etc/nas-credentials,uid=1000,gid=1000 0 0
+```
+
+---
+
 ## Data Model Updates
 
-### Report Model Changes
+### Report Model with Video Validations
 
 ```ruby
 # app/models/report.rb
 class Report < ApplicationRecord
-  has_many_attached :videos  # Changed from has_one_attached :video
+  include VideoValidatable
+
+  has_many_attached :videos do |attachable|
+    # Preprocessed variants (required for read replicas)
+    attachable.variant :thumbnail,
+      resize_to_limit: [320, 180],
+      format: :webp,
+      preprocessed: true
+
+    attachable.variant :poster,
+      resize_to_limit: [1280, 720],
+      format: :webp,
+      preprocessed: true
+  end
+
+  # Rich text description with auto-linking
+  has_rich_text :description
 
   # Per-video clip times stored as JSON
   # Format: { "blob_id_1" => { start: 2.5, end: 5.0 }, "blob_id_2" => { start: 0, end: 3.0 } }
-  # Alternatively, use a separate VideoClip model for more complex needs
   store :video_clips, coder: JSON, default: {}
+
+  # Video validations
+  validates_videos :videos,
+    max_size: 100.megabytes,
+    max_duration: 5.minutes,
+    types: %w[video/mp4 video/webm video/quicktime]
 
   def clip_for(video_blob)
     video_clips[video_blob.id.to_s] || { "start" => 0, "end" => video_duration(video_blob) }
@@ -84,6 +161,101 @@ class Report < ApplicationRecord
 end
 ```
 
+### Video Validation Concern
+
+```ruby
+# app/models/concerns/video_validatable.rb
+module VideoValidatable
+  extend ActiveSupport::Concern
+
+  included do
+    class_attribute :video_max_size, default: 100.megabytes
+    class_attribute :video_max_duration, default: 5.minutes
+    class_attribute :video_allowed_types, default: %w[video/mp4 video/webm video/quicktime]
+  end
+
+  class_methods do
+    def validates_videos(attribute, max_size: nil, max_duration: nil, types: nil)
+      validate do
+        send(attribute).each do |video|
+          next unless video.attached?
+
+          validate_video_attachment(
+            video,
+            max_size: max_size || video_max_size,
+            max_duration: max_duration || video_max_duration,
+            types: types || video_allowed_types
+          )
+        end
+      end
+    end
+  end
+
+  private
+
+  def validate_video_attachment(video, max_size:, max_duration:, types:)
+    blob = video.blob
+
+    # Size validation
+    if blob.byte_size > max_size
+      errors.add(:videos, "must be less than #{max_size / 1.megabyte}MB each (#{blob.filename} is #{blob.byte_size / 1.megabyte}MB)")
+    end
+
+    # Type validation
+    unless types.include?(blob.content_type)
+      errors.add(:videos, "'#{blob.filename}' must be #{types.map { |t| t.split('/').last.upcase }.join(', ')} format")
+    end
+
+    # Duration validation (requires FFprobe analysis)
+    if blob.analyzed? && blob.metadata[:duration]
+      duration_seconds = blob.metadata[:duration]
+      if duration_seconds > max_duration
+        errors.add(:videos, "'#{blob.filename}' exceeds maximum duration of #{max_duration.to_i / 60} minutes (#{(duration_seconds / 60).round(1)} minutes)")
+      end
+    end
+  end
+end
+```
+
+### Active Storage Initializer
+
+```ruby
+# config/initializers/active_storage.rb
+
+# Ensure FFprobe is available for video analysis
+Rails.application.config.active_storage.analyzers = [
+  ActiveStorage::Analyzer::VideoAnalyzer,
+  ActiveStorage::Analyzer::ImageAnalyzer,
+  ActiveStorage::Analyzer::AudioAnalyzer
+]
+
+# Extended URL expiry for slow connections (Cloudflare buffering)
+module ActiveStorage
+  mattr_accessor :service_urls_for_direct_uploads_expire_in, default: 48.hours
+end
+
+# Skip previews for large files
+module ActiveStorageBlobPreviewable
+  MAX_PREVIEWABLE_SIZE = 50.megabytes
+
+  def previewable?
+    super && byte_size <= MAX_PREVIEWABLE_SIZE
+  end
+end
+
+ActiveSupport.on_load(:active_storage_blob) do
+  ActiveStorage::Blob.prepend(ActiveStorageBlobPreviewable)
+end
+
+# Verify NAS mount on boot (production safety check)
+if Rails.env.production?
+  nas_path = Pathname.new("/mnt/nas/ismf-race-logger/storage")
+  unless nas_path.exist? && nas_path.writable?
+    Rails.logger.error "NAS storage not mounted or not writable at #{nas_path}!"
+  end
+end
+```
+
 ### Migration
 
 ```ruby
@@ -93,6 +265,65 @@ class AddVideoClipsToReports < ActiveRecord::Migration[8.1]
     add_column :reports, :video_clips, :jsonb, default: {}, null: false
   end
 end
+```
+
+---
+
+## Action Text Integration
+
+Reports can have rich text descriptions with auto-linking at render time.
+
+### Sanitizer Configuration
+
+```ruby
+# config/initializers/sanitization.rb
+Rails.application.config.after_initialize do
+  # Add custom tags and attributes
+  Rails::HTML5::SafeListSanitizer.allowed_tags.merge(%w[
+    video source figure figcaption details summary table tr td th thead tbody
+  ])
+
+  Rails::HTML5::SafeListSanitizer.allowed_attributes.merge(%w[
+    data-turbo-frame data-action data-controller controls type width height src poster preload
+  ])
+
+  # CRITICAL: Sync with Action Text in production
+  ActionText::ContentHelper.allowed_tags = Rails::HTML5::SafeListSanitizer.allowed_tags
+  ActionText::ContentHelper.allowed_attributes = Rails::HTML5::SafeListSanitizer.allowed_attributes
+end
+```
+
+### Rich Text Content Layout
+
+```erb
+<%# app/views/layouts/action_text/contents/_content.html.erb %>
+<div class="action-text-content" data-controller="retarget-links">
+  <%= format_html yield -%>
+</div>
+```
+
+### Link Retargeting Controller
+
+```javascript
+// app/javascript/controllers/retarget_links_controller.js
+import { Controller } from "@hotwired/stimulus"
+
+export default class extends Controller {
+  connect() {
+    this.element.querySelectorAll("a").forEach(this.#retargetLink.bind(this))
+  }
+
+  #retargetLink(link) {
+    link.target = this.#targetsSameDomain(link) ? "_top" : "_blank"
+    if (link.target === "_blank") {
+      link.rel = "noopener noreferrer"
+    }
+  }
+
+  #targetsSameDomain(link) {
+    return link.href.startsWith(window.location.origin)
+  }
+}
 ```
 
 ---
@@ -1239,14 +1470,41 @@ end
 - **Focus indicators**: Visible focus rings on all interactive elements
 - **Screen reader support**: Time values announced when changed
 
+See [.agents/accessibility.md](../../.agents/accessibility.md) for comprehensive accessibility patterns.
+
 ---
 
 ## Performance Considerations
 
+- **NAS storage**: Local NAS provides fast read/write with optional cloud mirror for backup
 - **Lazy video loading**: Videos use `preload="metadata"` to avoid loading full content
 - **Debounced saves**: Clip time changes are saved only on drag end (committed event)
 - **Optimistic UI**: Preview updates immediately on file selection before upload completes
 - **Frame accuracy**: HTML5 video seeking is frame-accurate in modern browsers
+- **Skip large previews**: Videos > 50MB skip preview generation to avoid timeouts
+- **Preprocessed variants**: Thumbnail/poster variants generated on upload, not on request
+- **Extended URL expiry**: 48-hour signed URLs for slow uploads with CDN buffering
+
+See [.agents/performance.md](../../.agents/performance.md) for comprehensive performance patterns.
+
+---
+
+## Validation Summary
+
+| Validation | Default | Configurable |
+|------------|---------|--------------|
+| Max file size | 100 MB | `max_size:` option |
+| Max duration | 5 minutes | `max_duration:` option |
+| Allowed types | MP4, WebM, MOV | `types:` option |
+
+### Error Messages
+
+```ruby
+# Example validation errors:
+# - "Videos must be less than 100MB each (race_clip.mp4 is 150MB)"
+# - "Videos 'race_clip.mp4' must be MP4, WEBM, QUICKTIME format"
+# - "Videos 'race_clip.mp4' exceeds maximum duration of 5 minutes (7.5 minutes)"
+```
 
 ---
 
@@ -1258,6 +1516,8 @@ end
 4. **Waveform display** - Show audio waveform for audio-based navigation
 5. **Slow motion playback** - 0.25x, 0.5x playback speeds
 6. **Touch gestures** - Pinch to zoom timeline on touch devices
+7. **Cloud sync** - Automatic sync to cloud storage after NAS upload
+8. **Video transcoding** - Auto-convert to web-friendly formats
 
 ---
 
@@ -1266,3 +1526,10 @@ end
 - [FOP Real-Time Performance](./fop-realtime-performance.md) - Report creation flow
 - [MSO Import Participants](./mso-import-participants.md) - Participant data
 - [Architecture Overview](../architecture-overview.md) - Report model details
+
+## Agent References
+
+- [Active Storage Patterns](../../.agents/active-storage.md) - NAS storage, video validation, direct uploads
+- [Action Text Patterns](../../.agents/action-text.md) - Rich text, sanitization, attachments
+- [Accessibility Patterns](../../.agents/accessibility.md) - ARIA, keyboard nav, screen readers
+- [Performance Patterns](../../.agents/performance.md) - Caching, lazy loading, optimization
