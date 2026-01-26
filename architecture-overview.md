@@ -13,17 +13,30 @@ This document provides a detailed overview of the architecture and models for th
 #
 # Table name: users
 #
-# id         :bigint           not null, primary key
-# name       :string           not null
-# email      :string           not null, unique
-# role_id    :bigint           not null, foreign_key
-# country    :string
-# ref_level  :enum             roles: [:national, :international]
-# created_at :datetime         not null
-# updated_at :datetime         not null
+# id              :bigint           not null, primary key
+# name            :string           not null
+# email           :string           not null, unique
+# password_digest :string           not null
+# role_id         :bigint           not null, foreign_key
+# country         :string
+# ref_level       :enum             roles: [:national, :international]
+# created_at      :datetime         not null
+# updated_at      :datetime         not null
 #
 class User < ApplicationRecord
+  # Rails 8.1 Authentication
+  has_secure_password
+  has_many :sessions, dependent: :destroy
+  has_many :magic_links, dependent: :destroy
+
   belongs_to :role
+
+  # Validations
+  validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :name, presence: true
+
+  # Normalizations (Rails 7.1+)
+  normalizes :email, with: ->(email) { email.strip.downcase }
 
   # Scopes
   scope :referees, -> { joins(:role).where(roles: { name: %w[national_referee international_referee] }) }
@@ -36,6 +49,82 @@ class User < ApplicationRecord
 
   def referee?
     %w[national_referee international_referee].include?(role.name)
+  end
+
+  # Generate magic link token for passwordless login
+  def generate_magic_link!
+    magic_links.create!(
+      token: SecureRandom.urlsafe_base64(32),
+      expires_at: 15.minutes.from_now
+    )
+  end
+end
+```
+
+### **1a. Session**
+
+```ruby
+# == Schema Information
+#
+# Table name: sessions
+#
+# id         :bigint           not null, primary key
+# user_id    :bigint           not null, foreign_key
+# token      :string           not null, unique
+# ip_address :string
+# user_agent :string
+# created_at :datetime         not null
+# updated_at :datetime         not null
+#
+class Session < ApplicationRecord
+  belongs_to :user
+
+  before_create :generate_token
+
+  private
+
+  def generate_token
+    self.token = SecureRandom.urlsafe_base64(32)
+  end
+end
+```
+
+### **1b. MagicLink**
+
+```ruby
+# == Schema Information
+#
+# Table name: magic_links
+#
+# id         :bigint           not null, primary key
+# user_id    :bigint           not null, foreign_key
+# token      :string           not null, unique
+# expires_at :datetime         not null
+# used_at    :datetime
+# created_at :datetime         not null
+# updated_at :datetime         not null
+#
+class MagicLink < ApplicationRecord
+  belongs_to :user
+
+  validates :token, presence: true, uniqueness: true
+  validates :expires_at, presence: true
+
+  scope :valid, -> { where(used_at: nil).where("expires_at > ?", Time.current) }
+
+  def expired?
+    expires_at < Time.current
+  end
+
+  def used?
+    used_at.present?
+  end
+
+  def consume!
+    return false if expired? || used?
+
+    update!(used_at: Time.current)
+    true
   end
 end
 ```
@@ -324,7 +413,13 @@ end
 ## **Quick Summary of Each Model**
 
 ### **1. User**
-Represents a system user with attributes like name, email, and associated role. It determines the user's responsibilities and permissions in the system (e.g., referee, VAR operator).
+Represents a system user with attributes like name, email, and associated role. It determines the user's responsibilities and permissions in the system (e.g., referee, VAR operator). Uses Rails 8.1 authentication with `has_secure_password` for password-based login and magic links for passwordless authentication.
+
+### **1a. Session**
+Manages user authentication sessions with secure tokens. Each session tracks the user's IP address and user agent for security auditing.
+
+### **1b. MagicLink**
+Enables passwordless authentication via email. Magic links are single-use, time-limited tokens (15 minutes) that allow users to log in without entering a password.
 
 ### **2. Role**
 Defines user roles (e.g., national referee, jury president). It is associated with users and determines their functionality within the system.
