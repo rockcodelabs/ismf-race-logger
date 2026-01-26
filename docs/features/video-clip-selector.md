@@ -1524,7 +1524,7 @@ See [.agents/performance.md](../../.agents/performance.md) for comprehensive per
 ## Related Documents
 
 - [FOP Real-Time Performance](./fop-realtime-performance.md) - Report creation flow
-- [MSO Import Participants](./mso-import-participants.md) - Participant data
+- [MSO Import Athletes](./mso-import-participants.md) - Athlete data
 - [Architecture Overview](../architecture-overview.md) - Report model details
 
 ## Agent References

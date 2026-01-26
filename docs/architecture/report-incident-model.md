@@ -10,6 +10,73 @@
 
 ---
 
+## Primary Key Decision: bigint + Client UUID
+
+### Recommendation: **bigint primary keys** with **client_uuid for offline sync**
+
+| Aspect | bigint | UUID |
+|--------|--------|------|
+| **Storage** | 8 bytes | 16 bytes |
+| **Index performance** | ✅ Excellent (sequential) | ⚠️ Slower (random distribution) |
+| **B-tree fragmentation** | ✅ Minimal | ⚠️ High (random inserts) |
+| **Human-readable** | ✅ Yes | ❌ No |
+| **Predictable** | ⚠️ Yes (security concern for public APIs) | ✅ No |
+| **Offline generation** | ❌ No (needs server) | ✅ Yes (client can generate) |
+| **Rails default** | ✅ Yes | ❌ Needs config |
+
+### Solution: Hybrid Approach
+
+For **offline FOP support** (reports created offline, synced later):
+
+```ruby
+# Migration
+create_table :reports do |t|
+  t.bigint :id, primary_key: true           # Fast, sequential, server-assigned
+  t.uuid :client_uuid, null: false, index: { unique: true }  # Client-generated for sync
+  # ...
+end
+```
+
+**How it works:**
+1. FOP device generates `client_uuid` locally (even offline)
+2. Report is saved to IndexedDB with `client_uuid`
+3. When online, sync sends report with `client_uuid`
+4. Server creates report with new `id`, stores `client_uuid`
+5. Server responds with `id` → client updates local record
+6. Duplicate sync requests are idempotent (check `client_uuid`)
+
+**Benefits:**
+- ✅ Fast bigint primary keys for all queries/joins
+- ✅ Offline support via client-generated UUID
+- ✅ Idempotent sync (no duplicate reports)
+- ✅ No public API exposure of sequential IDs
+
+```ruby
+# app/models/report.rb
+class Report < ApplicationRecord
+  before_validation :set_client_uuid, on: :create
+  
+  validates :client_uuid, presence: true, uniqueness: true
+  
+  private
+  
+  def set_client_uuid
+    self.client_uuid ||= SecureRandom.uuid
+  end
+end
+
+# app/services/reports/create.rb - handles sync
+def call(user:, race_id:, bib_number:, client_uuid:, **params)
+  # Idempotent: if client_uuid exists, return existing report
+  existing = Report.find_by(client_uuid: client_uuid)
+  return Success(existing) if existing
+  
+  # Create new report...
+end
+```
+
+---
+
 ## Core Concept
 
 ```
@@ -94,13 +161,15 @@
 #
 # Table name: reports
 #
-# id               :bigint           not null, primary key
-# race_id          :bigint           not null, index
-# incident_id      :bigint           not null, index
-# user_id          :bigint           not null, index (reporter)
-# race_location_id :bigint           optional, index
-# participant_id   :bigint           optional, index
-# bib_number       :integer          not null, index
+# id                    :bigint           not null, primary key
+# client_uuid           :uuid             not null, unique index (for offline sync)
+# race_id               :bigint           not null, index
+# incident_id           :bigint           not null, index
+# user_id               :bigint           not null, index (reporter)
+# race_location_id      :bigint           optional, index
+# race_participation_id :bigint           optional, index (for bib lookup)
+# athlete_id            :bigint           optional, index (specific athlete, for team races)
+# bib_number            :integer          not null, index
 # description      :text             optional
 # video_clip       :jsonb            optional {start_time, end_time}
 # created_at       :datetime         not null, index
@@ -111,12 +180,19 @@ class Report < ApplicationRecord
   # ASSOCIATIONS
   # ═══════════════════════════════════════════════════════════════════
   belongs_to :race
-  belongs_to :incident
+  belongs_to :incident, counter_cache: true
   belongs_to :user
   belongs_to :race_location, optional: true
-  belongs_to :participant, optional: true
+  belongs_to :race_participation, optional: true  # For bib/entry lookup
+  belongs_to :athlete, optional: true              # Specific athlete (for team races: 12.1 vs 12.2)
 
   has_one_attached :video
+
+  # ═══════════════════════════════════════════════════════════════════
+  # CLIENT UUID (for offline sync)
+  # ═══════════════════════════════════════════════════════════════════
+  before_validation :set_client_uuid, on: :create
+  validates :client_uuid, presence: true, uniqueness: true
 
   # ═══════════════════════════════════════════════════════════════════
   # VALIDATIONS (minimal for speed)
@@ -126,6 +202,23 @@ class Report < ApplicationRecord
   validates :user_id, presence: true
   validates :bib_number, presence: true,
                          numericality: { only_integer: true, greater_than: 0 }
+
+  # ═══════════════════════════════════════════════════════════════════
+  # HELPER METHODS
+  # ═══════════════════════════════════════════════════════════════════
+  
+  # Get athlete name for display (handles both individual and team races)
+  def athlete_name
+    if athlete.present?
+      athlete.display_name
+    elsif race_participation&.team.present?
+      race_participation.team.display_name
+    elsif race_participation&.athlete.present?
+      race_participation.athlete.display_name
+    else
+      "Bib #{bib_number}"
+    end
+  end
 
   # ═══════════════════════════════════════════════════════════════════
   # NO STATUS ON REPORT
@@ -148,6 +241,10 @@ class Report < ApplicationRecord
 
   def broadcast_created
     Reports::BroadcastJob.perform_later(id)
+  end
+
+  def set_client_uuid
+    self.client_uuid ||= SecureRandom.uuid
   end
 end
 ```

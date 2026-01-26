@@ -741,9 +741,10 @@ Reports are **observations only** - they have NO status. All status/decision log
 # race_id          :bigint           not null, index
 # incident_id      :bigint           not null, index (always belongs to incident)
 # user_id          :bigint           not null, index (reporter)
-# race_location_id :bigint           optional, index
-# participant_id   :bigint           optional, index
-# bib_number       :integer          not null, index
+# race_location_id      :bigint           optional, index
+# race_participation_id :bigint           optional, index (for bib/entry lookup)
+# athlete_id            :bigint           optional, index (specific athlete, for team races)
+# bib_number            :integer          not null, index
 # description      :text             optional
 # video_clip       :jsonb            optional {start_time, end_time}
 # created_at       :datetime         not null, index
@@ -760,9 +761,27 @@ class Report < ApplicationRecord
   belongs_to :incident, counter_cache: true
   belongs_to :user
   belongs_to :race_location, optional: true
-  belongs_to :participant, optional: true
+  belongs_to :race_participation, optional: true  # For bib/entry lookup
+  belongs_to :athlete, optional: true              # Specific athlete (for team races: 12.1 vs 12.2)
 
   has_one_attached :video
+
+  # ═══════════════════════════════════════════════════════════════════
+  # HELPER METHODS
+  # ═══════════════════════════════════════════════════════════════════
+  
+  # Get athlete name for display (handles both individual and team races)
+  def athlete_name
+    if athlete.present?
+      athlete.display_name
+    elsif race_participation&.team.present?
+      race_participation.team.display_name
+    elsif race_participation&.athlete.present?
+      race_participation.athlete.display_name
+    else
+      "Bib #{bib_number}"
+    end
+  end
 
   # ═══════════════════════════════════════════════════════════════════
   # VALIDATIONS (minimal for speed - target < 100ms creation)

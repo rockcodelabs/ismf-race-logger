@@ -113,7 +113,7 @@ High-performance Field of Play (FOP) interface with real-time incident notificat
 ```ruby
 # Eager loading to prevent N+1
 Race.includes(
-  reports: [:race_location, :participant, :user, :incident]
+  reports: [:race_location, :race_participation, :athlete, :user, :incident]
 )
 
 # Fragment caching for report cards
@@ -170,7 +170,7 @@ def broadcast_new_report
       type: "new_report",
       report_id: id,
       bib_number: bib_number,
-      athlete_name: participant&.athlete_name,
+      athlete_name: athlete_name,  # Uses Report#athlete_name helper method
       location: race_location&.name,
       timestamp: created_at.iso8601,
       html: ApplicationController.render(
@@ -233,7 +233,7 @@ end
   ```javascript
   // Stimulus controller with:
   // - targets: input, grid, recentList, heatLabel
-  // - values: participants (Array), locationId, raceId
+  // - values: raceParticipations (Array), locationId, raceId
   // - filter() - instant client-side filter (< 10ms for 200 bibs)
   // - select(bib) - create report and close modal
   // - loadRecent() - from localStorage
@@ -250,7 +250,7 @@ end
 - **File**: `app/components/fop/bib_selector_component.rb`
 - **Details**:
   - Accepts race and location
-  - Preloads only `active_in_heat` participants (8-200)
+  - Preloads only `active_in_heat` race_participations (8-200)
   - Renders as JSON in data attribute (no extra request)
   - Touch-optimized grid layout (56px targets)
   - Shows heat label: "8 athletes in Final"
@@ -444,7 +444,7 @@ end
       action: action,
       report: ReportSerializer.new(self).as_json,
       bib_number: bib_number,
-      athlete_name: participant&.athlete_name,
+      athlete_name: athlete_name,  # Uses Report#athlete_name helper method
       html: ApplicationController.render(
         partial: "reports/report",
         locals: { report: self }
@@ -793,7 +793,7 @@ This phase adds the ability to select multiple reports and group them into a sin
           report_id: report.id,
           incident_id: report.incident_id,
           bib_number: report.bib_number,
-          athlete_name: report.participant&.athlete_name,
+          athlete_name: report.athlete_name,  # Uses Report#athlete_name helper method
           html: ApplicationController.render(
             partial: "reports/report_card",
             locals: { report: report }
@@ -983,7 +983,7 @@ This phase adds the ability to select multiple reports and group them into a sin
             #<%= report.bib_number %>
           </span>
           <span class="text-lg text-gray-600">
-            <%= report.participant&.athlete_name || "Unknown" %>
+            <%= report.athlete_name %>
           </span>
         </div>
         <div class="text-sm text-gray-500 mt-1">
@@ -1225,7 +1225,7 @@ This phase adds the ability to select multiple reports and group them into a sin
       def find_reports!(report_ids)
         return Failure([:invalid, "No reports selected"]) if report_ids.blank?
         
-        reports = Report.where(id: report_ids).includes(:participant, :race_location)
+        reports = Report.where(id: report_ids).includes(:race_participation, :athlete, :race_location)
         
         if reports.empty?
           Failure([:not_found, "No reports found"])
@@ -1592,8 +1592,8 @@ This phase adds the ability to select multiple reports and group them into a sin
   <%= render Fop::IncidentCardComponent.new(incident: incident) %>
 <% end %>
 
-# Bib grid - cached by race and participants updated_at
-<% cache [race, race.participants.maximum(:updated_at)] do %>
+# Bib grid - cached by race and race_participations updated_at
+<% cache [race, race.race_participations.maximum(:updated_at)] do %>
   <%= render Fop::BibSelectorComponent.new(race: race) %>
 <% end %>
 ```
@@ -1603,7 +1603,7 @@ This phase adds the ability to select multiple reports and group them into a sin
 ```ruby
 # If fragment caching isn't fast enough, consider Redis:
 Rails.cache.fetch("race_#{race.id}_bibs", expires_in: 1.hour) do
-  race.participants.pluck(:bib_number).sort
+  race.race_participations.pluck(:bib_number).sort
 end
 ```
 
@@ -1733,7 +1733,7 @@ proxy:
 │  │ BibSelector Component                                            │   │
 │  │                                                                  │   │
 │  │ Stimulus: bib_selector                                          │   │
-│  │ - Pre-loaded participants (8-200)                               │   │
+│  │ - Pre-loaded race_participations (8-200)                        │   │
 │  │ - Client-side filter                                            │   │
 │  │ - Creates report on tap                                         │   │
 │  │ - NO channel subscription                                       │   │
