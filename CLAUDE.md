@@ -170,11 +170,13 @@ end
 
 ## Default Users (Development)
 
-| Role  | Email                      | Password    |
-|-------|----------------------------|-------------|
-| Admin | admin@ismf-ski.com         | password123 |
-| Admin | dariusz.finster@gmail.com  | test123     |
-| User  | user@example.com           | password123 |
+| Role            | Email                      | Password    | System Role      |
+|-----------------|----------------------------|-------------|------------------|
+| Admin           | admin@ismf-ski.com         | password123 | referee_manager  |
+| Admin           | dariusz.finster@gmail.com  | test123     | referee_manager  |
+| Referee         | referee@ismf-ski.com       | password123 | national_referee |
+| VAR Operator    | var@ismf-ski.com           | password123 | var_operator     |
+| User            | user@example.com           | password123 | (none)           |
 
 ## ISMF Brand Colors
 
