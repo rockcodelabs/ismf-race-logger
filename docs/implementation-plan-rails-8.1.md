@@ -1806,6 +1806,158 @@ Based on https://ismf-ski.com/:
 
 ---
 
+### Phase 14: FOP Real-Time Performance & Report Grouping
+
+> **Reference**: See `docs/features/fop-realtime-performance.md` for complete implementation details.
+
+This phase implements real-time notifications for desktop devices and the report grouping workflow for incident management.
+
+#### Task 14.1: Configure Solid Cable for Real-Time
+- **Owner**: Developer
+- **Files**:
+  - `config/cable.yml`
+- **Details**: Configure Solid Cable with 100ms polling interval
+- **Dependencies**: Phase 12
+
+#### Task 14.2: Create Bib Number Quick Select (FOP Devices)
+- **Owner**: Developer
+- **Components**:
+  - `app/javascript/controllers/bib_selector_controller.js`
+  - `app/components/fop/bib_selector_component.rb`
+- **Details**: 
+  - Pre-load active bibs (8-200) as JSON
+  - Client-side filtering (< 10ms for 200 bibs)
+  - Touch-optimized grid (56px targets)
+  - Recent bibs in localStorage
+- **Dependencies**: Task 14.1
+
+#### Task 14.3: Create Real-Time Channels (Desktop Only)
+- **Owner**: Developer
+- **Files**:
+  - `app/channels/reports_channel.rb`
+  - `app/channels/incidents_channel.rb`
+  - `app/channels/application_cable/connection.rb`
+  - `app/javascript/channels/reports_channel.js`
+- **Details**: 
+  - Race-scoped channels
+  - Desktop devices subscribe to receive notifications
+  - FOP devices do NOT subscribe (creation only)
+- **Dependencies**: Task 14.2
+
+#### Task 14.4: Add Broadcast Callbacks to Models
+- **Owner**: Developer
+- **Files**:
+  - `app/models/report.rb` (add after_create_commit, after_update_commit)
+  - `app/models/incident.rb` (add broadcast callbacks)
+- **Details**: Broadcasts to desktop clients on create/update
+- **Dependencies**: Task 14.3
+
+#### Task 14.5: Create Report Selection Components (Desktop)
+- **Owner**: Developer
+- **Components**:
+  - `app/javascript/controllers/report_selection_controller.js`
+  - `app/components/fop/report_selection_component.rb`
+  - `app/components/fop/floating_action_bar_component.rb`
+- **Details**:
+  - Multi-select checkboxes (56px touch targets)
+  - Floating action bar appears when reports selected
+  - "Group into Incident" button
+- **Dependencies**: Task 14.4
+
+#### Task 14.6: Create Incident Action Components (Desktop)
+- **Owner**: Developer
+- **Components**:
+  - `app/components/fop/incident_actions_component.rb`
+- **Details**:
+  - Three touch-friendly buttons (56px height):
+    - **Apply Penalty** (red, primary)
+    - **Reject** (gray, secondary)
+    - **No Action** (outline, tertiary)
+  - Only shown for officialized incidents with pending status
+- **Dependencies**: Task 14.5
+
+#### Task 14.7: Add Incident Status Enum Extension
+- **Owner**: Developer
+- **Migration**: Add `no_action` to `official_status` enum
+- **Model Update**: 
+  ```ruby
+  enum :official_status, {
+    pending: "pending",
+    applied: "applied",
+    declined: "declined",
+    no_action: "no_action"
+  }, default: :pending, prefix: true
+  ```
+- **Dependencies**: Task 14.6
+
+#### Task 14.8: Create Report Grouping Services
+- **Owner**: Developer
+- **Services**:
+  - `app/services/incidents/group_reports.rb` - Create incident from selected reports
+  - `app/services/incidents/update_status.rb` - Apply/Reject/No Action
+- **Details**: 
+  - Uses dry-monads (Success/Failure)
+  - Validates all reports belong to same race
+  - Validates reports not already in incident
+  - Broadcasts updates via IncidentsChannel
+- **Dependencies**: Task 14.7
+
+#### Task 14.9: Add Incident Routes and Controller
+- **Owner**: Developer
+- **Routes**:
+  ```ruby
+  resources :races do
+    resources :incidents do
+      member do
+        patch :apply
+        patch :reject
+        patch :no_action
+        patch :officialize
+      end
+    end
+  end
+  ```
+- **Controller Actions**: create, apply, reject, no_action, officialize
+- **Dependencies**: Task 14.8
+
+#### Task 14.10: Create Notification Components (Desktop)
+- **Owner**: Developer
+- **Components**:
+  - `app/components/fop/toast_component.rb`
+  - `app/components/fop/new_reports_banner_component.rb`
+  - `app/javascript/controllers/report_notifications_controller.js`
+  - `app/javascript/controllers/toast_controller.js`
+- **Details**:
+  - Toast notifications for new reports
+  - "X new reports" banner with refresh
+  - Auto-dismiss after 5 seconds
+- **Dependencies**: Task 14.9
+
+#### Task 14.11: Write Real-Time & Grouping Tests
+- **Owner**: Developer
+- **Test Files**:
+  - `spec/channels/reports_channel_spec.rb`
+  - `spec/channels/incidents_channel_spec.rb`
+  - `spec/services/incidents/group_reports_spec.rb`
+  - `spec/services/incidents/update_status_spec.rb`
+  - `spec/components/fop/report_selection_component_spec.rb`
+  - `spec/components/fop/incident_actions_component_spec.rb`
+  - `spec/system/report_grouping_spec.rb`
+  - `spec/system/realtime_notifications_spec.rb`
+- **Dependencies**: Task 14.10
+
+#### Task 14.12: Performance Testing & Optimization
+- **Owner**: Developer
+- **Details**:
+  - Add Bullet gem for N+1 detection
+  - Create performance test suite
+  - Verify bib filtering < 10ms for 200 bibs
+  - Verify report list < 300ms for 100 reports
+  - Verify broadcast delivery < 100ms
+- **Dependencies**: Task 14.11
+
+---
+
 ## Quick Reference
 
 ### Development Commands
@@ -1887,13 +2039,20 @@ docker network inspect ismf-network
 
 ## Device Support Matrix
 
-| Device | Screen Size | Priority | Notes |
-|--------|-------------|----------|-------|
-| 7" Display | 600px | **HIGH** | Field of Play primary device |
-| iPad Mini | 768px | **HIGH** | Referee tablets |
-| iPad | 1024px | Medium | Control room |
-| Desktop | 1280px+ | Medium | Admin/reporting |
-| Phone | 375px+ | Medium | Quick access |
+| Device | Screen Size | Priority | Role | Notes |
+|--------|-------------|----------|------|-------|
+| 7" Display | 600px | **HIGH** | FOP (Creation) | Field of Play primary device |
+| iPad Mini | 768px | **HIGH** | FOP (Creation) | Referee tablets |
+| iPad | 1024px | Medium | Desktop (Viewing) | Control room, report grouping |
+| Desktop | 1280px+ | Medium | Desktop (Viewing) | Admin/reporting, incident actions |
+| Phone | 375px+ | Medium | FOP (Creation) | Quick access |
+
+### Device Role Separation
+
+| Role | Capabilities | Receives Notifications |
+|------|--------------|------------------------|
+| **FOP (Creation)** | Create reports, select bibs, offline queue | ❌ No |
+| **Desktop (Viewing)** | View reports, group into incidents, take action | ✅ Yes (Action Cable) |
 
 ---
 
@@ -1915,8 +2074,9 @@ docker network inspect ismf-network
 | Phase 11: Cloudflare | 1 hour | 20 hours |
 | Phase 12: Solid Stack | 1 hour | 21 hours |
 | Phase 13: Testing & Docs | 2 hours | 23 hours |
+| **Phase 14: Real-Time & Report Grouping** | **6 hours** | **29 hours** |
 
-**Total Estimated Time: 3 days (23+ hours)**
+**Total Estimated Time: 4 days (29+ hours)**
 
 ---
 
