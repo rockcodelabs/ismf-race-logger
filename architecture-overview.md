@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This document provides a detailed overview of the architecture and models for the race system, integrating users, roles, races, locations, incidents, reports, world cup editions, stages, and authorization via Pundit.
+This document provides a detailed overview of the architecture and models for the race system, integrating users, roles, competitions, races, locations, incidents, reports, and authorization via Pundit.
 
 ---
 
@@ -179,26 +179,47 @@ class Role < ApplicationRecord
 end
 ```
 
-### **3. WorldCupEdition**
+### **3. Competition**
 
 ```ruby
 # == Schema Information
 #
-# Table name: world_cup_editions
+# Table name: competitions
 #
 # id          :bigint           not null, primary key
-# name        :string           not null, unique
-# year        :integer          not null
+# name        :string           not null
+# place       :string           not null
+# country     :string           not null
 # description :text
+# start_date  :date             not null
+# end_date    :date             not null
+# webpage_url :string
 # created_at  :datetime         not null
 # updated_at  :datetime         not null
 #
-class WorldCupEdition < ApplicationRecord
+class Competition < ApplicationRecord
   has_many :stages, dependent: :destroy
+  has_many :races, through: :stages
 
-  # Example: World Cup 2026
-  validates :name, presence: true, uniqueness: true
-  validates :year, presence: true, numericality: { greater_than: 1900 }
+  has_one_attached :logo
+
+  validates :name, presence: true
+  validates :place, presence: true
+  validates :country, presence: true
+  validates :start_date, presence: true
+  validates :end_date, presence: true
+  validate :end_date_after_start_date
+
+  scope :upcoming, -> { where("start_date > ?", Date.current).order(:start_date) }
+  scope :ongoing, -> { where("start_date <= ? AND end_date >= ?", Date.current, Date.current) }
+  scope :past, -> { where("end_date < ?", Date.current).order(start_date: :desc) }
+
+  private
+
+  def end_date_after_start_date
+    return unless start_date && end_date
+    errors.add(:end_date, "must be after start date") if end_date < start_date
+  end
 end
 ```
 
@@ -209,49 +230,29 @@ end
 #
 # Table name: stages
 #
-# id                  :bigint           not null, primary key
-# world_cup_edition_id :bigint           not null, foreign_key
-# name                :string           not null
-# description         :text
-# created_at          :datetime         not null
-# updated_at          :datetime         not null
+# id             :bigint           not null, primary key
+# competition_id :bigint           not null, foreign_key
+# name           :string           not null
+# description    :text
+# date           :date
+# position       :integer          not null, default: 0
+# created_at     :datetime         not null
+# updated_at     :datetime         not null
 #
 class Stage < ApplicationRecord
-  belongs_to :world_cup_edition
+  belongs_to :competition
   has_many :races, dependent: :destroy
 
   validates :name, presence: true
+  validates :position, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+
+  default_scope { order(:position) }
+
+  # Examples: "Qualification", "Semi-Finals", "Finals"
 end
 ```
 
-### **5. Race**
-
-```ruby
-# == Schema Information
-#
-# Table name: races
-#
-# id           :bigint           not null, primary key
-# name         :string           not null
-# race_type_id :bigint           not null, foreign_key
-# stage_id     :bigint           not null, foreign_key
-# created_at   :datetime         not null
-# updated_at   :datetime         not null
-#
-class Race < ApplicationRecord
-  belongs_to :stage
-  belongs_to :race_type
-  has_many :race_locations, dependent: :destroy
-  has_many :incidents, dependent: :destroy
-
-  # Aggregates default and specific locations for the race
-  def all_locations
-    race_type.race_locations.default + race_locations
-  end
-end
-```
-
-### **6. RaceType**
+### **5. RaceType**
 
 ```ruby
 # == Schema Information
@@ -265,12 +266,104 @@ end
 # updated_at  :datetime         not null
 #
 class RaceType < ApplicationRecord
-  has_many :race_locations, dependent: :destroy
-  has_many :races, dependent: :destroy
+  has_many :location_templates, class_name: "RaceTypeLocationTemplate", dependent: :destroy
+  has_many :races, dependent: :restrict_with_error
+
+  validates :name, presence: true, uniqueness: true
+
+  # Predefined race types:
+  # - sprint (default locations: start, finish, top, walk, platform_1, platform_2)
+  # - vertical (default locations: start, finish, checkpoint_1, checkpoint_2)
+  # - individual (default locations: start, finish, transition_1, transition_2)
+  # - relay (default locations: start, finish, exchange_zone, transition)
 end
 ```
 
-### **7. RaceLocation**
+### **6. RaceTypeLocationTemplate**
+
+```ruby
+# == Schema Information
+#
+# Table name: race_type_location_templates
+#
+# id            :bigint           not null, primary key
+# race_type_id  :bigint           not null, foreign_key
+# name          :string           not null
+# location_type :enum             values: [:referee, :spectator, :var]
+# position      :integer          not null, default: 0
+# created_at    :datetime         not null
+# updated_at    :datetime         not null
+#
+class RaceTypeLocationTemplate < ApplicationRecord
+  belongs_to :race_type
+
+  enum :location_type, {
+    referee: "referee",
+    spectator: "spectator",
+    var: "var"
+  }
+
+  validates :name, presence: true
+  validates :position, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  validates :name, uniqueness: { scope: :race_type_id }
+
+  default_scope { order(:position) }
+end
+```
+
+### **7. Race**
+
+```ruby
+# == Schema Information
+#
+# Table name: races
+#
+# id           :bigint           not null, primary key
+# stage_id     :bigint           not null, foreign_key
+# race_type_id :bigint           not null, foreign_key
+# name         :string           not null
+# scheduled_at :datetime
+# status       :enum             values: [:scheduled, :in_progress, :completed, :cancelled]
+# created_at   :datetime         not null
+# updated_at   :datetime         not null
+#
+class Race < ApplicationRecord
+  belongs_to :stage
+  belongs_to :race_type
+  has_many :race_locations, dependent: :destroy
+  has_many :incidents, dependent: :destroy
+  has_many :reports, dependent: :destroy
+
+  has_one :competition, through: :stage
+
+  enum :status, {
+    scheduled: "scheduled",
+    in_progress: "in_progress",
+    completed: "completed",
+    cancelled: "cancelled"
+  }, default: :scheduled
+
+  validates :name, presence: true
+
+  after_create :copy_locations_from_template
+
+  private
+
+  # Automatically copy default locations from RaceType template
+  def copy_locations_from_template
+    race_type.location_templates.each do |template|
+      race_locations.create!(
+        name: template.name,
+        location_type: template.location_type,
+        from_template: true,
+        position: template.position
+      )
+    end
+  end
+end
+```
+
+### **8. RaceLocation**
 
 ```ruby
 # == Schema Information
@@ -278,24 +371,36 @@ end
 # Table name: race_locations
 #
 # id               :bigint           not null, primary key
-# race_type_id     :bigint           foreign key
-# race_id          :bigint           foreign key
+# race_id          :bigint           not null, foreign_key
 # name             :string           not null
 # location_type    :enum             values: [:referee, :spectator, :var]
 # has_camera       :boolean          default: false
 # camera_stream_url :string
-# default          :boolean          default: false, null: false
+# from_template    :boolean          default: false, null: false
+# position         :integer          not null, default: 0
 # created_at       :datetime         not null
 # updated_at       :datetime         not null
 #
 class RaceLocation < ApplicationRecord
-  belongs_to :race_type, optional: true
-  belongs_to :race, optional: true
-  has_many :reports
+  belongs_to :race
+  has_many :reports, dependent: :nullify
+  has_many :incidents, dependent: :nullify
 
-  # Filter scopes
+  enum :location_type, {
+    referee: "referee",
+    spectator: "spectator",
+    var: "var"
+  }
+
+  validates :name, presence: true
+  validates :name, uniqueness: { scope: :race_id }
+  validates :position, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+
   scope :with_camera, -> { where(has_camera: true) }
-  scope :referee_areas, -> { where(location_type: :referee) }
+  scope :from_template, -> { where(from_template: true) }
+  scope :custom, -> { where(from_template: false) }
+
+  default_scope { order(:position) }
 end
 ```
 
@@ -662,11 +767,11 @@ class RaceLocationPolicy < ApplicationPolicy
 end
 ```
 
-### **WorldCupEditionPolicy**
+### **CompetitionPolicy**
 
 ```ruby
-# app/policies/world_cup_edition_policy.rb
-class WorldCupEditionPolicy < ApplicationPolicy
+# app/policies/competition_policy.rb
+class CompetitionPolicy < ApplicationPolicy
   def index?
     true
   end
@@ -684,7 +789,44 @@ class WorldCupEditionPolicy < ApplicationPolicy
   end
 
   def destroy?
-    user.referee_manager? # Only referee manager can delete editions
+    user.referee_manager? # Only referee manager can delete competitions
+  end
+
+  class Scope < Scope
+    def resolve
+      scope.all
+    end
+  end
+end
+```
+
+### **RaceTypePolicy**
+
+```ruby
+# app/policies/race_type_policy.rb
+class RaceTypePolicy < ApplicationPolicy
+  def index?
+    true
+  end
+
+  def show?
+    true
+  end
+
+  def create?
+    admin?
+  end
+
+  def update?
+    admin?
+  end
+
+  def destroy?
+    user.referee_manager? # Only referee manager can delete race types
+  end
+
+  def manage_templates?
+    admin? # Add/remove/edit location templates
   end
 
   class Scope < Scope
@@ -773,28 +915,31 @@ Enables passwordless authentication via email. Magic links are single-use, time-
 ### **2. Role**
 Defines user roles (e.g., national referee, jury president). It is associated with users and determines their authorization level via Pundit policies.
 
-### **3. WorldCupEdition**
-Represents a particular World Cup Edition (e.g., World Cup 2024), which consists of multiple stages.
+### **3. Competition**
+Represents a specific competition event (e.g., "Verbier Sprint Weekend 2024") with place, dates, description, logo, and webpage URL. Replaces the old WorldCupEdition model.
 
 ### **4. Stage**
-Represents a stage within a World Cup Edition (e.g., Pre-Qualification, Semi-Finals). Each stage includes multiple races.
+Represents a stage within a Competition (e.g., "Qualification", "Semi-Finals", "Finals"). Each stage includes multiple races and has a position for ordering.
 
-### **5. Race**
-Represents a specific race within a stage, linked to a race type (e.g., sprint, relay). Each race can have locations, incidents, and reports.
+### **5. RaceType**
+Defines the general type of a race (e.g., sprint, vertical, individual, relay). Contains location templates that define the default locations for races of this type.
 
-### **6. RaceType**
-Defines the general type of a race (e.g., sprint, vertical), along with the default locations.
+### **6. RaceTypeLocationTemplate**
+Defines default locations for a RaceType. When a new Race is created, these templates are automatically copied to create the race's actual locations. Examples: sprint type has start, finish, top, walk, platform_1, platform_2.
 
-### **7. RaceLocation**
-Represents locations within a race where referees, spectators, and VAR operators are assigned. Some locations include cameras.
+### **7. Race**
+Represents a specific race within a stage, linked to a race type. When created, automatically copies locations from the RaceType's templates. Has a status (scheduled, in_progress, completed, cancelled).
 
-### **8. Incident**
+### **8. RaceLocation**
+Represents an actual location within a specific race. Created automatically from templates when a race is created (`from_template: true`), plus custom locations can be added (`from_template: false`). Tracks camera availability and stream URLs.
+
+### **9. Incident**
 Handles grouped violations or race-related issues that may involve multiple reports and statuses (e.g., unofficial and official statuses).
 
-### **9. Report**
+### **10. Report**
 Tracks individual referee-reported incidents during a race. Includes details like rule violations, videos, and penalties. Now includes `user_id` to track the reporter.
 
-### **10. Rule**
+### **11. Rule**
 Defines the rules of the competition, which are referenced in reports to clarify the violated rule.
 
 ---
