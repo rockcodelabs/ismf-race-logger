@@ -2,7 +2,21 @@
 
 ## Overview
 
-High-performance Field of Play (FOP) interface with real-time incident notifications via Action Cable. This feature ensures sub-second response times for bib number selection, instant incident display, and live notifications when other users add incidents.
+High-performance Field of Play (FOP) interface with real-time incident notifications via Action Cable. This feature ensures sub-second response times for bib number selection on FOP devices (creation only) and live notifications on desktop devices (viewing only).
+
+---
+
+## Key Constraints (Clarified)
+
+| Constraint | Value | Impact |
+|------------|-------|--------|
+| **Max athletes per race** | 200 | Client-side bib grid is trivial, no pagination |
+| **Active bibs vary by stage** | Quali=all (200), Sprint Finals=8 | Heat-based filtering |
+| **Duplicate reports** | Allowed, grouped into incidents | No uniqueness constraint |
+| **Stale reports** | Hidden after ~5 min if not processed | Background job marks stale |
+| **FOP devices** | Creation only (7", iPad, phone) | No incident list, just bib selector |
+| **Desktop devices** | Viewing only | Full dashboard, Action Cable notifications |
+| **Video** | Added AFTER report creation | Two-step: create report, then attach video |
 
 ---
 
@@ -10,21 +24,27 @@ High-performance Field of Play (FOP) interface with real-time incident notificat
 
 ### User Stories
 
-1. **As a referee**, I need to quickly select a bib number (under 200ms) so I can log incidents without delay during a race.
-2. **As a VAR operator**, I need to see incidents displayed instantly so I can review video evidence promptly.
-3. **As a jury president**, I need to be notified in real-time when new incidents are logged so I don't miss any during a race.
-4. **As a field referee**, I need the interface to work smoothly on a 7" display with touch targets.
+1. **As a field referee (FOP device)**, I need to quickly select a bib number (under 100ms) so I can log reports without delay during a race.
+2. **As a VAR operator (desktop)**, I need to see reports displayed instantly so I can review video evidence promptly.
+3. **As a jury president (desktop)**, I need to be notified in real-time when new reports are logged so I don't miss any during a race.
+4. **As a field referee**, I need the interface to work smoothly on a 7" display with large touch targets.
 
 ### Acceptance Criteria
 
-- [ ] Bib number selection responds in < 200ms (client-side filtering)
-- [ ] Incident list loads in < 500ms with 100+ incidents
-- [ ] Real-time notifications appear within 1 second of incident creation
-- [ ] "New incidents since page load" banner with count
-- [ ] Toast notifications for new incidents (dismissible)
+#### FOP Devices (Creation Only)
+- [ ] Bib number selection responds in < 100ms (max 200 bibs, often just 8 in finals)
+- [ ] Report creation appears instant (< 100ms perceived, optimistic UI)
+- [ ] Works offline with IndexedDB queue
+- [ ] Touch-optimized for 7" displays (56px minimum touch targets)
+- [ ] No incident/report list (creation only)
+
+#### Desktop Devices (Viewing Only)
+- [ ] Report list loads in < 300ms with 100+ reports
+- [ ] Real-time notifications appear within 1 second of report creation
+- [ ] "New reports since page load" banner with count
+- [ ] Toast notifications for new reports (dismissible)
 - [ ] Badge counter updates on navigation items
-- [ ] Works offline-first with sync when connection restored (PWA)
-- [ ] Touch-optimized for 7" displays (44px minimum touch targets)
+- [ ] Report → Incident grouping workflow
 
 ### Environment Simplification
 
@@ -37,72 +57,83 @@ High-performance Field of Play (FOP) interface with real-time incident notificat
 
 ## Technical Approach
 
-### 1. Bib Number Selection - Client-Side Performance
+### 1. Bib Number Selection - Client-Side Performance (FOP Devices Only)
 
-**Strategy**: Pre-load all bib numbers at page load, filter entirely client-side with Stimulus.
+**Strategy**: Pre-load active bibs for current heat at page load, filter entirely client-side with Stimulus.
+
+**Scale**: Max 200 bibs (qualification), as few as 8 (sprint finals) - trivial for client-side.
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  BIB NUMBER QUICK SELECT                                │
-├─────────────────────────────────────────────────────────┤
-│  [___________] Search/Filter                            │
-│                                                         │
-│  ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐     │
-│  │ 1  │ │ 2  │ │ 3  │ │ 4  │ │ 5  │ │ 6  │ │ 7  │     │
-│  └────┘ └────┘ └────┘ └────┘ └────┘ └────┘ └────┘     │
-│  ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐     │
-│  │ 8  │ │ 9  │ │ 10 │ │ 11 │ │ 12 │ │ 13 │ │ 14 │     │
-│  └────┘ └────┘ └────┘ └────┘ └────┘ └────┘ └────┘     │
-│                                                         │
-│  Recent: [42] [17] [88]                                │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│  BIB NUMBER QUICK SELECT                     [8 athletes in Final]      │
+├─────────────────────────────────────────────────────────────────────────┤
+│  [___________] Search/Filter                                            │
+│                                                                         │
+│  Sprint Final (8 athletes):                                             │
+│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                                   │
+│  │  12  │ │  34  │ │  56  │ │  78  │                                   │
+│  │ SUI  │ │ FRA  │ │ ITA  │ │ AUT  │                                   │
+│  └──────┘ └──────┘ └──────┘ └──────┘                                   │
+│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                                   │
+│  │  23  │ │  45  │ │  67  │ │  89  │                                   │
+│  │ ESP  │ │ GER  │ │ NOR  │ │ SWE  │                                   │
+│  └──────┘ └──────┘ └──────┘ └──────┘                                   │
+│                                                                         │
+│  Recent: [34] [12]                                                     │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Implementation**:
-- Load bib numbers as JSON in initial HTML (no extra request)
-- Stimulus controller for instant filtering
+- Load only `active_in_heat` bibs as JSON in initial HTML
+- Stimulus controller for instant filtering (< 10ms for 200 bibs)
 - Recently selected bibs stored in localStorage
-- Numeric keypad option for quick entry
+- Heat label shown: "8 athletes in Final" or "156 athletes in Qualification"
 
-### 2. Incident Display - Server-Side Optimization
+### 2. Report/Incident Display - Desktop Only
 
-**Strategy**: Eager loading, fragment caching, Turbo Frames for partial updates.
+**Strategy**: Eager loading, fragment caching, Turbo Frames for partial updates. Only shown on desktop devices.
 
 ```ruby
 # Eager loading to prevent N+1
 Race.includes(
-  incidents: [:race_location, :reports, { reports: :user }]
+  reports: [:race_location, :participant, :user, :incident]
 )
 
-# Fragment caching for incident cards
-# app/views/incidents/_incident.html.erb
-<% cache [incident, incident.updated_at] do %>
-  <%= render Fop::IncidentCardComponent.new(incident: incident) %>
+# Fragment caching for report cards
+# app/views/reports/_report.html.erb
+<% cache [report, report.updated_at] do %>
+  <%= render Fop::ReportCardComponent.new(report: report) %>
 <% end %>
+
+# Scope for desktop view (hide stale reports)
+Report.active.for_desktop_view
 ```
 
-### 3. Real-Time Notifications - Action Cable (Solid Cable)
+### 3. Real-Time Notifications - Action Cable (Solid Cable) - Desktop Only
 
-**Strategy**: Race-scoped channels with targeted broadcasts.
+**Strategy**: Race-scoped channels with targeted broadcasts. FOP devices don't subscribe - they only create.
 
 ```
 ┌──────────────────┐     ┌─────────────────┐     ┌──────────────────┐
-│   Referee A      │     │   Rails Server  │     │   Referee B      │
-│   (iPad)         │     │   (Pi5)         │     │   (7" Display)   │
+│   Referee A      │     │   Rails Server  │     │   Desktop        │
+│   (FOP Device)   │     │   (Pi5)         │     │   (VAR/Jury)     │
 ├──────────────────┤     ├─────────────────┤     ├──────────────────┤
 │                  │     │                 │     │                  │
 │  Creates        ─┼────►│  Saves to DB   ─┼────►│  Receives Toast  │
-│  Incident        │     │  Broadcasts     │     │  Notification    │
+│  Report          │     │  Broadcasts     │     │  Notification    │
 │                  │     │                 │     │                  │
-│                  │     │  IncidentsChannel│    │  Badge Updates   │
-│                  │     │  race_123        │     │                  │
+│  (no receive)    │     │  ReportsChannel │     │  Badge Updates   │
+│                  │     │  race_123       │     │  Live Report List│
 └──────────────────┘     └─────────────────┘     └──────────────────┘
 ```
 
+**Note**: FOP devices (7", iPad, phone) do NOT receive notifications - they only create reports.
+Desktop devices receive all notifications and see live updates.
+
 **Channel Architecture**:
 ```ruby
-# app/channels/incidents_channel.rb
-class IncidentsChannel < ApplicationCable::Channel
+# app/channels/reports_channel.rb
+class ReportsChannel < ApplicationCable::Channel
   def subscribed
     @race = Race.find(params[:race_id])
     stream_for @race
@@ -112,19 +143,23 @@ end
 
 **Broadcast on Create**:
 ```ruby
-# app/models/incident.rb
-after_create_commit :broadcast_new_incident
+# app/models/report.rb
+after_create_commit :broadcast_new_report
 
-def broadcast_new_incident
-  IncidentsChannel.broadcast_to(
+def broadcast_new_report
+  ReportsChannel.broadcast_to(
     race,
     {
-      type: "new_incident",
-      incident_id: id,
+      type: "new_report",
+      report_id: id,
       bib_number: bib_number,
-      location: race_location.name,
+      athlete_name: participant&.athlete_name,
+      location: race_location&.name,
       timestamp: created_at.iso8601,
-      html: render_to_string(partial: "incidents/incident", locals: { incident: self })
+      html: ApplicationController.render(
+        partial: "reports/report",
+        locals: { report: self }
+      )
     }
   )
 end
@@ -171,7 +206,7 @@ end
 
 ---
 
-### Phase 2: Bib Number Quick Select Component
+### Phase 2: Bib Number Quick Select Component (FOP Devices Only)
 
 #### Task 2.1: Create Bib Number Stimulus Controller
 - **Owner**: Developer
@@ -180,14 +215,16 @@ end
 - **Details**:
   ```javascript
   // Stimulus controller with:
-  // - targets: input, grid, recentList
-  // - values: bibs (Array), recent (Array)
-  // - filter() - instant client-side filter (< 10ms)
-  // - select(bib) - select and emit event
+  // - targets: input, grid, recentList, heatLabel
+  // - values: participants (Array), locationId, raceId
+  // - filter() - instant client-side filter (< 10ms for 200 bibs)
+  // - select(bib) - create report and close modal
   // - loadRecent() - from localStorage
   // - saveRecent(bib) - to localStorage (max 5)
+  // - NO subscription to channels (creation only)
   ```
-- **Performance Target**: Filter 500 bibs in < 10ms
+- **Performance Target**: Filter 200 bibs in < 10ms, open modal in < 50ms
+- **Scale**: Often just 8 bibs (sprint final) - trivial
 - **Dependencies**: Phase 1
 
 #### Task 2.2: Create BibSelectorComponent (ViewComponent)
@@ -195,10 +232,12 @@ end
 - **Agent**: @service
 - **File**: `app/components/fop/bib_selector_component.rb`
 - **Details**:
-  - Accepts race and preloads all bib numbers
+  - Accepts race and location
+  - Preloads only `active_in_heat` participants (8-200)
   - Renders as JSON in data attribute (no extra request)
-  - Touch-optimized grid layout (44px targets)
-  - Numeric keypad alternative mode
+  - Touch-optimized grid layout (56px targets)
+  - Shows heat label: "8 athletes in Final"
+  - Optimistic UI: report created immediately, syncs in background
 - **Dependencies**: Task 2.1
 
 #### Task 2.3: Write Bib Selector Tests
@@ -208,25 +247,30 @@ end
   - `spec/components/fop/bib_selector_component_spec.rb`
   - `spec/system/bib_selection_spec.rb` (with Capybara)
 - **Details**:
-  - Test grid rendering
+  - Test grid rendering with 8 bibs (sprint final)
+  - Test grid rendering with 200 bibs (qualification)
+  - Test heat filtering (only active_in_heat shown)
   - Test recent selections persistence
-  - Test filtering performance (< 200ms assertion)
+  - Test filtering performance (< 100ms assertion)
+  - Test report creation via bib tap
 - **Dependencies**: Task 2.2
 
 ---
 
-### Phase 3: Incident Display Optimization
+### Phase 3: Report/Incident Display Optimization (Desktop Only)
 
 #### Task 3.1: Add Database Indexes for Performance
 - **Owner**: Developer
 - **Agent**: @model
-- **File**: `db/migrate/XXXXXX_add_incident_performance_indexes.rb`
+- **File**: `db/migrate/XXXXXX_add_report_performance_indexes.rb`
 - **Details**:
   ```ruby
+  add_index :reports, [:race_id, :created_at], order: { created_at: :desc }
+  add_index :reports, [:race_id, :status]
+  add_index :reports, :stale_at
+  add_index :reports, :bib_number
   add_index :incidents, [:race_id, :created_at], order: { created_at: :desc }
   add_index :incidents, [:race_id, :status]
-  add_index :reports, [:incident_id, :created_at]
-  add_index :incidents, :race_location_id
   ```
 - **Dependencies**: Phase 2
 
@@ -245,46 +289,49 @@ end
   ```
 - **Dependencies**: Task 3.1
 
-#### Task 3.3: Create Optimized Incident Query Service
+#### Task 3.3: Create Optimized Report Query Service
 - **Owner**: Developer
 - **Agent**: @service
-- **File**: `app/components/incidents/operation/list_for_race.rb`
+- **File**: `app/components/reports/operation/list_for_race.rb`
 - **Details**:
   ```ruby
   # Uses dry-monads
   # Eager loads all associations
-  # Returns Success(incidents) with pagination
-  # Supports filtering by status, location, bib
-  # Query time target: < 50ms for 100 incidents
+  # Returns Success(reports) with pagination
+  # Filters: active only (not stale), by location, by bib
+  # Query time target: < 50ms for 100 reports
+  # Desktop only - not used on FOP devices
   ```
 - **Dependencies**: Task 3.2
 
-#### Task 3.4: Create Incident Card Component with Caching
+#### Task 3.4: Create Report Card Component with Caching (Desktop)
 - **Owner**: Developer
 - **Agent**: @service
-- **File**: `app/components/fop/incident_card_component.rb`
+- **File**: `app/components/fop/report_card_component.rb`
 - **Details**:
-  - Fragment cached by incident + updated_at
-  - Displays: bib, location, time, status badge, report count
-  - Touch-friendly actions (expand, edit)
-  - Color-coded by status (unofficial=yellow, official=green)
+  - Fragment cached by report + updated_at
+  - Displays: bib, athlete name, location, time, status badge
+  - Desktop actions (review, group into incident, mark stale)
+  - Color-coded by status (pending=yellow, reviewed=green, stale=gray)
+  - NOT used on FOP devices
 - **Dependencies**: Task 3.3
 
-#### Task 3.5: Write Incident Display Tests
+#### Task 3.5: Write Report Display Tests
 - **Owner**: Developer
 - **Agent**: @rspec
 - **Files**:
-  - `spec/components/fop/incident_card_component_spec.rb`
-  - `spec/components/incidents/operation/list_for_race_spec.rb`
+  - `spec/components/fop/report_card_component_spec.rb`
+  - `spec/components/reports/operation/list_for_race_spec.rb`
 - **Details**:
   - Test caching behavior
   - Test eager loading (no N+1 with Bullet gem)
   - Test query performance
+  - Test stale reports are excluded from active view
 - **Dependencies**: Task 3.4
 
 ---
 
-### Phase 4: Action Cable Real-Time Notifications
+### Phase 4: Action Cable Real-Time Notifications (Desktop Only)
 
 #### Task 4.1: Configure Solid Cable
 - **Owner**: Developer
@@ -305,13 +352,15 @@ end
   ```
 - **Dependencies**: Phase 3
 
-#### Task 4.2: Create IncidentsChannel
+#### Task 4.2: Create ReportsChannel (Desktop Only)
 - **Owner**: Developer
 - **Agent**: @service
-- **File**: `app/channels/incidents_channel.rb`
+- **File**: `app/channels/reports_channel.rb`
 - **Details**:
   ```ruby
-  class IncidentsChannel < ApplicationCable::Channel
+  # Only desktop devices subscribe to this channel
+  # FOP devices (7", iPad, phone) do NOT subscribe
+  class ReportsChannel < ApplicationCable::Channel
     def subscribed
       @race = Race.find(params[:race_id])
       authorize! :show, @race  # Pundit check
@@ -353,56 +402,60 @@ end
   ```
 - **Dependencies**: Task 4.2
 
-#### Task 4.4: Add Broadcast Callbacks to Incident Model
+#### Task 4.4: Add Broadcast Callbacks to Report Model
 - **Owner**: Developer
 - **Agent**: @model
-- **File**: `app/models/incident.rb`
+- **File**: `app/models/report.rb`
 - **Details**:
   ```ruby
+  # Broadcasts to desktop devices only (they subscribe to ReportsChannel)
   after_create_commit :broadcast_created
   after_update_commit :broadcast_updated
   
   private
   
   def broadcast_created
-    broadcast_incident_change("created")
+    broadcast_report_change("created")
   end
   
   def broadcast_updated
-    broadcast_incident_change("updated")
+    broadcast_report_change("updated")
   end
   
-  def broadcast_incident_change(action)
-    IncidentsChannel.broadcast_to(race, {
+  def broadcast_report_change(action)
+    ReportsChannel.broadcast_to(race, {
       action: action,
-      incident: IncidentSerializer.new(self).as_json,
+      report: ReportSerializer.new(self).as_json,
+      bib_number: bib_number,
+      athlete_name: participant&.athlete_name,
       html: ApplicationController.render(
-        partial: "incidents/incident",
-        locals: { incident: self }
+        partial: "reports/report",
+        locals: { report: self }
       )
     })
   end
   ```
 - **Dependencies**: Task 4.3
 
-#### Task 4.5: Create Client-Side Incidents Subscription
+#### Task 4.5: Create Client-Side Reports Subscription (Desktop Only)
 - **Owner**: Developer
 - **Agent**: @service
-- **File**: `app/javascript/channels/incidents_channel.js`
+- **File**: `app/javascript/channels/reports_channel.js`
 - **Details**:
   ```javascript
   import consumer from "./consumer"
   
-  // Subscribe when entering race view
+  // Only used on desktop devices
+  // FOP devices do NOT include this subscription
   export function subscribeToRace(raceId, callbacks) {
     return consumer.subscriptions.create(
-      { channel: "IncidentsChannel", race_id: raceId },
+      { channel: "ReportsChannel", race_id: raceId },
       {
         received(data) {
           if (data.action === "created") {
-            callbacks.onNewIncident(data)
+            callbacks.onNewReport(data)
           } else if (data.action === "updated") {
-            callbacks.onIncidentUpdated(data)
+            callbacks.onReportUpdated(data)
           }
         }
       }
@@ -411,16 +464,17 @@ end
   ```
 - **Dependencies**: Task 4.4
 
-#### Task 4.6: Create Notifications Stimulus Controller
+#### Task 4.6: Create Notifications Stimulus Controller (Desktop Only)
 - **Owner**: Developer
 - **Agent**: @service
-- **File**: `app/javascript/controllers/incident_notifications_controller.js`
+- **File**: `app/javascript/controllers/report_notifications_controller.js`
 - **Details**:
-  - Connects to IncidentsChannel on connect()
-  - Shows toast notification for new incidents
+  - Only loaded on desktop views (not FOP)
+  - Connects to ReportsChannel on connect()
+  - Shows toast notification for new reports
   - Updates badge counters
-  - Shows "X new incidents" banner
-  - Stores initial incident count for comparison
+  - Shows "X new reports" banner
+  - Stores initial report count for comparison
   - disconnect() unsubscribes from channel
 - **Dependencies**: Task 4.5
 
@@ -442,58 +496,61 @@ end
 - **Owner**: Developer
 - **Agent**: @rspec
 - **Files**:
-  - `spec/channels/incidents_channel_spec.rb`
+  - `spec/channels/reports_channel_spec.rb`
   - `spec/channels/connection_spec.rb`
   - `spec/system/realtime_notifications_spec.rb`
 - **Details**:
-  - Test channel subscription
-  - Test broadcast on incident create
+  - Test channel subscription (desktop only)
+  - Test broadcast on report create
   - Test authorization (reject unauthorized)
-  - System test with two browser sessions
+  - System test: FOP creates, desktop receives notification
 - **Dependencies**: Task 4.7
 
 ---
 
-### Phase 5: "New Incidents" Banner Component
+### Phase 5: "New Reports" Banner Component (Desktop Only)
 
-#### Task 5.1: Create New Incidents Banner Component
+#### Task 5.1: Create New Reports Banner Component
 - **Owner**: Developer
 - **Agent**: @service
-- **File**: `app/components/fop/new_incidents_banner_component.rb`
+- **File**: `app/components/fop/new_reports_banner_component.rb`
 - **Details**:
   - Hidden by default
-  - Shows: "3 new incidents since you opened this page"
-  - Click to refresh incident list (Turbo Frame)
+  - Shows: "3 new reports since you opened this page"
+  - Click to refresh report list (Turbo Frame)
   - Dismiss button
-  - Sticky at top of incident list
+  - Sticky at top of report list
+  - Desktop only - not used on FOP devices
 - **Dependencies**: Phase 4
 
-#### Task 5.2: Create Banner Stimulus Controller
+#### Task 5.2: Create Banner Stimulus Controller (Desktop)
 - **Owner**: Developer
 - **Agent**: @service
-- **File**: `app/javascript/controllers/new_incidents_banner_controller.js`
+- **File**: `app/javascript/controllers/new_reports_banner_controller.js`
 - **Details**:
-  - Tracks count of new incidents
+  - Tracks count of new reports
   - Shows/hides banner based on count
   - Refreshes Turbo Frame on click
   - Resets counter after refresh
+  - Only loaded on desktop views
 - **Dependencies**: Task 5.1
 
-#### Task 5.3: Integrate with Turbo Frames
+#### Task 5.3: Integrate with Turbo Frames (Desktop View)
 - **Owner**: Developer
 - **Agent**: Direct edit
-- **File**: `app/views/races/show.html.erb`
+- **File**: `app/views/races/show.html.erb` (desktop layout)
 - **Details**:
   ```erb
-  <%= turbo_frame_tag "incidents_list", 
-      src: race_incidents_path(@race), 
+  <%# Desktop view only - FOP devices get a different view %>
+  <%= turbo_frame_tag "reports_list", 
+      src: race_reports_path(@race), 
       loading: :lazy do %>
     <%= render "shared/loading_spinner" %>
   <% end %>
   
-  <div data-controller="incident-notifications new-incidents-banner"
-       data-incident-notifications-race-id-value="<%= @race.id %>">
-    <!-- Banner appears here when new incidents arrive -->
+  <div data-controller="report-notifications new-reports-banner"
+       data-report-notifications-race-id-value="<%= @race.id %>">
+    <!-- Banner appears here when new reports arrive -->
   </div>
   ```
 - **Dependencies**: Task 5.2
@@ -502,8 +559,8 @@ end
 - **Owner**: Developer
 - **Agent**: @rspec
 - **Files**:
-  - `spec/components/fop/new_incidents_banner_component_spec.rb`
-  - `spec/system/new_incidents_banner_spec.rb`
+  - `spec/components/fop/new_reports_banner_component_spec.rb`
+  - `spec/system/new_reports_banner_spec.rb`
 - **Dependencies**: Task 5.3
 
 ---
@@ -650,13 +707,15 @@ function saveRecentBib(bib) {
 
 ## Request Time Targets
 
-| Endpoint | Target | Method |
-|----------|--------|--------|
-| `GET /races/:id` | < 200ms | Eager loading, caching |
-| `GET /races/:id/incidents` | < 300ms | Fragment caching, pagination |
-| `POST /incidents` | < 500ms | Optimistic UI, background broadcast |
-| `Action Cable broadcast` | < 100ms | Solid Cable with 100ms polling |
-| Bib filter (client) | < 10ms | Pure JavaScript filtering |
+| Endpoint | Target | Device | Method |
+|----------|--------|--------|--------|
+| `GET /races/:id` (FOP) | < 100ms | FOP | Minimal view, pre-loaded bibs |
+| `GET /races/:id` (Desktop) | < 200ms | Desktop | Eager loading, caching |
+| `GET /races/:id/reports` | < 300ms | Desktop | Fragment caching, pagination |
+| `POST /reports` | < 100ms perceived | FOP | Optimistic UI, background sync |
+| `Action Cable broadcast` | < 100ms | Desktop | Solid Cable with 100ms polling |
+| Bib modal open | < 50ms | FOP | Pre-loaded JSON, no network |
+| Bib filter (client) | < 10ms | FOP | Pure JavaScript (max 200 bibs) |
 
 ---
 
@@ -668,17 +727,19 @@ function saveRecentBib(bib) {
 |------|------------|
 | N+1 queries | Bullet gem, eager loading |
 | Slow Pi5 | Fragment caching, optimized queries |
-| WebSocket overhead | Solid Cable (DB-backed, efficient) |
-| Large bib lists | Client-side filtering, pagination if > 500 |
+| WebSocket overhead | Solid Cable (DB-backed, efficient), desktop only |
+| ~~Large bib lists~~ | **Max 200 bibs** - trivial for client-side |
+| Sprint finals | Only 8 bibs - instant |
 
 ### Real-Time Risks
 
 | Risk | Mitigation |
 |------|------------|
-| Missed broadcasts | Client polls on reconnect |
+| Missed broadcasts | Client polls on reconnect (desktop only) |
 | Connection drops | Auto-reconnect with exponential backoff |
 | Stale data | Timestamp comparison, refresh on reconnect |
-| Concurrent edits | Optimistic locking, last-write-wins for now |
+| Concurrent edits | Duplicates allowed, grouped into incidents |
+| FOP offline | IndexedDB queue, sync on reconnect |
 
 ### Production-Only Deployment Risk
 
@@ -728,58 +789,90 @@ proxy:
 
 ## Success Metrics
 
-1. **Bib Selection**: 95th percentile < 200ms response
-2. **Incident List**: 95th percentile < 500ms for 100 incidents
-3. **Real-Time Delivery**: 95th percentile < 1 second notification delay
-4. **User Experience**: Zero missed incidents reported by referees
-5. **Uptime**: 99.9% during race events
+### FOP Devices (Creation)
+1. **Bib Modal Open**: 95th percentile < 50ms
+2. **Bib Selection**: 95th percentile < 100ms perceived
+3. **Offline Queue**: Reports sync within 30s of reconnection
+4. **User Experience**: Zero failed report creations during race
+
+### Desktop Devices (Viewing)
+1. **Report List**: 95th percentile < 300ms for 100 reports
+2. **Real-Time Delivery**: 95th percentile < 1 second notification delay
+3. **User Experience**: Zero missed reports during race
+4. **Uptime**: 99.9% during race events
 
 ---
 
 ## Appendix: Component Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         FOP Interface                                │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐ │
-│  │ BibSelector     │  │ IncidentList    │  │ NotificationToast   │ │
-│  │ Component       │  │ Component       │  │ Component           │ │
-│  │                 │  │                 │  │                     │ │
-│  │ Stimulus:       │  │ Turbo Frame     │  │ Stimulus:           │ │
-│  │ bib_selector    │  │ incidents_list  │  │ toast               │ │
-│  └────────┬────────┘  └────────┬────────┘  └──────────┬──────────┘ │
-│           │                    │                      │            │
-│           │                    │                      │            │
-│           v                    v                      v            │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │              Stimulus: incident_notifications               │   │
-│  │                                                             │   │
-│  │  - Subscribes to IncidentsChannel                          │   │
-│  │  - Receives broadcasts                                      │   │
-│  │  - Triggers toast and banner updates                        │   │
-│  └──────────────────────────────┬──────────────────────────────┘   │
-│                                 │                                  │
-└─────────────────────────────────┼──────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    FOP DEVICE (7", iPad, Phone)                          │
+│                         CREATION ONLY                                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │ BibSelector Component                                            │   │
+│  │                                                                  │   │
+│  │ Stimulus: bib_selector                                          │   │
+│  │ - Pre-loaded participants (8-200)                               │   │
+│  │ - Client-side filter                                            │   │
+│  │ - Creates report on tap                                         │   │
+│  │ - NO channel subscription                                       │   │
+│  └──────────────────────────────┬──────────────────────────────────┘   │
+│                                 │                                       │
+│                                 │ POST /reports (optimistic)            │
+│                                 │ + IndexedDB queue for offline         │
+│                                 │                                       │
+└─────────────────────────────────┼───────────────────────────────────────┘
+                                  │
+                                  │
+                                  v
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         Rails Server (Pi5)                              │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐     │
+│  │ ReportsChannel  │  │ Report Model    │  │ ListForRace Service │     │
+│  │                 │  │                 │  │                     │     │
+│  │ stream_for race │◄─┤ after_commit    │  │ Eager loading       │     │
+│  │ broadcast_to    │  │ broadcast       │  │ Fragment caching    │     │
+│  └────────┬────────┘  └─────────────────┘  └─────────────────────┘     │
+│           │                                                             │
+│           │ WebSocket (desktop only)                                   │
+│           │                                                             │
+│  ┌────────┴────────────────────────────────────────────────────────┐   │
+│  │                     Solid Cable (PostgreSQL)                     │   │
+│  │                     polling_interval: 0.1s                       │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+└─────────────────────────────────┬───────────────────────────────────────┘
                                   │
                                   │ WebSocket
                                   v
-┌─────────────────────────────────────────────────────────────────────┐
-│                         Rails Server (Pi5)                          │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐ │
-│  │ IncidentsChannel│  │ Incident Model  │  │ ListForRace Service │ │
-│  │                 │  │                 │  │                     │ │
-│  │ stream_for race │◄─┤ after_commit    │  │ Eager loading       │ │
-│  │ broadcast_to    │  │ broadcast       │  │ Fragment caching    │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────────────┘ │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                     Solid Cable (PostgreSQL)                 │   │
-│  │                     polling_interval: 0.1s                   │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         DESKTOP DEVICE                                   │
+│                         VIEWING ONLY                                     │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐     │
+│  │ ReportList      │  │ NewReportsBanner│  │ NotificationToast   │     │
+│  │ Component       │  │ Component       │  │ Component           │     │
+│  │                 │  │                 │  │                     │     │
+│  │ Turbo Frame     │  │ Shows count of  │  │ Appears on new      │     │
+│  │ reports_list    │  │ new reports     │  │ report received     │     │
+│  └────────┬────────┘  └────────┬────────┘  └──────────┬──────────┘     │
+│           │                    │                      │                │
+│           └────────────────────┴──────────────────────┘                │
+│                                │                                       │
+│                                v                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │              Stimulus: report_notifications                      │   │
+│  │                                                                  │   │
+│  │  - Subscribes to ReportsChannel                                 │   │
+│  │  - Receives broadcasts                                          │   │
+│  │  - Triggers toast and banner updates                            │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
 ```

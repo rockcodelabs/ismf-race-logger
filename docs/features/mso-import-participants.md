@@ -1,86 +1,136 @@
-# Feature: MSO Import & Participant Models
+# Feature: MSO Import & Athlete/Race Participation Models
 
 ## Overview
 
-This feature adds the `Participant` model to track athletes/racers with bib numbers for each race, and implements MSO (timekeeper system) import functionality to sync the official start list before each race.
+This feature adds the `Athlete` model (the person) and `RaceParticipation` model (bib assignment per race) to properly track athletes across competitions. It also supports **team races** (pairs: MM, MW, WW) where penalties apply to athletes and cascade to team results. MSO (timekeeper system) import syncs the active bib list via CSV.
 
 ---
 
-## Gap Analysis: Current Architecture
+## Key Constraints
 
-The current `architecture-overview.md` is **missing**:
-
-1. **Participant/RaceParticipant model** - No way to track who is racing with what bib number
-2. **Bib number on Report** - Reports don't capture which athlete the report is about
-3. **MSO import integration** - No way to import the official start list from the timekeeper
-
-### Current Report Model (Incomplete)
-
-```ruby
-# Current - Missing bib_number!
-class Report < ApplicationRecord
-  belongs_to :race
-  belongs_to :incident, optional: true
-  belongs_to :rule
-  belongs_to :user
-  belongs_to :race_location, optional: true
-  has_one_attached :video
-end
-```
-
----
-
-## Requirements Summary
-
-### User Stories
-
-1. **As a race administrator**, I need to import the start list from MSO so that referees have accurate bib numbers during the race.
-2. **As a referee**, I need to select a bib number when creating a report so the incident is linked to the correct athlete.
-3. **As a VAR operator**, I need to see athlete names alongside bib numbers so I can verify identity in video.
-4. **As a jury president**, I need to see athlete status (racing, DNF, DNS, DSQ) to understand race context.
-
-### Acceptance Criteria
-
-- [ ] Participant model stores bib number, athlete info, and race status
-- [ ] MSO import creates/updates participants from CSV/XML file
-- [ ] Import handles incremental updates (status changes during race)
-- [ ] Reports link to participants via bib number
-- [ ] Bib selector shows only active participants
-- [ ] Import can be triggered via UI or API
-- [ ] Import history is tracked for audit
+| Constraint | Value | Impact |
+|------------|-------|--------|
+| **Max athletes per race** | 200 | Client-side bib grid trivial |
+| **Active bibs vary by stage** | Quali=all (200), Sprint Finals=8 | Heat-based filtering |
+| **Team races** | Pairs (MM, MW, WW) | Two athletes share one bib |
+| **Duplicate reports** | Allowed, grouped into incidents | No uniqueness constraint |
+| **Stale reports** | Hidden after ~5 min | Background job cleanup |
+| **Video upload** | Multiple files per report, V1 file upload only | No in-app recording |
+| **MSO format** | CSV of athletes still in play | Simple active bib list |
 
 ---
 
 ## Data Model
 
-### New Models
+### Entity Relationship
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                           DATA MODEL                                     │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
-│  ┌──────────────┐       ┌──────────────────┐       ┌───────────────┐   │
-│  │    Race      │──────<│   Participant    │       │    Report     │   │
-│  ├──────────────┤   1:N ├──────────────────┤       ├───────────────┤   │
-│  │ id           │       │ id               │       │ id            │   │
-│  │ name         │       │ race_id (FK)     │>──────│ participant_id│   │
-│  │ status       │       │ bib_number       │       │ bib_number    │   │
-│  └──────────────┘       │ athlete_name     │       │ race_id       │   │
-│                         │ athlete_country  │       │ ...           │   │
-│                         │ team_name        │       └───────────────┘   │
-│                         │ category         │                           │
-│                         │ status           │                           │
-│                         │ start_time       │                           │
-│                         │ finish_time      │                           │
-│                         │ mso_id           │                           │
-│                         └──────────────────┘                           │
-│                                                                         │
 │  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │                      MsoImport (Audit Log)                        │  │
+│  │                      Athlete (The Person)                         │  │
 │  ├──────────────────────────────────────────────────────────────────┤  │
-│  │ id | race_id | user_id | filename | status | stats | created_at │  │
+│  │ id            | Primary key                                       │  │
+│  │ first_name    | String, required                                  │  │
+│  │ last_name     | String, required                                  │  │
+│  │ country       | String (ISO 3166-1 alpha-3: SUI, FRA, ITA)       │  │
+│  │ license_number| String, optional (ISMF license)                   │  │
+│  │ gender        | Enum: male, female                                │  │
 │  └──────────────────────────────────────────────────────────────────┘  │
+│                    │                              │                     │
+│                    │ 1:N                          │ 1:N                 │
+│                    ▼                              ▼                     │
+│  ┌────────────────────────────┐    ┌────────────────────────────────┐  │
+│  │    RaceParticipation       │    │         Team (Pairs)           │  │
+│  │    (Bib Assignment)        │    │                                │  │
+│  ├────────────────────────────┤    ├────────────────────────────────┤  │
+│  │ id                         │    │ id                             │  │
+│  │ race_id          (FK)      │    │ race_id           (FK)         │  │
+│  │ bib_number       (unique/race)│ │ bib_number        (unique/race)│  │
+│  │ athlete_id       (FK, opt) │◄───│ athlete_1_id      (FK)         │  │
+│  │ team_id          (FK, opt) │    │ athlete_2_id      (FK)         │  │
+│  │ heat             (string)  │    │ team_type         (mm/mw/ww)   │  │
+│  │ active_in_heat   (boolean) │    │ name              (optional)   │  │
+│  │ status           (enum)    │    └────────────────────────────────┘  │
+│  │ start_time       (datetime)│                                        │
+│  │ finish_time      (datetime)│                                        │
+│  │ rank             (integer) │                                        │
+│  └─────────────┬──────────────┘                                        │
+│                │                                                        │
+│                │ 1:N                                                    │
+│                ▼                                                        │
+│  ┌────────────────────────────────────────────────────────────────────┐│
+│  │                         Report                                      ││
+│  ├────────────────────────────────────────────────────────────────────┤│
+│  │ id                                                                  ││
+│  │ race_id                    (FK)                                     ││
+│  │ race_participation_id      (FK) ◄── Links to bib/athlete           ││
+│  │ bib_number                 (denormalized for quick queries)        ││
+│  │ race_location_id           (FK)                                     ││
+│  │ user_id                    (FK, reporter)                           ││
+│  │ incident_id                (FK, optional, when grouped)             ││
+│  │ status                     (pending/reviewed/stale/archived)        ││
+│  │ stale_at                   (datetime, +5 min from creation)         ││
+│  │ videos                     (has_many_attached, multiple files)      ││
+│  └────────────────────────────────────────────────────────────────────┘│
+│                                                                         │
+│  ┌────────────────────────────────────────────────────────────────────┐│
+│  │                       MsoImport (Audit Log)                         ││
+│  ├────────────────────────────────────────────────────────────────────┤│
+│  │ id | race_id | user_id | filename | status | stats | created_at    ││
+│  └────────────────────────────────────────────────────────────────────┘│
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Bib Selector Display
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  BIB SELECTOR - Shows bib + country flag/code                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  Individual Race:                                                       │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐                   │
+│  │    12    │ │    34    │ │    56    │ │    78    │                   │
+│  │   🇨🇭    │ │   🇫🇷    │ │   🇮🇹    │ │   🇦🇹    │                   │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘                   │
+│                                                                         │
+│  Team Race (pairs):                                                     │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐                   │
+│  │    12    │ │    34    │ │    56    │ │    78    │                   │
+│  │  🇨🇭 🇫🇷  │ │  🇮🇹 🇮🇹  │ │  🇦🇹 🇩🇪  │ │  🇪🇸 🇪🇸  │                   │
+│  │   (MW)   │ │   (WW)   │ │   (MM)   │ │   (MM)   │                   │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘                   │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Penalty Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         PENALTY CASCADE                                  │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  Report created for bib 42 at Checkpoint 2                              │
+│       │                                                                 │
+│       ▼                                                                 │
+│  ┌─────────────────┐                                                   │
+│  │ RaceParticipation│  bib: 42, team_id: 7                             │
+│  └────────┬────────┘                                                   │
+│           │                                                             │
+│           ▼                                                             │
+│  ┌─────────────────┐                                                   │
+│  │      Team       │  team_type: MW                                    │
+│  │                 │  athlete_1: Jean (FRA) ← penalty applies here     │
+│  │                 │  athlete_2: Maria (ESP)                           │
+│  └─────────────────┘                                                   │
+│           │                                                             │
+│           ▼                                                             │
+│  Team result affected by Jean's penalty                                │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -89,42 +139,175 @@ end
 
 ## Implementation Plan
 
-### Phase 1: Participant Model
+### Phase 1: Athlete Model
 
-#### Task 1.1: Create Participant Model
+#### Task 1.1: Create Athlete Model
 - **Owner**: Developer
 - **Agent**: @model
-- **File**: `app/models/participant.rb`
 - **Migration**:
   ```ruby
-  create_table :participants do |t|
-    t.references :race, null: false, foreign_key: true
-    t.integer :bib_number, null: false
-    t.string :athlete_name, null: false
-    t.string :athlete_first_name
-    t.string :athlete_last_name
-    t.string :athlete_country  # ISO 3166-1 alpha-3 (e.g., "SUI", "FRA")
-    t.string :team_name
-    t.string :category         # e.g., "Senior Men", "U23 Women"
-    t.integer :status, default: 0  # enum: registered, racing, finished, dnf, dns, dsq
-    t.datetime :start_time
-    t.datetime :finish_time
-    t.integer :rank            # Final position
-    t.string :mso_id           # External ID from timekeeper
-    t.jsonb :mso_data          # Raw data from MSO for reference
-
+  create_table :athletes do |t|
+    t.string :first_name, null: false
+    t.string :last_name, null: false
+    t.string :country, limit: 3  # ISO 3166-1 alpha-3
+    t.string :license_number     # ISMF license, optional
+    t.integer :gender, default: 0  # enum: male, female
+    
     t.timestamps
   end
-
-  add_index :participants, [:race_id, :bib_number], unique: true
-  add_index :participants, [:race_id, :status]
-  add_index :participants, :mso_id
-  add_index :participants, [:race_id, :athlete_country]
+  
+  add_index :athletes, :license_number, unique: true, where: "license_number IS NOT NULL"
+  add_index :athletes, [:last_name, :first_name]
+  add_index :athletes, :country
   ```
 - **Model**:
   ```ruby
-  class Participant < ApplicationRecord
+  class Athlete < ApplicationRecord
+    has_many :race_participations, dependent: :destroy
+    has_many :races, through: :race_participations
+    has_many :teams_as_athlete_1, class_name: "Team", foreign_key: :athlete_1_id
+    has_many :teams_as_athlete_2, class_name: "Team", foreign_key: :athlete_2_id
+    
+    enum :gender, { male: 0, female: 1 }
+    
+    validates :first_name, presence: true
+    validates :last_name, presence: true
+    validates :country, length: { is: 3 }, allow_blank: true
+    validates :license_number, uniqueness: true, allow_nil: true
+    
+    def full_name
+      "#{first_name} #{last_name}"
+    end
+    
+    def display_name
+      "#{last_name.upcase} #{first_name}"
+    end
+    
+    def flag_emoji
+      return nil if country.blank?
+      # Convert ISO 3166-1 alpha-3 to alpha-2 for flag emoji
+      # SUI → CH → 🇨🇭
+      COUNTRY_FLAGS[country] || country
+    end
+    
+    def teams
+      Team.where("athlete_1_id = ? OR athlete_2_id = ?", id, id)
+    end
+    
+    COUNTRY_FLAGS = {
+      "SUI" => "🇨🇭", "FRA" => "🇫🇷", "ITA" => "🇮🇹", "AUT" => "🇦🇹",
+      "GER" => "🇩🇪", "ESP" => "🇪🇸", "NOR" => "🇳🇴", "SWE" => "🇸🇪",
+      "USA" => "🇺🇸", "CAN" => "🇨🇦", "JPN" => "🇯🇵", "KOR" => "🇰🇷",
+      "POL" => "🇵🇱", "CZE" => "🇨🇿", "SVK" => "🇸🇰", "SLO" => "🇸🇮",
+      "AND" => "🇦🇩", "GBR" => "🇬🇧", "BEL" => "🇧🇪", "NED" => "🇳🇱",
+      # Add more as needed
+    }.freeze
+  end
+  ```
+- **Dependencies**: None
+
+#### Task 1.2: Create Team Model
+- **Owner**: Developer
+- **Agent**: @model
+- **Migration**:
+  ```ruby
+  create_table :teams do |t|
+    t.references :race, null: false, foreign_key: true
+    t.integer :bib_number, null: false
+    t.references :athlete_1, null: false, foreign_key: { to_table: :athletes }
+    t.references :athlete_2, null: false, foreign_key: { to_table: :athletes }
+    t.integer :team_type, null: false  # enum: mm, mw, ww
+    t.string :name  # Optional custom name
+    
+    t.timestamps
+  end
+  
+  add_index :teams, [:race_id, :bib_number], unique: true
+  ```
+- **Model**:
+  ```ruby
+  class Team < ApplicationRecord
     belongs_to :race
+    belongs_to :athlete_1, class_name: "Athlete"
+    belongs_to :athlete_2, class_name: "Athlete"
+    has_one :race_participation, dependent: :destroy
+    
+    enum :team_type, { mm: 0, mw: 1, ww: 2 }  # men-men, mixed, women-women
+    
+    validates :bib_number, presence: true, uniqueness: { scope: :race_id }
+    validate :team_type_matches_genders
+    
+    def display_name
+      name.presence || "#{athlete_1.last_name}/#{athlete_2.last_name}"
+    end
+    
+    def countries
+      [athlete_1.country, athlete_2.country].compact.uniq
+    end
+    
+    def flags
+      [athlete_1.flag_emoji, athlete_2.flag_emoji].compact
+    end
+    
+    def athletes
+      [athlete_1, athlete_2]
+    end
+    
+    private
+    
+    def team_type_matches_genders
+      case team_type
+      when "mm"
+        unless athlete_1.male? && athlete_2.male?
+          errors.add(:team_type, "MM team requires two male athletes")
+        end
+      when "ww"
+        unless athlete_1.female? && athlete_2.female?
+          errors.add(:team_type, "WW team requires two female athletes")
+        end
+      when "mw"
+        genders = [athlete_1.gender, athlete_2.gender].sort
+        unless genders == ["female", "male"]
+          errors.add(:team_type, "MW team requires one male and one female athlete")
+        end
+      end
+    end
+  end
+  ```
+- **Dependencies**: Task 1.1
+
+#### Task 1.3: Create RaceParticipation Model
+- **Owner**: Developer
+- **Agent**: @model
+- **Migration**:
+  ```ruby
+  create_table :race_participations do |t|
+    t.references :race, null: false, foreign_key: true
+    t.integer :bib_number, null: false
+    t.references :athlete, foreign_key: true  # For individual races
+    t.references :team, foreign_key: true     # For team races
+    t.string :heat                            # e.g., "final", "semi_1", "quali"
+    t.boolean :active_in_heat, default: true
+    t.integer :status, default: 0             # enum
+    t.datetime :start_time
+    t.datetime :finish_time
+    t.integer :rank
+    t.string :mso_id                          # External ID from timekeeper
+    
+    t.timestamps
+  end
+  
+  add_index :race_participations, [:race_id, :bib_number], unique: true
+  add_index :race_participations, [:race_id, :active_in_heat]
+  add_index :race_participations, [:race_id, :status]
+  add_index :race_participations, :mso_id
+  ```
+- **Model**:
+  ```ruby
+  class RaceParticipation < ApplicationRecord
+    belongs_to :race
+    belongs_to :athlete, optional: true  # For individual races
+    belongs_to :team, optional: true     # For team races
     has_many :reports, dependent: :nullify
     
     enum :status, {
@@ -138,86 +321,157 @@ end
     
     validates :bib_number, presence: true, 
               uniqueness: { scope: :race_id, message: "already exists in this race" }
-    validates :athlete_name, presence: true
-    validates :race, presence: true
+    validate :athlete_or_team_present
     
     scope :active, -> { where(status: [:registered, :racing]) }
     scope :can_report, -> { where(status: [:registered, :racing, :finished]) }
+    scope :in_current_heat, -> { where(active_in_heat: true) }
+    scope :for_bib_selector, -> { can_report.in_current_heat.order(:bib_number) }
     scope :by_bib, -> { order(:bib_number) }
-    scope :by_country, ->(country) { where(athlete_country: country) }
-    
-    # Full name helper
-    def display_name
-      "#{bib_number} - #{athlete_name}"
-    end
     
     # For bib selector display
+    def display_name
+      if team.present?
+        team.display_name
+      else
+        athlete&.display_name || "Bib #{bib_number}"
+      end
+    end
+    
+    def country
+      if team.present?
+        team.countries.join("/")
+      else
+        athlete&.country
+      end
+    end
+    
+    def flags
+      if team.present?
+        team.flags
+      else
+        [athlete&.flag_emoji].compact
+      end
+    end
+    
+    # JSON for bib selector
     def as_bib_json
       {
-        number: bib_number,
-        name: athlete_name,
-        country: athlete_country,
-        category: category,
+        bib: bib_number,
+        name: display_name,
+        country: country,
+        flags: flags,
+        team_type: team&.team_type,
         status: status
       }
     end
-  end
-  ```
-- **Dependencies**: None
-
-#### Task 1.2: Update Report Model with Participant Reference
-- **Owner**: Developer
-- **Agent**: @model
-- **File**: `db/migrate/XXXXXX_add_participant_to_reports.rb`
-- **Migration**:
-  ```ruby
-  add_reference :reports, :participant, foreign_key: true
-  add_column :reports, :bib_number, :integer  # Denormalized for query performance
-  add_index :reports, :bib_number
-  ```
-- **Update Model**:
-  ```ruby
-  class Report < ApplicationRecord
-    belongs_to :race
-    belongs_to :incident, optional: true
-    belongs_to :rule, optional: true  # Make optional for quick create
-    belongs_to :user
-    belongs_to :race_location, optional: true
-    belongs_to :participant, optional: true  # NEW
-    
-    has_one_attached :video
-    
-    # Auto-populate bib_number from participant
-    before_validation :set_bib_number_from_participant
-    
-    validates :bib_number, presence: true
     
     private
     
-    def set_bib_number_from_participant
-      self.bib_number ||= participant&.bib_number
+    def athlete_or_team_present
+      if athlete_id.blank? && team_id.blank?
+        errors.add(:base, "Must have either athlete or team")
+      end
+      if athlete_id.present? && team_id.present?
+        errors.add(:base, "Cannot have both athlete and team")
+      end
     end
   end
   ```
-- **Dependencies**: Task 1.1
-
-#### Task 1.3: Update Architecture Overview
-- **Owner**: Developer
-- **Agent**: Direct edit
-- **File**: `docs/architecture-overview.md`
-- **Details**: Add Participant model section between Race and Incident
 - **Dependencies**: Task 1.2
 
-#### Task 1.4: Write Participant Model Tests
+#### Task 1.4: Update Report Model
+- **Owner**: Developer
+- **Agent**: @model
+- **Migration**:
+  ```ruby
+  add_reference :reports, :race_participation, foreign_key: true
+  add_column :reports, :bib_number, :integer  # Denormalized
+  add_column :reports, :status, :integer, default: 0
+  add_column :reports, :stale_at, :datetime
+  
+  add_index :reports, :bib_number
+  add_index :reports, :status
+  add_index :reports, :stale_at
+  
+  # Change from has_one_attached to has_many_attached for multiple videos
+  # This is handled in model, not migration
+  ```
+- **Model**:
+  ```ruby
+  class Report < ApplicationRecord
+    STALE_AFTER = 5.minutes
+    
+    belongs_to :race
+    belongs_to :race_participation, optional: true
+    belongs_to :incident, optional: true
+    belongs_to :rule, optional: true
+    belongs_to :user
+    belongs_to :race_location, optional: true
+    
+    # Multiple video files per report
+    has_many_attached :videos
+    
+    enum :status, {
+      pending: 0,
+      reviewed: 1,
+      stale: 2,
+      archived: 3
+    }
+    
+    before_validation :set_bib_number_from_participation
+    before_create :set_stale_at
+    
+    validates :bib_number, presence: true
+    
+    scope :active, -> { where(status: [:pending, :reviewed]) }
+    scope :for_desktop_view, -> { active.order(created_at: :desc) }
+    scope :needs_review, -> { pending.where("stale_at > ?", Time.current) }
+    scope :became_stale, -> { pending.where("stale_at <= ?", Time.current) }
+    
+    def self.mark_stale!
+      became_stale.update_all(status: :stale)
+    end
+    
+    # Get athlete(s) from participation
+    def athletes
+      return [] unless race_participation
+      
+      if race_participation.team.present?
+        race_participation.team.athletes
+      else
+        [race_participation.athlete].compact
+      end
+    end
+    
+    private
+    
+    def set_bib_number_from_participation
+      self.bib_number ||= race_participation&.bib_number
+    end
+    
+    def set_stale_at
+      self.stale_at ||= Time.current + STALE_AFTER
+    end
+  end
+  ```
+- **Dependencies**: Task 1.3
+
+#### Task 1.5: Write Model Tests
 - **Owner**: Developer
 - **Agent**: @rspec
-- **File**: `spec/models/participant_spec.rb`
+- **Files**:
+  - `spec/models/athlete_spec.rb`
+  - `spec/models/team_spec.rb`
+  - `spec/models/race_participation_spec.rb`
+  - `spec/models/report_spec.rb`
 - **Details**:
-  - Test validations (bib uniqueness per race)
-  - Test scopes (active, can_report, by_bib)
-  - Test status transitions
-  - Test as_bib_json output
-- **Dependencies**: Task 1.1
+  - Test athlete validations and flag emoji
+  - Test team type validation (MM/MW/WW)
+  - Test race participation scopes (for_bib_selector)
+  - Test report stale lifecycle
+  - Test multiple video attachments
+- **Dependencies**: Task 1.4
 
 ---
 
@@ -226,21 +480,19 @@ end
 #### Task 2.1: Create MsoImport Audit Model
 - **Owner**: Developer
 - **Agent**: @model
-- **File**: `app/models/mso_import.rb`
 - **Migration**:
   ```ruby
   create_table :mso_imports do |t|
     t.references :race, null: false, foreign_key: true
-    t.references :user, null: false, foreign_key: true  # Who triggered import
+    t.references :user, null: false, foreign_key: true
     t.string :filename, null: false
-    t.string :file_type  # csv, xml, json
-    t.integer :status, default: 0  # pending, processing, completed, failed
-    t.jsonb :stats       # { created: 10, updated: 5, errors: 1, skipped: 0 }
+    t.integer :status, default: 0
+    t.jsonb :stats
     t.text :error_message
-    t.jsonb :error_details  # Array of row-level errors
+    t.jsonb :error_details
     t.datetime :started_at
     t.datetime :completed_at
-
+    
     t.timestamps
   end
   ```
@@ -272,234 +524,168 @@ end
       return error_message if failed?
       
       s = stats || {}
-      "Created: #{s['created'] || 0}, Updated: #{s['updated'] || 0}, Errors: #{s['errors'] || 0}"
+      "Athletes: #{s['athletes_created'] || 0} new, #{s['athletes_updated'] || 0} updated. " \
+      "Bibs: #{s['participations_created'] || 0} new, #{s['participations_updated'] || 0} updated."
     end
   end
   ```
-- **Dependencies**: Task 1.1
+- **Dependencies**: Task 1.4
 
 #### Task 2.2: Create MSO CSV Parser
 - **Owner**: Developer
 - **Agent**: @service
 - **File**: `app/components/mso/parser/csv.rb`
+- **Expected CSV Format**:
+  ```csv
+  bib,first_name,last_name,country,gender,license,status
+  1,Jean,Dupont,FRA,M,ISMF-12345,racing
+  2,Maria,Garcia,ESP,F,ISMF-23456,racing
+  3,Hans,Mueller,SUI,M,,racing
+  ```
+  
+  For team races:
+  ```csv
+  bib,first_name_1,last_name_1,country_1,gender_1,first_name_2,last_name_2,country_2,gender_2,team_type,status
+  1,Jean,Dupont,FRA,M,Maria,Garcia,ESP,F,MW,racing
+  2,Hans,Mueller,SUI,M,Peter,Schmidt,GER,M,MM,racing
+  ```
 - **Details**:
   ```ruby
-  # frozen_string_literal: true
-  
   module Mso
     module Parser
       class Csv
-        REQUIRED_HEADERS = %w[bib_number athlete_name].freeze
-        OPTIONAL_HEADERS = %w[
-          first_name last_name country team category
-          start_time finish_time status mso_id
-        ].freeze
+        INDIVIDUAL_HEADERS = %w[bib first_name last_name country].freeze
+        TEAM_HEADERS = %w[bib first_name_1 last_name_1 country_1 gender_1
+                          first_name_2 last_name_2 country_2 gender_2 team_type].freeze
         
-        attr_reader :errors
+        attr_reader :errors, :is_team_race
         
         def initialize(file_content)
           @content = file_content
           @errors = []
+          @is_team_race = false
         end
         
         def parse
           rows = CSV.parse(@content, headers: true, header_converters: :symbol)
           
+          @is_team_race = detect_team_race(rows.headers)
           validate_headers!(rows.headers)
           return [] if @errors.any?
           
-          rows.map.with_index(2) do |row, line_number|  # +2 for header row
+          rows.map.with_index(2) do |row, line_number|
             parse_row(row, line_number)
           end.compact
         end
         
         private
         
-        def validate_headers!(headers)
-          missing = REQUIRED_HEADERS - headers.map(&:to_s)
-          if missing.any?
-            @errors << "Missing required headers: #{missing.join(', ')}"
-          end
+        def detect_team_race(headers)
+          headers.map(&:to_s).include?("first_name_1")
         end
         
-        def parse_row(row, line_number)
-          bib = row[:bib_number]&.to_s&.strip
-          name = row[:athlete_name]&.to_s&.strip
-          
-          if bib.blank?
-            @errors << "Line #{line_number}: Missing bib_number"
-            return nil
-          end
-          
-          if name.blank?
-            @errors << "Line #{line_number}: Missing athlete_name"
-            return nil
-          end
-          
-          {
-            bib_number: bib.to_i,
-            athlete_name: name,
-            athlete_first_name: row[:first_name]&.strip,
-            athlete_last_name: row[:last_name]&.strip,
-            athlete_country: row[:country]&.strip&.upcase,
-            team_name: row[:team]&.strip,
-            category: row[:category]&.strip,
-            start_time: parse_time(row[:start_time]),
-            finish_time: parse_time(row[:finish_time]),
-            status: parse_status(row[:status]),
-            mso_id: row[:mso_id]&.strip
-          }
-        end
-        
-        def parse_time(value)
-          return nil if value.blank?
-          Time.zone.parse(value)
-        rescue ArgumentError
-          nil
-        end
-        
-        def parse_status(value)
-          return :registered if value.blank?
-          
-          case value.to_s.strip.downcase
-          when 'racing', 'started', 'on_course' then :racing
-          when 'finished', 'fin' then :finished
-          when 'dnf' then :dnf
-          when 'dns' then :dns
-          when 'dsq', 'dq' then :dsq
-          else :registered
-          end
-        end
+        # ... parsing logic
       end
     end
   end
   ```
 - **Dependencies**: Task 2.1
 
-#### Task 2.3: Create MSO Import Operation (dry-monads)
+#### Task 2.3: Create MSO Import Operation
 - **Owner**: Developer
 - **Agent**: @service
 - **File**: `app/components/mso/operation/import.rb`
 - **Details**:
   ```ruby
-  # frozen_string_literal: true
-  
   module Mso
     module Operation
       class Import
         include Dry::Monads[:result, :do]
         
-        def call(race:, file:, user:, filename: nil)
-          import_record = yield create_import_record(race, user, filename || file.original_filename)
-          parsed_data = yield parse_file(file, import_record)
-          stats = yield upsert_participants(race, parsed_data, import_record)
-          yield complete_import(import_record, stats)
+        def call(race:, file:, user:)
+          import = yield create_import_record(race, user, file)
+          parsed = yield parse_file(file, import)
+          stats = yield upsert_data(race, parsed, import)
+          yield complete_import(import, stats)
           
-          # Broadcast to connected clients that bib list updated
-          broadcast_update(race)
-          
-          Success(import_record.reload)
+          Success(import.reload)
         end
         
         private
         
-        def create_import_record(race, user, filename)
-          import = MsoImport.create(
-            race: race,
-            user: user,
-            filename: filename,
-            status: :processing,
-            started_at: Time.current
-          )
+        def upsert_data(race, parsed_data, import)
+          stats = { 
+            athletes_created: 0, athletes_updated: 0,
+            participations_created: 0, participations_updated: 0,
+            teams_created: 0, errors: 0
+          }
           
-          import.persisted? ? Success(import) : Failure(import.errors.full_messages)
-        end
-        
-        def parse_file(file, import_record)
-          content = file.respond_to?(:read) ? file.read : file
-          parser = Parser::Csv.new(content)
-          data = parser.parse
-          
-          if parser.errors.any?
-            import_record.update(
-              status: :failed,
-              error_message: "Parse errors",
-              error_details: parser.errors,
-              completed_at: Time.current
-            )
-            return Failure(parser.errors)
-          end
-          
-          Success(data)
-        end
-        
-        def upsert_participants(race, data, import_record)
-          stats = { created: 0, updated: 0, errors: 0, skipped: 0 }
-          error_details = []
-          
-          data.each_with_index do |row, index|
-            result = upsert_participant(race, row)
-            
-            case result
-            when :created then stats[:created] += 1
-            when :updated then stats[:updated] += 1
-            when :skipped then stats[:skipped] += 1
+          parsed_data.each do |row|
+            if import.is_team_race
+              upsert_team_participation(race, row, stats)
             else
-              stats[:errors] += 1
-              error_details << { row: index + 2, error: result }
+              upsert_individual_participation(race, row, stats)
             end
           end
           
-          import_record.update(error_details: error_details) if error_details.any?
-          
           Success(stats)
         end
         
-        def upsert_participant(race, row)
-          participant = race.participants.find_or_initialize_by(bib_number: row[:bib_number])
+        def upsert_individual_participation(race, row, stats)
+          # Find or create athlete by license or name+country
+          athlete = find_or_create_athlete(row, stats)
           
-          was_new = participant.new_record?
+          # Find or create race participation
+          participation = race.race_participations.find_or_initialize_by(bib_number: row[:bib])
+          participation.athlete = athlete
+          participation.status = row[:status] || :registered
+          participation.active_in_heat = true  # From MSO = currently active
           
-          participant.assign_attributes(
-            athlete_name: row[:athlete_name],
-            athlete_first_name: row[:athlete_first_name],
-            athlete_last_name: row[:athlete_last_name],
-            athlete_country: row[:athlete_country],
-            team_name: row[:team_name],
-            category: row[:category],
-            start_time: row[:start_time],
-            finish_time: row[:finish_time],
-            status: row[:status],
-            mso_id: row[:mso_id]
-          )
-          
-          return :skipped unless participant.changed?
-          
-          if participant.save
-            was_new ? :created : :updated
-          else
-            participant.errors.full_messages.join(", ")
+          if participation.new_record?
+            stats[:participations_created] += 1
+          elsif participation.changed?
+            stats[:participations_updated] += 1
           end
+          
+          participation.save!
         end
         
-        def complete_import(import_record, stats)
-          import_record.update(
-            status: :completed,
-            stats: stats,
-            completed_at: Time.current
+        def find_or_create_athlete(row, stats)
+          athlete = if row[:license].present?
+            Athlete.find_by(license_number: row[:license])
+          end
+          
+          athlete ||= Athlete.find_by(
+            first_name: row[:first_name],
+            last_name: row[:last_name],
+            country: row[:country]
           )
           
-          Success(stats)
+          if athlete
+            stats[:athletes_updated] += 1 if athlete.update(
+              country: row[:country],
+              gender: parse_gender(row[:gender])
+            )
+          else
+            athlete = Athlete.create!(
+              first_name: row[:first_name],
+              last_name: row[:last_name],
+              country: row[:country],
+              license_number: row[:license],
+              gender: parse_gender(row[:gender])
+            )
+            stats[:athletes_created] += 1
+          end
+          
+          athlete
         end
         
-        def broadcast_update(race)
-          ParticipantsChannel.broadcast_to(race, {
-            action: "participants_updated",
-            count: race.participants.active.count,
-            updated_at: Time.current.iso8601
-          })
-        rescue => e
-          Rails.logger.warn "Failed to broadcast participant update: #{e.message}"
+        def parse_gender(value)
+          case value.to_s.upcase
+          when "M", "MALE" then :male
+          when "F", "FEMALE" then :female
+          else :male  # Default
+          end
         end
       end
     end
@@ -507,123 +693,25 @@ end
   ```
 - **Dependencies**: Task 2.2
 
-#### Task 2.4: Create MSO Import Job (Background)
-- **Owner**: Developer
-- **Agent**: @job
-- **File**: `app/jobs/mso_import_job.rb`
-- **Details**:
-  ```ruby
-  class MsoImportJob < ApplicationJob
-    queue_as :imports
-    
-    def perform(import_id)
-      import = MsoImport.find(import_id)
-      return if import.completed? || import.failed?
-      
-      file_content = import.file.download
-      
-      result = Mso::Operation::Import.call(
-        race: import.race,
-        file: file_content,
-        user: import.user,
-        filename: import.filename
-      )
-      
-      case result
-      when Dry::Monads::Success
-        Rails.logger.info "MSO Import #{import_id} completed: #{import.reload.summary}"
-      when Dry::Monads::Failure
-        Rails.logger.error "MSO Import #{import_id} failed: #{result.failure}"
-      end
-    end
-  end
-  ```
-- **Dependencies**: Task 2.3
-
-#### Task 2.5: Create Import Controller
-- **Owner**: Developer
-- **Agent**: @service
-- **File**: `app/controllers/mso_imports_controller.rb`
-- **Details**:
-  ```ruby
-  class MsoImportsController < ApplicationController
-    before_action :set_race
-    
-    def index
-      @imports = @race.mso_imports.order(created_at: :desc).limit(20)
-      authorize @imports
-    end
-    
-    def create
-      authorize MsoImport
-      
-      unless params[:file].present?
-        return render json: { error: "No file provided" }, status: :unprocessable_entity
-      end
-      
-      import = @race.mso_imports.create!(
-        user: current_user,
-        filename: params[:file].original_filename,
-        file: params[:file],
-        status: :pending
-      )
-      
-      # Run immediately for small files, async for large
-      if params[:file].size < 100.kilobytes
-        Mso::Operation::Import.call(
-          race: @race,
-          file: params[:file].read,
-          user: current_user,
-          filename: params[:file].original_filename
-        )
-        import.reload
-      else
-        MsoImportJob.perform_later(import.id)
-      end
-      
-      respond_to do |format|
-        format.html { redirect_to race_mso_imports_path(@race), notice: import.summary }
-        format.json { render json: import }
-        format.turbo_stream { render turbo_stream: turbo_stream.prepend("imports", import) }
-      end
-    end
-    
-    def show
-      @import = @race.mso_imports.find(params[:id])
-      authorize @import
-    end
-    
-    private
-    
-    def set_race
-      @race = Race.find(params[:race_id])
-    end
-  end
-  ```
-- **Dependencies**: Task 2.4
-
-#### Task 2.6: Write MSO Import Tests
+#### Task 2.4: Write MSO Import Tests
 - **Owner**: Developer
 - **Agent**: @rspec
 - **Files**:
   - `spec/components/mso/parser/csv_spec.rb`
   - `spec/components/mso/operation/import_spec.rb`
-  - `spec/jobs/mso_import_job_spec.rb`
 - **Details**:
-  - Test CSV parsing with valid data
-  - Test CSV parsing with missing headers
-  - Test CSV parsing with invalid rows
-  - Test upsert (create + update)
+  - Test individual race CSV parsing
+  - Test team race CSV parsing
+  - Test athlete creation and update
+  - Test participation creation
   - Test idempotent import (same file twice)
-  - Test status mapping
-  - Test job queuing and execution
-- **Dependencies**: Task 2.5
+- **Dependencies**: Task 2.3
 
 ---
 
 ### Phase 3: Bib Selector Integration
 
-#### Task 3.1: Update BibSelector to Use Participants
+#### Task 3.1: Create BibSelectorComponent
 - **Owner**: Developer
 - **Agent**: @service
 - **File**: `app/components/fop/bib_selector_component.rb`
@@ -638,11 +726,10 @@ end
         @location = location
       end
       
-      # Pre-load all active participants for client-side filtering
-      def participants_json
-        race.participants
-            .can_report  # registered, racing, or finished
-            .by_bib
+      def participations_json
+        race.race_participations
+            .for_bib_selector
+            .includes(:athlete, team: [:athlete_1, :athlete_2])
             .map(&:as_bib_json)
             .to_json
       end
@@ -650,30 +737,37 @@ end
       def location_json
         { id: location.id, name: location.name }.to_json
       end
+      
+      def participation_count
+        race.race_participations.for_bib_selector.count
+      end
+      
+      def is_team_race?
+        race.race_participations.joins(:team).exists?
+      end
     end
   end
   ```
-- **View**:
+- **View** (`app/components/fop/bib_selector_component.html.erb`):
   ```erb
-  <%# app/components/fop/bib_selector_component.html.erb %>
   <div data-controller="bib-selector"
-       data-bib-selector-participants-value="<%= participants_json %>"
+       data-bib-selector-participations-value="<%= participations_json %>"
        data-bib-selector-location-value="<%= location_json %>"
        data-bib-selector-race-id-value="<%= race.id %>">
     
-    <!-- Modal (hidden by default) -->
     <div data-bib-selector-target="modal" 
          class="fixed inset-0 bg-black/50 hidden z-50">
-      <div class="bg-white rounded-t-xl fixed bottom-0 inset-x-0 max-h-[80vh] 
-                  overflow-hidden flex flex-col safe-area-inset">
+      <div class="bg-white rounded-t-xl fixed bottom-0 inset-x-0 max-h-[85vh] 
+                  overflow-hidden flex flex-col">
         
         <!-- Header -->
         <div class="bg-ismf-navy text-white px-4 py-3 flex justify-between items-center">
           <div>
-            <h2 class="font-semibold">Select Bib Number</h2>
+            <h2 class="font-semibold text-lg">Select Bib</h2>
             <p class="text-sm text-white/70" data-bib-selector-target="locationName"></p>
           </div>
-          <button data-action="bib-selector#closeModal" class="p-2">
+          <button data-action="bib-selector#closeModal" 
+                  class="p-2 -mr-2 rounded-lg hover:bg-white/10">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
             </svg>
@@ -681,24 +775,19 @@ end
         </div>
         
         <!-- Search -->
-        <div class="px-4 py-2 border-b">
+        <div class="px-4 py-3 border-b bg-gray-50">
           <input type="text" 
-                 placeholder="Search by bib or name..."
+                 placeholder="Search bib or name..."
                  data-bib-selector-target="search"
                  data-action="input->bib-selector#filter"
-                 class="w-full px-4 py-3 border rounded-lg text-lg"
-                 inputmode="numeric">
-        </div>
-        
-        <!-- Recent Bibs -->
-        <div class="px-4 py-2 border-b" data-bib-selector-target="recent">
-          <span class="text-xs text-gray-500 uppercase tracking-wide">Recent</span>
-          <div class="flex gap-2 mt-1" data-bib-selector-target="recentList"></div>
+                 class="w-full px-4 py-3 border-2 rounded-xl text-lg font-medium"
+                 inputmode="numeric"
+                 autocomplete="off">
         </div>
         
         <!-- Bib Grid -->
         <div class="flex-1 overflow-y-auto p-4">
-          <div class="grid grid-cols-4 fop-7:grid-cols-6 tablet:grid-cols-8 gap-2"
+          <div class="grid grid-cols-4 fop-7:grid-cols-5 tablet:grid-cols-6 gap-3"
                data-bib-selector-target="grid">
             <!-- Rendered by Stimulus -->
           </div>
@@ -707,265 +796,266 @@ end
     </div>
   </div>
   ```
-- **Dependencies**: Task 1.1, Phase 2
+- **Dependencies**: Task 1.3
 
-#### Task 3.2: Create ParticipantsChannel for Live Updates
+#### Task 3.2: Create Bib Selector Stimulus Controller
 - **Owner**: Developer
 - **Agent**: @service
-- **File**: `app/channels/participants_channel.rb`
+- **File**: `app/javascript/controllers/bib_selector_controller.js`
 - **Details**:
-  ```ruby
-  class ParticipantsChannel < ApplicationCable::Channel
-    def subscribed
-      @race = Race.find(params[:race_id])
-      stream_for @race
-    end
-  end
-  ```
-- **JavaScript**:
   ```javascript
-  // When participants are updated (MSO import), refresh bib list
-  participantsChannel.onParticipantsUpdated = (data) => {
-    // Fetch fresh participant list via Turbo
-    Turbo.visit(window.location.href, { action: "replace" })
+  import { Controller } from "@hotwired/stimulus"
+  
+  export default class extends Controller {
+    static targets = ["modal", "grid", "search", "locationName"]
+    static values = {
+      participations: Array,
+      location: Object,
+      raceId: Number
+    }
     
-    // Or just update the bib selector data attribute
-    this.element.dataset.bibSelectorParticipantsValue = data.participants
+    connect() {
+      this.participationsMap = new Map(
+        this.participationsValue.map(p => [p.bib, p])
+      )
+    }
+    
+    openModal(event) {
+      const locationId = event.currentTarget.dataset.locationId
+      const locationName = event.currentTarget.dataset.locationName
+      
+      this.currentLocationId = locationId
+      this.locationNameTarget.textContent = locationName
+      
+      this.renderGrid()
+      this.modalTarget.classList.remove("hidden")
+      this.searchTarget.focus()
+    }
+    
+    closeModal() {
+      this.modalTarget.classList.add("hidden")
+      this.searchTarget.value = ""
+    }
+    
+    renderGrid() {
+      const html = this.participationsValue
+        .filter(p => p.status !== "dnf" && p.status !== "dns" && p.status !== "dsq")
+        .map(p => this.renderBibButton(p))
+        .join("")
+      
+      this.gridTarget.innerHTML = html
+    }
+    
+    renderBibButton(participation) {
+      const flags = participation.flags.join(" ")
+      const teamType = participation.team_type 
+        ? `<span class="text-xs text-gray-500">(${participation.team_type.toUpperCase()})</span>` 
+        : ""
+      
+      return `
+        <button class="bib-button flex flex-col items-center justify-center 
+                       min-h-[72px] p-2 bg-white border-2 border-gray-200 
+                       rounded-xl font-semibold transition-all
+                       hover:border-ismf-red hover:bg-red-50
+                       active:scale-95 active:bg-ismf-red active:text-white"
+                data-action="click->bib-selector#selectBib"
+                data-bib="${participation.bib}">
+          <span class="text-2xl font-bold">${participation.bib}</span>
+          <span class="text-lg">${flags}</span>
+          ${teamType}
+        </button>
+      `
+    }
+    
+    filter(event) {
+      const query = event.target.value.toLowerCase()
+      const buttons = this.gridTarget.querySelectorAll(".bib-button")
+      
+      buttons.forEach(btn => {
+        const bib = btn.dataset.bib
+        const participation = this.participationsMap.get(parseInt(bib))
+        const matches = bib.includes(query) || 
+                        participation.name.toLowerCase().includes(query) ||
+                        participation.country?.toLowerCase().includes(query)
+        btn.classList.toggle("hidden", !matches)
+      })
+    }
+    
+    async selectBib(event) {
+      const bib = parseInt(event.currentTarget.dataset.bib)
+      const participation = this.participationsMap.get(bib)
+      
+      // Immediate feedback
+      this.showSuccessToast(bib, participation.flags.join(" "))
+      this.closeModal()
+      
+      // Save to recent
+      this.saveRecentBib(bib)
+      
+      // Create report (optimistic, background sync)
+      await this.createReport(bib)
+    }
+    
+    async createReport(bibNumber) {
+      const report = {
+        race_id: this.raceIdValue,
+        race_location_id: this.currentLocationId,
+        bib_number: bibNumber
+      }
+      
+      try {
+        const response = await fetch("/reports", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+          },
+          body: JSON.stringify({ report })
+        })
+        
+        if (!response.ok) {
+          this.showErrorToast("Failed to save report")
+        }
+      } catch (error) {
+        // Queue for offline sync
+        this.queueOfflineReport(report)
+      }
+    }
+    
+    showSuccessToast(bib, flags) {
+      // Dispatch event for toast controller
+      this.dispatch("reportCreated", { 
+        detail: { bib, flags, message: `Report created for bib ${bib}` }
+      })
+    }
   }
   ```
 - **Dependencies**: Task 3.1
 
-#### Task 3.3: Update Report Creation with Bib
+---
+
+### Phase 4: Video Upload
+
+#### Task 4.1: Create Video Upload Component
 - **Owner**: Developer
 - **Agent**: @service
-- **File**: `app/components/reports/operation/create.rb`
+- **File**: `app/components/fop/video_upload_component.rb`
+- **Details**:
+  - Accepts multiple files
+  - Shows upload progress per file
+  - Supports adding to existing report
+  - File types: mp4, mov, webm
+  - Max size: configurable (default 500MB)
+- **Dependencies**: Task 1.4
+
+#### Task 4.2: Create Add Video Operation
+- **Owner**: Developer
+- **Agent**: @service
+- **File**: `app/components/reports/operation/add_videos.rb`
 - **Details**:
   ```ruby
   module Reports
     module Operation
-      class Create
+      class AddVideos
         include Dry::Monads[:result, :do]
         
-        def call(params:, user:)
-          validated = yield validate_params(params)
-          participant = yield find_participant(validated)
-          report = yield create_report(validated, participant, user)
-          yield broadcast_report(report)
+        MAX_FILE_SIZE = 500.megabytes
+        ALLOWED_TYPES = %w[video/mp4 video/quicktime video/webm].freeze
+        
+        def call(report:, files:)
+          validated_files = yield validate_files(files)
+          yield attach_files(report, validated_files)
           
-          Success(report)
+          Success(report.reload)
         end
         
         private
         
-        def validate_params(params)
-          # Require: race_id, race_location_id, bib_number
-          if params[:race_id].blank? || params[:bib_number].blank?
-            return Failure("race_id and bib_number are required")
+        def validate_files(files)
+          errors = []
+          
+          files.each_with_index do |file, index|
+            if file.size > MAX_FILE_SIZE
+              errors << "File #{index + 1} exceeds maximum size (500MB)"
+            end
+            
+            unless ALLOWED_TYPES.include?(file.content_type)
+              errors << "File #{index + 1} has invalid type (must be MP4, MOV, or WebM)"
+            end
           end
           
-          Success(params)
+          errors.any? ? Failure(errors) : Success(files)
         end
         
-        def find_participant(params)
-          participant = Participant.find_by(
-            race_id: params[:race_id],
-            bib_number: params[:bib_number]
-          )
-          
-          participant ? Success(participant) : Failure("Participant not found")
-        end
-        
-        def create_report(params, participant, user)
-          report = Report.create(
-            race_id: params[:race_id],
-            race_location_id: params[:race_location_id],
-            participant: participant,
-            bib_number: participant.bib_number,
-            user: user
-          )
-          
-          report.persisted? ? Success(report) : Failure(report.errors.full_messages)
-        end
-        
-        def broadcast_report(report)
-          IncidentsChannel.broadcast_to(report.race, {
-            action: "report_created",
-            report: ReportSerializer.new(report).as_json
-          })
+        def attach_files(report, files)
+          files.each do |file|
+            report.videos.attach(file)
+          end
           
           Success(true)
+        rescue => e
+          Failure(["Failed to attach files: #{e.message}"])
         end
       end
     end
   end
   ```
-- **Dependencies**: Task 1.2, Task 3.1
-
----
-
-### Phase 4: MSO Import UI
-
-#### Task 4.1: Create Import UI (Admin)
-- **Owner**: Developer
-- **Agent**: Direct edit
-- **File**: `app/views/mso_imports/index.html.erb`
-- **Details**:
-  - File upload form (drag & drop)
-  - Import history table
-  - Status indicators
-  - Error detail expansion
-- **Dependencies**: Task 2.5
-
-#### Task 4.2: Create Import API Endpoint
-- **Owner**: Developer
-- **Agent**: @service
-- **File**: `app/controllers/api/v1/mso_imports_controller.rb`
-- **Details**:
-  - Accept CSV/JSON via API
-  - Return import status
-  - Support webhook callback
-- **Dependencies**: Task 2.5
+- **Dependencies**: Task 4.1
 
 ---
 
 ## MSO CSV Format
 
-### Required Format
+### Individual Race
 
 ```csv
-bib_number,athlete_name,country,category,status
-1,John Smith,USA,Senior Men,registered
-2,Jean Dupont,FRA,Senior Men,registered
-3,Maria Garcia,ESP,Senior Women,registered
-...
+bib,first_name,last_name,country,gender,license,status
+1,Jean,DUPONT,FRA,M,ISMF-12345,racing
+2,Maria,GARCIA,ESP,F,ISMF-23456,racing
+3,Hans,MUELLER,SUI,M,,registered
+4,Anna,ROSSI,ITA,F,ISMF-34567,finished
+5,Erik,JOHANSSON,SWE,M,ISMF-45678,dnf
 ```
 
-### Optional Extended Format
+### Team Race (Pairs)
 
 ```csv
-bib_number,athlete_name,first_name,last_name,country,team,category,start_time,finish_time,status,mso_id
-1,John Smith,John,Smith,USA,Team USA,Senior Men,2024-02-15T09:00:00,,,MSO-12345
-2,Jean Dupont,Jean,Dupont,FRA,FFME,Senior Men,2024-02-15T09:01:00,2024-02-15T09:45:23,finished,MSO-12346
+bib,first_name_1,last_name_1,country_1,gender_1,first_name_2,last_name_2,country_2,gender_2,team_type,status
+1,Jean,DUPONT,FRA,M,Maria,GARCIA,ESP,F,MW,racing
+2,Hans,MUELLER,SUI,M,Peter,SCHMIDT,GER,M,MM,racing
+3,Anna,ROSSI,ITA,F,Sophie,BERNARD,FRA,F,WW,racing
 ```
 
-### Status Values
+### Field Reference
 
-| MSO Value | Our Status |
-|-----------|------------|
-| (empty) | registered |
-| started, racing, on_course | racing |
-| finished, fin | finished |
-| dnf | dnf |
-| dns | dns |
-| dsq, dq | dsq |
-
----
-
-## Updated Architecture Diagram
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         RACE DATA FLOW                                   │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  ┌───────────────┐    CSV/XML    ┌─────────────────────┐               │
-│  │  MSO System   │──────────────►│  MsoImportJob       │               │
-│  │  (Timekeeper) │               │  - Parse file       │               │
-│  └───────────────┘               │  - Upsert           │               │
-│                                  │    participants     │               │
-│                                  └──────────┬──────────┘               │
-│                                             │                           │
-│                                             ▼                           │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │                        Race                                      │   │
-│  │  ├── participants[] ◄── Bib numbers, athlete names, status      │   │
-│  │  ├── race_locations[]                                           │   │
-│  │  ├── incidents[]                                                │   │
-│  │  └── reports[] ◄── Links to participant via bib_number         │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-│                                                                         │
-│  ┌─────────────────┐    Tap Location    ┌──────────────────────────┐   │
-│  │  FOP Interface  │──────────────────► │  Bib Selector Modal      │   │
-│  │  (7" / iPad)    │                    │  - Pre-loaded from       │   │
-│  │                 │◄─ Select Bib ──────│    participants          │   │
-│  │                 │                    │  - Client-side filter    │   │
-│  └─────────────────┘                    │  - Recent bibs           │   │
-│         │                               └──────────────────────────┘   │
-│         │ Creates Report                                               │
-│         ▼                                                              │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │  Report                                                          │   │
-│  │  - race_id                                                       │   │
-│  │  - race_location_id                                             │   │
-│  │  - participant_id ◄── Links to athlete                          │   │
-│  │  - bib_number ◄── Denormalized for quick access                 │   │
-│  │  - user_id (reporter)                                           │   │
-│  │  - video (attached later)                                       │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Multi-Device Considerations
-
-### Bib Data Sync
-
-When MSO import updates participants:
-1. Server broadcasts via `ParticipantsChannel`
-2. All connected devices receive update notification
-3. Devices can either:
-   - Soft reload (fetch new participant JSON)
-   - Hard reload (full page refresh via Turbo)
-
-### Offline Scenarios
-
-1. **Device goes offline during race**:
-   - Local participant list still works (pre-loaded)
-   - Reports queue in IndexedDB
-   - Sync when reconnected
-
-2. **MSO import happens while device offline**:
-   - Device has stale bib list
-   - On reconnect, receives channel notification
-   - Refreshes participant list
-
----
-
-## Risks & Considerations
-
-### Data Integrity
-
-| Risk | Mitigation |
-|------|------------|
-| Bib number reuse across races | Unique constraint on (race_id, bib_number) |
-| MSO import overwrites manual changes | Track `mso_id` separately, flag manual edits |
-| Concurrent imports | Lock race during import, queue additional imports |
-
-### Performance
-
-| Concern | Solution |
-|---------|----------|
-| Large start list (500+ athletes) | Client-side filtering, pagination if needed |
-| Frequent MSO syncs | Debounce imports, track unchanged rows |
-| Slow Pi5 processing | Background job, progress updates |
+| Field | Required | Description |
+|-------|----------|-------------|
+| `bib` | Yes | Bib number (unique per race) |
+| `first_name` | Yes | Athlete first name |
+| `last_name` | Yes | Athlete last name |
+| `country` | Yes | ISO 3166-1 alpha-3 (SUI, FRA, ITA) |
+| `gender` | No | M/F (defaults to M) |
+| `license` | No | ISMF license number |
+| `status` | No | registered/racing/finished/dnf/dns/dsq |
 
 ---
 
 ## Success Metrics
 
-1. **Import Speed**: < 5 seconds for 500 participants
-2. **Bib Selection**: < 50ms to open modal with 500 participants
-3. **Sync Reliability**: 99.9% successful imports
-4. **Offline Support**: Reports created offline sync within 30s of reconnection
+1. **MSO Import**: < 3 seconds for 200 athletes
+2. **Bib Modal Open**: < 50ms (max 200 bibs)
+3. **Report Creation**: < 100ms perceived
+4. **Video Upload**: Progress shown, < 30s for 100MB file
+5. **Offline Sync**: Reports sync within 30s of reconnection
 
 ---
 
 ## Next Steps
 
-1. Implement Participant model (Task 1.1)
-2. Update Report model with participant reference (Task 1.2)
-3. Build MSO import service (Phase 2)
-4. Integrate with bib selector (Phase 3)
-5. Add import UI (Phase 4)
+1. Create Athlete model with country, license, gender (Task 1.1)
+2. Create Team model for pairs MM/MW/WW (Task 1.2)
+3. Create RaceParticipation model for bib assignment (Task 1.3)
+4. Update Report model with participation reference + multiple videos (Task 1.4)
+5. Build MSO CSV import service (Phase 2)
+6. Create bib selector with flags (Phase 3)
+7. Add multi-file video upload (Phase 4)
