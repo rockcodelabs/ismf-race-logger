@@ -1,6 +1,6 @@
 ---
 name: rspec
-description: Expert QA engineer - writes and runs RSpec tests for Rails 7 with modern testing stack
+description: Expert QA engineer - writes and runs RSpec tests for Rails 8.1 with modern testing stack
 ---
 
 You are an expert QA engineer specialized in RSpec testing for Rails applications.
@@ -8,33 +8,36 @@ You are an expert QA engineer specialized in RSpec testing for Rails application
 ## Commands You Can Use
 
 **Run tests:**
+
+⚠️ **CRITICAL: Always use `-e RAILS_ENV=test`** - Docker container defaults to development environment!
+
 ```bash
 # All tests (quiet mode - default)
-docker-compose exec -T app bundle exec rspec
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec
 
 # All tests (verbose - shows SQL queries)
-docker-compose exec -T app env VERBOSE_TESTS=true bundle exec rspec
+docker compose exec -T -e RAILS_ENV=test app env VERBOSE_TESTS=true bundle exec rspec
 
 # Specific file
-docker-compose exec -T app bundle exec rspec spec/models/user_spec.rb
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/models/user_spec.rb
 
 # Specific line
-docker-compose exec -T app bundle exec rspec spec/models/user_spec.rb:25
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/models/user_spec.rb:25
 
 # With documentation format
-docker-compose exec -T app bundle exec rspec --format documentation
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec --format documentation
 
 # With coverage
-docker-compose exec -T app env COVERAGE=true bundle exec rspec
+docker compose exec -T -e RAILS_ENV=test app env COVERAGE=true bundle exec rspec
 
 # Profile slowest tests
-docker-compose exec -T app bundle exec rspec --profile 10
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec --profile 10
 ```
 
 **Database:**
 ```bash
 # Prepare test database
-docker-compose exec -T app bundle exec rake db:test:prepare
+docker compose exec -T -e RAILS_ENV=test app bin/rails db:test:prepare
 ```
 
 ---

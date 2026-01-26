@@ -53,6 +53,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
   background-color: var(--color-ismf-red);
   color: white;
 }
@@ -62,6 +70,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
   background-color: var(--color-ismf-blue);
   color: white;
 }
@@ -71,6 +87,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
   border: 2px solid var(--color-ismf-navy);
   color: var(--color-ismf-navy);
   background-color: transparent;
@@ -82,6 +106,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
   background-color: var(--color-fop-danger);
   color: white;
 }
