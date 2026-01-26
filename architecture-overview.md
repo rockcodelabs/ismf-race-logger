@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This document provides a detailed overview of the architecture and models for the race system, integrating users, roles, races, locations, incidents, reports, world cup editions, stages, and permissions.
+This document provides a detailed overview of the architecture and models for the race system, integrating users, roles, races, locations, incidents, reports, world cup editions, stages, and authorization via Pundit.
 
 ---
 
@@ -42,13 +42,33 @@ class User < ApplicationRecord
   scope :referees, -> { joins(:role).where(roles: { name: %w[national_referee international_referee] }) }
   scope :var_operators, -> { joins(:role).where(roles: { name: 'var_operator' }) }
 
-  # Methods
+  # Role check methods
   def var_operator?
     role.name == "var_operator"
   end
 
   def referee?
     %w[national_referee international_referee].include?(role.name)
+  end
+
+  def national_referee?
+    role.name == "national_referee"
+  end
+
+  def international_referee?
+    role.name == "international_referee"
+  end
+
+  def jury_president?
+    role.name == "jury_president"
+  end
+
+  def referee_manager?
+    role.name == "referee_manager"
+  end
+
+  def broadcast_viewer?
+    role.name == "broadcast_viewer"
   end
 
   # Generate magic link token for passwordless login
@@ -143,61 +163,23 @@ end
 # updated_at  :datetime         not null
 #
 class Role < ApplicationRecord
-  has_many :users, dependent: :destroy
+  has_many :users, dependent: :restrict_with_error
 
   # Enumerations
-  enum name: { national_referee: "national_referee",
-               international_referee: "international_referee",
-               var_operator: "var_operator",
-               jury_president: "jury_president",
-               referee_manager: "referee_manager",
-               broadcast_viewer: "broadcast_viewer" }
+  enum :name, {
+    national_referee: "national_referee",
+    international_referee: "international_referee",
+    var_operator: "var_operator",
+    jury_president: "jury_president",
+    referee_manager: "referee_manager",
+    broadcast_viewer: "broadcast_viewer"
+  }
+
+  validates :name, presence: true, uniqueness: true
 end
 ```
 
-### **3. RolePermission**
-
-```ruby
-# == Schema Information
-#
-# Table name: role_permissions
-#
-# id          :bigint           not null, primary key
-# role_id     :bigint           not null, foreign_key
-# action      :string           not null
-# resource    :string           not null
-# created_at  :datetime         not null
-# updated_at  :datetime         not null
-#
-class RolePermission < ApplicationRecord
-  belongs_to :role
-
-  validates :action, :resource, presence: true
-end
-```
-
-### **4. AuditLog**
-
-```ruby
-# == Schema Information
-#
-# Table name: audit_logs
-#
-# id          :bigint           not null, primary key
-# user_id     :bigint           optional, foreign_key
-# action      :string           not null
-# resource    :string           optional
-# details     :jsonb
-# created_at  :datetime         not null
-#
-class AuditLog < ApplicationRecord
-  belongs_to :user, optional: true
-
-  validates :action, presence: true
-end
-```
-
-### **5. WorldCupEdition**
+### **3. WorldCupEdition**
 
 ```ruby
 # == Schema Information
@@ -220,7 +202,7 @@ class WorldCupEdition < ApplicationRecord
 end
 ```
 
-### **6. Stage**
+### **4. Stage**
 
 ```ruby
 # == Schema Information
@@ -242,7 +224,7 @@ class Stage < ApplicationRecord
 end
 ```
 
-### **7. Race**
+### **5. Race**
 
 ```ruby
 # == Schema Information
@@ -269,7 +251,7 @@ class Race < ApplicationRecord
 end
 ```
 
-### **8. RaceType**
+### **6. RaceType**
 
 ```ruby
 # == Schema Information
@@ -288,7 +270,7 @@ class RaceType < ApplicationRecord
 end
 ```
 
-### **9. RaceLocation**
+### **7. RaceLocation**
 
 ```ruby
 # == Schema Information
@@ -317,7 +299,7 @@ class RaceLocation < ApplicationRecord
 end
 ```
 
-### **10. Incident**
+### **8. Incident**
 
 ```ruby
 # == Schema Information
@@ -350,7 +332,7 @@ class Incident < ApplicationRecord
 end
 ```
 
-### **11. Report**
+### **9. Report**
 
 ```ruby
 # == Schema Information
@@ -361,6 +343,7 @@ end
 # race_id           :bigint           foreign key
 # incident_id       :bigint           nullable (not all reports become incidents)
 # rule_id           :bigint           foreign key
+# user_id           :bigint           foreign key (reporter)
 # race_location_id  :bigint           optional
 # description       :text
 # video_start_time  :integer          optional
@@ -374,8 +357,9 @@ class Report < ApplicationRecord
   belongs_to :race
   belongs_to :incident, optional: true # Only some reports form incidents
   belongs_to :rule
-
+  belongs_to :user # The reporter
   belongs_to :race_location, optional: true
+
   has_one_attached :video
 
   validate :validate_video_times # Custom validations allow narrowing evidence
@@ -389,7 +373,7 @@ class Report < ApplicationRecord
 end
 ```
 
-### **12. Rule**
+### **10. Rule**
 
 ```ruby
 # == Schema Information
@@ -410,10 +394,375 @@ end
 
 ---
 
+## **Authorization with Pundit**
+
+Authorization is handled via [Pundit](https://github.com/varvet/pundit) policies. Each model has a corresponding policy class that defines what actions each role can perform.
+
+### **Setup**
+
+```ruby
+# Gemfile
+gem "pundit"
+
+# app/controllers/application_controller.rb
+class ApplicationController < ActionController::Base
+  include Pundit::Authorization
+
+  rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
+
+  private
+
+  def user_not_authorized
+    flash[:alert] = "You are not authorized to perform this action."
+    redirect_back(fallback_location: root_path)
+  end
+end
+```
+
+### **Base Policy**
+
+```ruby
+# app/policies/application_policy.rb
+class ApplicationPolicy
+  attr_reader :user, :record
+
+  def initialize(user, record)
+    @user = user
+    @record = record
+  end
+
+  def index?
+    false
+  end
+
+  def show?
+    false
+  end
+
+  def create?
+    false
+  end
+
+  def new?
+    create?
+  end
+
+  def update?
+    false
+  end
+
+  def edit?
+    update?
+  end
+
+  def destroy?
+    false
+  end
+
+  # Jury president and referee manager have full access by default
+  def admin?
+    user.jury_president? || user.referee_manager?
+  end
+
+  class Scope
+    def initialize(user, scope)
+      @user = user
+      @scope = scope
+    end
+
+    def resolve
+      raise NotImplementedError, "You must define #resolve in #{self.class}"
+    end
+
+    private
+
+    attr_reader :user, :scope
+  end
+end
+```
+
+### **IncidentPolicy**
+
+```ruby
+# app/policies/incident_policy.rb
+class IncidentPolicy < ApplicationPolicy
+  def index?
+    true # All authenticated users can view incidents list
+  end
+
+  def show?
+    true # All authenticated users can view incident details
+  end
+
+  def create?
+    user.referee? || user.var_operator? || admin?
+  end
+
+  def update?
+    admin? || (user.referee? && record.status == "unofficial")
+  end
+
+  def destroy?
+    admin?
+  end
+
+  def officialize?
+    user.jury_president?
+  end
+
+  def apply?
+    user.jury_president?
+  end
+
+  def decline?
+    user.jury_president?
+  end
+
+  class Scope < Scope
+    def resolve
+      if user.jury_president? || user.referee_manager?
+        scope.all
+      elsif user.international_referee?
+        scope.all # International referees see all incidents
+      elsif user.national_referee?
+        # National referees see incidents from their country's races
+        scope.joins(race: { stage: :world_cup_edition })
+             .where(races: { country: user.country })
+      elsif user.var_operator?
+        scope.all # VAR operators need to see all for video review
+      else
+        scope.none
+      end
+    end
+  end
+end
+```
+
+### **ReportPolicy**
+
+```ruby
+# app/policies/report_policy.rb
+class ReportPolicy < ApplicationPolicy
+  def index?
+    true
+  end
+
+  def show?
+    true
+  end
+
+  def create?
+    user.referee? || user.var_operator?
+  end
+
+  def update?
+    return true if admin?
+    return false unless record.status == "unofficial"
+
+    record.user_id == user.id # Only the reporter can edit their own unofficial report
+  end
+
+  def destroy?
+    admin? || (record.user_id == user.id && record.status == "unofficial")
+  end
+
+  def officialize?
+    user.jury_president?
+  end
+
+  class Scope < Scope
+    def resolve
+      if user.jury_president? || user.referee_manager?
+        scope.all
+      elsif user.referee? || user.var_operator?
+        scope.all # Referees and VAR operators can see all reports
+      else
+        scope.none
+      end
+    end
+  end
+end
+```
+
+### **RacePolicy**
+
+```ruby
+# app/policies/race_policy.rb
+class RacePolicy < ApplicationPolicy
+  def index?
+    true
+  end
+
+  def show?
+    true
+  end
+
+  def create?
+    admin?
+  end
+
+  def update?
+    admin?
+  end
+
+  def destroy?
+    admin?
+  end
+
+  class Scope < Scope
+    def resolve
+      scope.all # All authenticated users can see races
+    end
+  end
+end
+```
+
+### **RaceLocationPolicy**
+
+```ruby
+# app/policies/race_location_policy.rb
+class RaceLocationPolicy < ApplicationPolicy
+  def index?
+    true
+  end
+
+  def show?
+    true
+  end
+
+  def show_camera_stream?
+    return true if admin?
+    return true if user.var_operator?
+
+    # Referees can only see cameras at their assigned locations
+    user.referee? && record.location_type == "referee"
+  end
+
+  def create?
+    admin?
+  end
+
+  def update?
+    admin?
+  end
+
+  def destroy?
+    admin?
+  end
+
+  class Scope < Scope
+    def resolve
+      if user.broadcast_viewer?
+        scope.with_camera # Broadcast viewers only see locations with cameras
+      else
+        scope.all
+      end
+    end
+  end
+end
+```
+
+### **WorldCupEditionPolicy**
+
+```ruby
+# app/policies/world_cup_edition_policy.rb
+class WorldCupEditionPolicy < ApplicationPolicy
+  def index?
+    true
+  end
+
+  def show?
+    true
+  end
+
+  def create?
+    admin?
+  end
+
+  def update?
+    admin?
+  end
+
+  def destroy?
+    user.referee_manager? # Only referee manager can delete editions
+  end
+
+  class Scope < Scope
+    def resolve
+      scope.all
+    end
+  end
+end
+```
+
+### **Usage in Controllers**
+
+```ruby
+# app/controllers/incidents_controller.rb
+class IncidentsController < ApplicationController
+  def index
+    @incidents = policy_scope(Incident)
+  end
+
+  def show
+    @incident = Incident.find(params[:id])
+    authorize @incident
+  end
+
+  def create
+    @incident = Incident.new(incident_params)
+    authorize @incident
+
+    if @incident.save
+      redirect_to @incident, notice: "Incident created."
+    else
+      render :new, status: :unprocessable_entity
+    end
+  end
+
+  def officialize
+    @incident = Incident.find(params[:id])
+    authorize @incident
+
+    @incident.update!(status: :official)
+    redirect_to @incident, notice: "Incident officialized."
+  end
+
+  private
+
+  def incident_params
+    params.require(:incident).permit(:race_id, :race_location_id, :description)
+  end
+end
+```
+
+### **Role Permission Matrix**
+
+| Action | Jury President | Referee Manager | Int'l Referee | Nat'l Referee | VAR Operator | Broadcast Viewer |
+|--------|---------------|-----------------|---------------|---------------|--------------|------------------|
+| **Incidents** |
+| View all | ✅ | ✅ | ✅ | Own country | ✅ | ❌ |
+| Create | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Update | ✅ | ✅ | Unofficial only | Unofficial only | ❌ | ❌ |
+| Officialize | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Delete | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Reports** |
+| View all | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Create | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Update own | ✅ | ✅ | Unofficial only | Unofficial only | Unofficial only | ❌ |
+| Delete | ✅ | ✅ | Own unofficial | Own unofficial | Own unofficial | ❌ |
+| **Races** |
+| View | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Manage | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Camera Streams** |
+| View | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ (camera locations only) |
+
+---
+
 ## **Quick Summary of Each Model**
 
 ### **1. User**
-Represents a system user with attributes like name, email, and associated role. It determines the user's responsibilities and permissions in the system (e.g., referee, VAR operator). Uses Rails 8.1 authentication with `has_secure_password` for password-based login and magic links for passwordless authentication.
+Represents a system user with attributes like name, email, and associated role. Uses Rails 8.1 authentication with `has_secure_password` for password-based login and magic links for passwordless authentication. Role-based authorization is handled via Pundit policies.
 
 ### **1a. Session**
 Manages user authentication sessions with secure tokens. Each session tracks the user's IP address and user agent for security auditing.
@@ -422,49 +771,54 @@ Manages user authentication sessions with secure tokens. Each session tracks the
 Enables passwordless authentication via email. Magic links are single-use, time-limited tokens (15 minutes) that allow users to log in without entering a password.
 
 ### **2. Role**
-Defines user roles (e.g., national referee, jury president). It is associated with users and determines their functionality within the system.
+Defines user roles (e.g., national referee, jury president). It is associated with users and determines their authorization level via Pundit policies.
 
-### **3. RolePermission**
-Specifies the actions and resources a role can access (e.g., viewing camera streams or creating incidents).
-
-### **4. AuditLog**
-Used to track system activities, such as creating a report, updating incidents, or accessing video streams, ensuring accountability.
-
-### **5. WorldCupEdition**
+### **3. WorldCupEdition**
 Represents a particular World Cup Edition (e.g., World Cup 2024), which consists of multiple stages.
 
-### **6. Stage**
+### **4. Stage**
 Represents a stage within a World Cup Edition (e.g., Pre-Qualification, Semi-Finals). Each stage includes multiple races.
 
-### **7. Race**
+### **5. Race**
 Represents a specific race within a stage, linked to a race type (e.g., sprint, relay). Each race can have locations, incidents, and reports.
 
-### **8. RaceType**
+### **6. RaceType**
 Defines the general type of a race (e.g., sprint, vertical), along with the default locations.
 
-### **9. RaceLocation**
+### **7. RaceLocation**
 Represents locations within a race where referees, spectators, and VAR operators are assigned. Some locations include cameras.
 
-### **10. Incident**
+### **8. Incident**
 Handles grouped violations or race-related issues that may involve multiple reports and statuses (e.g., unofficial and official statuses).
 
-### **11. Report**
-Tracks individual referee-reported incidents during a race. Includes details like rule violations, videos, and penalties.
+### **9. Report**
+Tracks individual referee-reported incidents during a race. Includes details like rule violations, videos, and penalties. Now includes `user_id` to track the reporter.
 
-### **12. Rule**
+### **10. Rule**
 Defines the rules of the competition, which are referenced in reports to clarify the violated rule.
 
 ---
 
 ## **Combined Business Logic**
 
-### General User Access Management
+### Authorizing Actions with Pundit
 ```ruby
-class User
-  def can?(action, resource)
-    role.permissions.exists?(action: action, resource: resource)
-  end
+# In controller
+def show
+  @incident = Incident.find(params[:id])
+  authorize @incident
 end
+
+# In view
+<% if policy(@incident).officialize? %>
+  <%= button_to "Officialize", officialize_incident_path(@incident) %>
+<% end %>
+```
+
+### Scoping Records by Authorization
+```ruby
+# Only returns incidents the user is authorized to see
+@incidents = policy_scope(Incident)
 ```
 
 ### Aggregating Race Information
