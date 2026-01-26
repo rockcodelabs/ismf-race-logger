@@ -6,7 +6,7 @@
       <p class="mt-1 text-sm text-ismf-gray">Manage all users in the system.</p>
     </div>
     <%= link_to new_admin_user_path, class: "btn-primary whitespace-nowrap" do %>
-      <svg class="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
       </svg>
       <span>Add User</span>
@@ -32,7 +32,7 @@
               <tr>
                 <td>
                   <div class="flex items-center">
-                    <div class="flex-shrink-0 w-10 h-10 bg-ismf-blue rounded-full flex items-center justify-center">
+                    <div class="shrink-0 w-10 h-10 bg-ismf-blue rounded-full flex items-center justify-center">
                       <span class="text-white font-medium text-sm">
                         <%= user.name.first.upcase rescue user.email_address.first.upcase %>
                       </span>
@@ -85,7 +85,7 @@
                 <p class="mt-1 text-sm text-ismf-gray">Get started by creating a new user.</p>
                 <div class="mt-6">
                   <%= link_to new_admin_user_path, class: "btn-primary whitespace-nowrap" do %>
-                    <svg class="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
                     <span>Add User</span>

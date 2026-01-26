@@ -25,9 +25,9 @@
     <div class="min-h-full flex">
       <!-- Sidebar -->
       <aside class="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
-        <div class="flex flex-col flex-grow pt-5 bg-ismf-navy overflow-y-auto">
+        <div class="flex flex-col grow pt-5 bg-ismf-navy overflow-y-auto">
           <!-- Logo -->
-          <div class="flex items-center flex-shrink-0 px-4">
+          <div class="flex items-center shrink-0 px-4">
             <%= link_to root_path, class: "flex items-center gap-3 hover:opacity-90 transition-opacity" do %>
               <div class="w-10 h-10 bg-ismf-red rounded-lg flex items-center justify-center">
                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -59,9 +59,9 @@
           </nav>
           
           <!-- User info at bottom -->
-          <div class="flex-shrink-0 flex border-t border-ismf-blue p-4">
+          <div class="shrink-0 flex border-t border-ismf-blue p-4">
             <div class="flex items-center w-full">
-              <div class="flex-shrink-0">
+              <div class="shrink-0">
                 <div class="w-9 h-9 bg-ismf-red rounded-full flex items-center justify-center">
                   <span class="text-white font-medium text-sm">
                     <%= Current.user&.name&.first&.upcase || Current.user&.email_address&.first&.upcase || "?" %>
@@ -107,8 +107,8 @@
           </div>
           <!-- Mobile navigation -->
           <nav class="flex gap-1 px-3 pb-3 overflow-x-auto">
-            <%= link_to "Dashboard", admin_root_path, class: "flex-shrink-0 px-3 py-1.5 text-sm font-medium rounded-full transition-colors #{request.path == admin_root_path ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue'}" %>
-            <%= link_to "Users", admin_users_path, class: "flex-shrink-0 px-3 py-1.5 text-sm font-medium rounded-full transition-colors #{controller_name == 'users' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue'}" %>
+            <%= link_to "Dashboard", admin_root_path, class: "shrink-0 px-3 py-1.5 text-sm font-medium rounded-full transition-colors #{request.path == admin_root_path ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue'}" %>
+            <%= link_to "Users", admin_users_path, class: "shrink-0 px-3 py-1.5 text-sm font-medium rounded-full transition-colors #{controller_name == 'users' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue'}" %>
           </nav>
         </header>
 

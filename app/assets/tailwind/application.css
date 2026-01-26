@@ -215,7 +215,8 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--color-ismf-gray);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  background-color: #f9fafb;
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .table td {
