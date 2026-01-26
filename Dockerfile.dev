@@ -18,8 +18,6 @@ RUN apt-get update -qq && \
     libvips \
     pkg-config \
     postgresql-client \
-    nodejs \
-    npm \
     && rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Set development environment

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build:
@@ -10,21 +8,17 @@ services:
     volumes:
       - .:/rails
       - bundle_cache:/usr/local/bundle
-      - node_modules:/rails/node_modules
     ports:
-      - "3000:3000"
+      - "3003:3000"
     environment:
       - RAILS_ENV=development
       - DB_HOST=postgres
       - DB_PORT=5432
       - POSTGRES_USER=ismf_dev
       - POSTGRES_PASSWORD=ismf_dev_password
-      - REDIS_URL=redis://redis:6379/0
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_started
     tty: true
     stdin_open: true
     networks:
@@ -40,7 +34,7 @@ services:
       - POSTGRES_PASSWORD=ismf_dev_password
       - POSTGRES_DB=ismf_race_logger_development
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ismf_dev -d ismf_race_logger_development"]
       interval: 5s
@@ -49,29 +43,25 @@ services:
     networks:
       - ismf-network
 
-  redis:
-    container_name: ismf-redis
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
-    networks:
-      - ismf-network
-
   tailwind:
     build:
       context: .
       dockerfile: Dockerfile.dev
     container_name: ismf-tailwind
-    command: ./bin/rails tailwindcss:watch
+    command: >
+      sh -c "bundle exec tailwindcss 
+      -i ./app/assets/tailwind/application.css 
+      -o ./app/assets/builds/tailwind.css 
+      --watch=always"
     volumes:
       - .:/rails
       - bundle_cache:/usr/local/bundle
-      - node_modules:/rails/node_modules
     environment:
       - RAILS_ENV=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - POSTGRES_USER=ismf_dev
+      - POSTGRES_PASSWORD=ismf_dev_password
     depends_on:
       - app
     networks:
@@ -79,9 +69,7 @@ services:
 
 volumes:
   postgres_data:
-  redis_data:
   bundle_cache:
-  node_modules:
 
 networks:
   ismf-network:

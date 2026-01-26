@@ -1,0 +1,130 @@
+<div class="space-y-6">
+  <!-- Page header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-ismf-navy">Dashboard</h1>
+      <p class="mt-1 text-sm text-ismf-gray">Welcome to the ISMF Race Logger admin panel.</p>
+    </div>
+  </div>
+
+  <!-- Stats grid -->
+  <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <!-- Total Users -->
+    <div class="card">
+      <div class="card-body">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <div class="w-12 h-12 bg-ismf-blue rounded-lg flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            </div>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-ismf-gray truncate">Total Users</dt>
+              <dd class="text-3xl font-bold text-ismf-navy"><%= @total_users %></dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+      <div class="bg-gray-50 px-6 py-3">
+        <%= link_to "View all users", admin_users_path, class: "text-sm font-medium text-ismf-red hover:text-ismf-blue" %>
+      </div>
+    </div>
+
+    <!-- Admin Users -->
+    <div class="card">
+      <div class="card-body">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <div class="w-12 h-12 bg-ismf-red rounded-lg flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-ismf-gray truncate">Administrators</dt>
+              <dd class="text-3xl font-bold text-ismf-navy"><%= @admin_users %></dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+      <div class="bg-gray-50 px-6 py-3">
+        <%= link_to "Manage admins", admin_users_path, class: "text-sm font-medium text-ismf-red hover:text-ismf-blue" %>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card">
+      <div class="card-body">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <div class="w-12 h-12 bg-fop-success rounded-lg flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </div>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-ismf-gray truncate">Quick Actions</dt>
+              <dd class="text-sm text-ismf-navy mt-1">Add new user</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+      <div class="bg-gray-50 px-6 py-3">
+        <%= link_to "Create user", new_admin_user_path, class: "text-sm font-medium text-ismf-red hover:text-ismf-blue" %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Users -->
+  <div class="card">
+    <div class="card-header flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-ismf-navy">Recent Users</h2>
+      <%= link_to "View all", admin_users_path, class: "text-sm font-medium text-ismf-red hover:text-ismf-blue" %>
+    </div>
+    <div class="table-container border-0 rounded-none">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 bg-white">
+          <% if @recent_users.any? %>
+            <% @recent_users.each do |user| %>
+              <tr>
+                <td class="font-medium">
+                  <%= link_to user.display_name, admin_user_path(user), class: "text-ismf-navy hover:text-ismf-red" %>
+                </td>
+                <td class="text-ismf-gray"><%= user.email_address %></td>
+                <td>
+                  <% if user.admin? %>
+                    <span class="badge-danger">Admin</span>
+                  <% else %>
+                    <span class="badge-info">User</span>
+                  <% end %>
+                </td>
+                <td class="text-ismf-gray"><%= user.created_at.strftime("%b %d, %Y") %></td>
+              </tr>
+            <% end %>
+          <% else %>
+            <tr>
+              <td colspan="4" class="text-center py-8 text-ismf-gray">
+                No users yet. <%= link_to "Create one", new_admin_user_path, class: "text-ismf-red hover:underline" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

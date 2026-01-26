@@ -1,0 +1,126 @@
+<div class="space-y-6">
+  <!-- Page header -->
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <%= link_to admin_users_path, class: "p-2 text-ismf-gray hover:text-ismf-navy transition-colors" do %>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+      <% end %>
+      <div>
+        <h1 class="text-2xl font-bold text-ismf-navy"><%= @user.display_name %></h1>
+        <p class="mt-1 text-sm text-ismf-gray"><%= @user.email_address %></p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <%= link_to edit_admin_user_path(@user), class: "btn-secondary" do %>
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+        Edit
+      <% end %>
+      <% unless @user == Current.user %>
+        <%= button_to admin_user_path(@user), method: :delete, class: "btn-danger", data: { turbo_confirm: "Are you sure you want to delete this user? This action cannot be undone." } do %>
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          Delete
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- User details card -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="text-lg font-semibold text-ismf-navy">User Details</h2>
+    </div>
+    <div class="card-body">
+      <div class="flex items-start gap-6">
+        <!-- Avatar -->
+        <div class="flex-shrink-0">
+          <div class="w-20 h-20 bg-ismf-blue rounded-full flex items-center justify-center">
+            <span class="text-white font-bold text-2xl">
+              <%= @user.name.first.upcase rescue @user.email_address.first.upcase %>
+            </span>
+          </div>
+        </div>
+        
+        <!-- Details grid -->
+        <div class="flex-1 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <dt class="text-sm font-medium text-ismf-gray">Full Name</dt>
+            <dd class="mt-1 text-sm text-ismf-navy"><%= @user.name.presence || "—" %></dd>
+          </div>
+          
+          <div>
+            <dt class="text-sm font-medium text-ismf-gray">Email Address</dt>
+            <dd class="mt-1 text-sm text-ismf-navy"><%= @user.email_address %></dd>
+          </div>
+          
+          <div>
+            <dt class="text-sm font-medium text-ismf-gray">Role</dt>
+            <dd class="mt-1">
+              <% if @user.admin? %>
+                <span class="badge-danger">Administrator</span>
+              <% else %>
+                <span class="badge-info">User</span>
+              <% end %>
+            </dd>
+          </div>
+          
+          <div>
+            <dt class="text-sm font-medium text-ismf-gray">Account Created</dt>
+            <dd class="mt-1 text-sm text-ismf-navy"><%= @user.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+          </div>
+          
+          <div>
+            <dt class="text-sm font-medium text-ismf-gray">Last Updated</dt>
+            <dd class="mt-1 text-sm text-ismf-navy"><%= @user.updated_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+          </div>
+          
+          <div>
+            <dt class="text-sm font-medium text-ismf-gray">Active Sessions</dt>
+            <dd class="mt-1 text-sm text-ismf-navy"><%= @user.sessions.count %></dd>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sessions card -->
+  <div class="card">
+    <div class="card-header flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-ismf-navy">Active Sessions</h2>
+      <span class="badge-info"><%= @user.sessions.count %> active</span>
+    </div>
+    <div class="table-container border-0 rounded-none">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>IP Address</th>
+            <th>User Agent</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 bg-white">
+          <% if @user.sessions.any? %>
+            <% @user.sessions.order(created_at: :desc).each do |session| %>
+              <tr>
+                <td class="font-mono text-sm"><%= session.ip_address || "—" %></td>
+                <td class="text-ismf-gray text-sm truncate max-w-xs"><%= session.user_agent&.truncate(50) || "—" %></td>
+                <td class="text-ismf-gray"><%= session.created_at.strftime("%b %d, %Y %I:%M %p") %></td>
+              </tr>
+            <% end %>
+          <% else %>
+            <tr>
+              <td colspan="3" class="text-center py-8 text-ismf-gray">
+                No active sessions.
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
