@@ -44,20 +44,20 @@ Structured debugging approach with distinct roles:
 
 ```bash
 # 1. Get login page + cookie
-curl -c cookies.txt http://localhost:3002/users/sign_in > login.html
+curl -c cookies.txt http://localhost:3003/users/sign_in > login.html
 
 # 2. Extract CSRF token
 TOKEN=$(grep -o 'name="authenticity_token" value="[^"]*"' login.html | cut -d'"' -f4)
 
 # 3. Login (save + send cookies)
-curl -c cookies.txt -b cookies.txt -X POST http://localhost:3002/users/sign_in \
+curl -c cookies.txt -b cookies.txt -X POST http://localhost:3003/users/sign_in \
   -d "authenticity_token=$TOKEN" \
   -d "user[email]=EMAIL" \
   -d "user[password]=PASSWORD" \
   -H "Accept: text/html"
 
 # 4. Access protected page
-curl -b cookies.txt -H "Accept: text/html" http://localhost:3002/wydarzenia
+curl -b cookies.txt -H "Accept: text/html" http://localhost:3003/wydarzenia
 ```
 
 **Key**: Always include `-H "Accept: text/html"` for HTML responses and flash messages.
@@ -65,7 +65,7 @@ curl -b cookies.txt -H "Accept: text/html" http://localhost:3002/wydarzenia
 ### Check Redirects
 
 ```bash
-curl -I -b cookies.txt http://localhost:3002/wydarzenia
+curl -I -b cookies.txt http://localhost:3003/wydarzenia
 # Look for: HTTP/1.1 302 Found + Location: header
 ```
 
@@ -86,7 +86,7 @@ Playwright.create(playwright_cli_executable_path: 'npx playwright') do |playwrig
   page = browser.new_context.new_page
   
   LoginHelper.new(page, 'user@example.com', 'password').login!
-  page.goto('http://app:3002/wydarzenia')
+  page.goto('http://app:3003/wydarzenia')
   page.screenshot(path: 'tmp/playwright/screenshots/debug.png')
 end
 ```
@@ -188,11 +188,11 @@ docker-compose logs app | grep -i "cancan\|access.*denied"
 docker-compose up -d app playwright
 
 # Test login + access
-curl -c /tmp/c.txt http://localhost:3002/users/sign_in > /tmp/l.html
+curl -c /tmp/c.txt http://localhost:3003/users/sign_in > /tmp/l.html
 TOKEN=$(grep -o 'name="authenticity_token" value="[^"]*"' /tmp/l.html | cut -d'"' -f4)
-curl -c /tmp/c.txt -b /tmp/c.txt -X POST http://localhost:3002/users/sign_in \
+curl -c /tmp/c.txt -b /tmp/c.txt -X POST http://localhost:3003/users/sign_in \
   -d "authenticity_token=$TOKEN" -d "user[email]=EMAIL" -d "user[password]=PASS" -H "Accept: text/html"
-curl -b /tmp/c.txt http://localhost:3002/protected-path
+curl -b /tmp/c.txt http://localhost:3003/protected-path
 
 # Check permissions
 docker-compose exec -T app bundle exec rails runner "
@@ -236,7 +236,7 @@ docker-compose logs -f app | grep "ERROR\|DEBUG"
 **Fix:**
 ```bash
 # ✅ Correct - reproduce first with curl or Playwright
-curl -b cookies.txt http://localhost:3002/problem-path
+curl -b cookies.txt http://localhost:3003/problem-path
 # OR write Playwright script to reproduce
 ```
 
@@ -288,17 +288,17 @@ docker-compose logs app | grep "GET \"/problem-path\"" -A 20
 
 ```bash
 # ❌ Wrong - no cookies, always redirects to login
-curl http://localhost:3002/protected-path
+curl http://localhost:3003/protected-path
 ```
 
 **Fix:**
 ```bash
 # ✅ Correct - login first, save cookies
-curl -c cookies.txt http://localhost:3002/users/sign_in > login.html
+curl -c cookies.txt http://localhost:3003/users/sign_in > login.html
 TOKEN=$(grep -o 'name="authenticity_token" value="[^"]*"' login.html | cut -d'"' -f4)
-curl -c cookies.txt -b cookies.txt -X POST http://localhost:3002/users/sign_in \
+curl -c cookies.txt -b cookies.txt -X POST http://localhost:3003/users/sign_in \
   -d "authenticity_token=$TOKEN" -d "user[email]=EMAIL" -d "user[password]=PASS"
-curl -b cookies.txt http://localhost:3002/protected-path
+curl -b cookies.txt http://localhost:3003/protected-path
 ```
 
 ### ❌ Mistake 6: Not verifying the fix
@@ -312,7 +312,7 @@ curl -b cookies.txt http://localhost:3002/protected-path
 ```bash
 # ✅ Correct - verify fix with original reproduction
 # Run curl/Playwright script again to confirm issue is resolved
-curl -b cookies.txt http://localhost:3002/problem-path
+curl -b cookies.txt http://localhost:3003/problem-path
 # Should now work correctly
 ```
 

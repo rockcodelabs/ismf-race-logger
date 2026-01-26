@@ -56,7 +56,7 @@ docker-compose exec app bundle exec rails console
 **Local:**
 ```bash
 # Sidekiq web UI
-open http://localhost:3002/sidekiq
+open http://localhost:3003/sidekiq
 
 # View Sidekiq logs
 docker-compose logs -f sidekiq
