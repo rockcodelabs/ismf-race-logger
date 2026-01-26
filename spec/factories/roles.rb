@@ -4,6 +4,10 @@ FactoryBot.define do
   factory :role do
     name { Role::NAMES.sample }
 
+    # Use initialize_with to find or create roles by name
+    # This prevents unique constraint violations when creating multiple users with the same role
+    initialize_with { Role.find_or_create_by(name: name) }
+
     trait :var_operator do
       name { "var_operator" }
     end
