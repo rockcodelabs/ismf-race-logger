@@ -608,7 +608,7 @@ Based on https://ismf-ski.com/:
   ```yaml
   services:
     app:
-      command: ./bin/thrust ./bin/rails server -p 3001 -b 0.0.0.0
+      command: ./bin/thrust ./bin/rails server -p 3003 -b 0.0.0.0
       build: .
       environment:
         - DB_HOST=postgres
@@ -619,7 +619,7 @@ Based on https://ismf-ski.com/:
         - ismf-bundle:/usr/local/bundle
         - ismf-tmp:/rails/tmp
       ports:
-        - "3001:3001"
+        - "3003:3003"
       depends_on:
         - postgres
         - redis
@@ -698,7 +698,7 @@ Based on https://ismf-ski.com/:
 - **Port Mapping** (avoiding kw-app conflicts):
   | Service | ismf-race-logger | kw-app |
   |---------|------------------|--------|
-  | Web | 3001 | 3002 |
+  | Web | 3003 | 3002 |
   | PostgreSQL | 5434 | 5433 |
   | Redis | 6382 | 6380 |
   | MailCatcher Web | 1081 | 1080 |
@@ -1480,7 +1480,7 @@ Based on https://ismf-ski.com/:
   ```
 - **Dependencies**: Task 10.1
 
-#### Task 10.3: Configure Staging Deploy for Pi5
+#### Task 10.3: Configure Production Deploy for Pi5
 - **Owner**: Developer
 - **File**: `config/deploy.staging.yml`
 - **Content**:
@@ -1495,7 +1495,7 @@ Based on https://ismf-ski.com/:
   servers:
     web:
       hosts:
-        - pi5main.local
+        - pi5main.local  # Production on Pi5
 
   deploy_timeout: 180
 
@@ -1509,9 +1509,9 @@ Based on https://ismf-ski.com/:
 
   env:
     clear:
-      RAILS_ENV: staging
-      RACK_ENV: staging
-      DB_HOST: ismf-staging-postgres
+      RAILS_ENV: production
+      RACK_ENV: production
+      DB_HOST: ismf-postgres
       RAILS_SERVE_STATIC_FILES: true
 
   ssh:
@@ -1519,7 +1519,7 @@ Based on https://ismf-ski.com/:
 
   accessories:
     postgres:
-      service: ismf-staging-postgres
+      service: ismf-postgres
       image: postgres:16-alpine
       host: pi5main.local
       port: "5435:5432"
@@ -1527,15 +1527,15 @@ Based on https://ismf-ski.com/:
         network: "ismf-network"
       env:
         clear:
-          POSTGRES_USER: staging_user
-          POSTGRES_DB: ismf_race_logger_staging
+          POSTGRES_USER: ismf_user
+          POSTGRES_DB: ismf_race_logger_production
         secret:
           - POSTGRES_PASSWORD
       directories:
         - ismf-data-staging:/var/lib/postgresql/data
 
     redis:
-      service: ismf-staging-redis
+      service: ismf-redis
       image: redis:7-alpine
       host: pi5main.local
       port: "6383:6379"
@@ -1549,7 +1549,7 @@ Based on https://ismf-ski.com/:
         - ismf-redis-data-staging:/data
 
     solid_queue:
-      service: ismf-staging-solid-queue
+      service: ismf-solid-queue
       image: regedarek/ismf-race-logger
       host: pi5main.local
       options:
@@ -1557,8 +1557,8 @@ Based on https://ismf-ski.com/:
       cmd: bundle exec rails solid_queue:start
       env:
         clear:
-          RAILS_ENV: staging
-          DB_HOST: ismf-staging-postgres
+          RAILS_ENV: production
+          DB_HOST: ismf-postgres
         secret:
           - RAILS_MASTER_KEY
           - POSTGRES_PASSWORD
@@ -1625,7 +1625,7 @@ Based on https://ismf-ski.com/:
 
 ---
 
-### Phase 11: Cloudflare DNS & SSL Setup
+### Phase 11: Cloudflare DNS & SSL Setup (Production)
 
 #### Task 11.1: Configure Cloudflare DNS
 - **Owner**: User
@@ -1764,10 +1764,10 @@ Based on https://ismf-ski.com/:
   ```
 - **Dependencies**: All previous phases
 
-#### Task 13.2: Staging Smoke Test
+#### Task 13.2: Production Smoke Test
 - **Owner**: Developer
 - **Checklist**:
-  - [ ] Application loads at race-logger.ismf-ski.com
+  - [ ] Application loads at race-logger.ismf-ski.com (production)
   - [ ] ISMF branding displays correctly
   - [ ] User registration works
   - [ ] User login works
@@ -1782,15 +1782,17 @@ Based on https://ismf-ski.com/:
 - **Commands**:
   ```bash
   # Check logs
-  kamal app logs -d staging
+  kamal app logs -d production
   
   # Check container health
   ssh rege@pi5main.local docker ps | grep ismf
   
   # Rails console
-  kamal app exec -d staging --reuse 'bin/rails console'
+  kamal app exec -d production --reuse 'bin/rails console'
   ```
 - **Dependencies**: Task 11.2
+
+> **Note**: No staging environment - test thoroughly in development before deploying to production.
 
 #### Task 13.3: Documentation
 - **Owner**: Developer
@@ -1825,7 +1827,7 @@ docker compose exec app bin/rails db:seed
 docker compose exec app bin/rails db:rollback
 ```
 
-### Deployment Commands (Staging)
+### Deployment Commands (Production)
 
 ```bash
 # Provision server (first time)
@@ -1872,12 +1874,14 @@ docker network inspect ismf-network
 
 ## Port Reference
 
-| Service | Development | Staging (Pi5) | kw-app (Pi5) |
-|---------|-------------|---------------|--------------|
-| Web App | 3001 | 3000 (via proxy) | 3000 |
+| Service | Development | Production (Pi5) | kw-app (Pi5) |
+|---------|-------------|------------------|--------------|
+| Web App | 3003 | 3000 (via proxy) | 3000 |
 | PostgreSQL | 5434 | 5435 | 5433 |
 | Redis | 6382 | 6383 | 6381 |
 | MailCatcher | 1081 | - | 1080 |
+
+> **Note**: No staging environment. Only development (local Docker) and production (Pi5).
 
 ---
 
