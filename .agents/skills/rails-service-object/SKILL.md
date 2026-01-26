@@ -1,16 +1,40 @@
 ---
 name: rails-service-object
-description: Service object architecture for kw-app using dry-monads Result monad. Covers when to use services, structure patterns, testing, and integration with controllers.
+description: Service object architecture for ISMF Race Logger using dry-monads Result monad. Covers when to use services, structure patterns, testing, and integration with controllers.
 allowed-tools: Read, Write, Edit, Bash
 ---
 
-# Rails Service Object Pattern (kw-app)
+# Rails Service Object Pattern
 
 ## Overview
 
 Service objects encapsulate complex business logic that doesn't belong in models or controllers.
 
-**kw-app Standard**: All services MUST use dry-monads (`Success`/`Failure`).
+**Project Standard**: All services MUST use dry-monads (`Success`/`Failure`) and live in `app/services/`.
+
+## Project Structure
+
+```
+app/services/
+├── competitions/
+│   ├── create_from_template.rb   # Competitions::CreateFromTemplate
+│   └── duplicate.rb              # Competitions::Duplicate
+├── incidents/
+│   ├── create.rb                 # Incidents::Create
+│   └── officialize.rb            # Incidents::Officialize
+├── reports/
+│   ├── create.rb                 # Reports::Create
+│   └── attach_to_incident.rb     # Reports::AttachToIncident
+└── races/
+    ├── start.rb                  # Races::Start
+    └── complete.rb               # Races::Complete
+
+spec/services/
+├── competitions/
+│   ├── create_from_template_spec.rb
+│   └── duplicate_spec.rb
+└── ...
+```
 
 ## When to Use Service Objects
 
@@ -51,53 +75,56 @@ Does it need transaction?
 └─ No → Model method
 ```
 
-## Structure
+## Naming Convention
 
-### Naming Convention
+**Pattern**: `Namespace::Action`
 
-```
-app/components/
-├── users/
-│   └── operation/
-│       ├── create.rb         # Users::Operation::Create
-│       ├── update.rb         # Users::Operation::Update
-│       └── activate.rb       # Users::Operation::Activate
-└── payments/
-    └── operation/
-        ├── charge.rb         # Payments::Operation::Charge
-        └── refund.rb         # Payments::Operation::Refund
-```
+Examples:
+- `Competitions::CreateFromTemplate`
+- `Competitions::Duplicate`
+- `Incidents::Create`
+- `Incidents::Officialize`
+- `Reports::AttachToIncident`
 
-**Pattern**: `Namespace::Operation::Action`
-
-### Basic Template
+## Basic Template
 
 ```ruby
-# app/components/users/operation/create.rb
-module Users
-  module Operation
-    class Create
-      include Dry::Monads[:result, :do]
+# app/services/incidents/create.rb
+module Incidents
+  class Create
+    include Dry::Monads[:result, :do]
 
-      def call(params:)
-        validated = yield validate(params)
-        user      = yield persist(validated)
-        
-        Success(user)
-      end
+    def call(user:, params:)
+      _         = yield authorize!(user)
+      validated = yield validate!(params)
+      race      = yield find_race!(validated[:race_id])
+      incident  = yield persist!(race: race, params: validated)
+      
+      Success(incident)
+    end
 
-      private
+    private
 
-      def validate(params)
-        contract = Users::Contract::Create.new.call(params)
-        return Failure(contract.errors.to_h) unless contract.success?
-        Success(contract.to_h)
-      end
+    def authorize!(user)
+      return Failure([:unauthorized, "Must be logged in"]) unless user
+      return Failure([:forbidden, "Not authorized"]) unless user.referee? || user.admin?
+      Success(user)
+    end
 
-      def persist(attrs)
-        user = User.create(attrs)
-        user.persisted? ? Success(user) : Failure(user.errors)
-      end
+    def validate!(params)
+      errors = {}
+      errors[:race_id] = ["can't be blank"] if params[:race_id].blank?
+      errors.any? ? Failure([:validation_failed, errors]) : Success(params.to_h.symbolize_keys)
+    end
+
+    def find_race!(race_id)
+      race = Race.find_by(id: race_id)
+      race ? Success(race) : Failure([:not_found, "Race not found"])
+    end
+
+    def persist!(race:, params:)
+      incident = Incident.new(race: race, description: params[:description], status: :unofficial)
+      incident.save ? Success(incident) : Failure([:save_failed, incident.errors.to_h])
     end
   end
 end
@@ -108,40 +135,55 @@ end
 ### Pattern 1: Simple CRUD Service
 
 ```ruby
-module Users
-  module Operation
-    class Create
-      include Dry::Monads[:result, :do]
+# app/services/reports/create.rb
+module Reports
+  class Create
+    include Dry::Monads[:result, :do]
 
-      def call(params:, current_user:)
-        validated = yield validate(params)
-        user      = yield persist(validated, current_user)
-        yield send_welcome_email(user)
-        
-        Success(user)
-      end
+    def call(user:, params:)
+      _         = yield authorize!(user)
+      validated = yield validate!(params)
+      race      = yield find_race!(validated[:race_id])
+      rule      = yield find_rule!(validated[:rule_id])
+      report    = yield persist!(user: user, race: race, rule: rule, params: validated)
 
-      private
+      Success(report)
+    end
 
-      def validate(params)
-        contract = Users::Contract::Create.new.call(params)
-        return Failure([:validation_failed, contract.errors.to_h]) unless contract.success?
-        Success(contract.to_h)
-      end
+    private
 
-      def persist(attrs, creator)
-        user = User.new(attrs.merge(created_by: creator))
-        user.save ? Success(user) : Failure([:save_failed, user.errors])
-      end
+    def authorize!(user)
+      return Failure([:unauthorized, "Must be logged in"]) unless user
+      return Failure([:forbidden, "Not authorized"]) unless user.referee? || user.var_operator?
+      Success(user)
+    end
 
-      def send_welcome_email(user)
-        UserMailer.welcome(user).deliver_later
-        Success(:email_queued)
-      rescue => e
-        # Don't fail the whole operation if email fails
-        Rails.logger.error("Failed to send welcome email: #{e.message}")
-        Success(:email_skipped)
-      end
+    def validate!(params)
+      errors = {}
+      errors[:race_id] = ["can't be blank"] if params[:race_id].blank?
+      errors[:rule_id] = ["can't be blank"] if params[:rule_id].blank?
+      errors.any? ? Failure([:validation_failed, errors]) : Success(params.to_h.symbolize_keys)
+    end
+
+    def find_race!(race_id)
+      race = Race.find_by(id: race_id)
+      race ? Success(race) : Failure([:not_found, "Race not found"])
+    end
+
+    def find_rule!(rule_id)
+      rule = Rule.find_by(id: rule_id)
+      rule ? Success(rule) : Failure([:not_found, "Rule not found"])
+    end
+
+    def persist!(user:, race:, rule:, params:)
+      report = Report.new(
+        user: user,
+        race: race,
+        rule: rule,
+        description: params[:description],
+        status: :draft
+      )
+      report.save ? Success(report) : Failure([:save_failed, report.errors.to_h])
     end
   end
 end
@@ -150,139 +192,172 @@ end
 ### Pattern 2: Service with Transaction
 
 ```ruby
-module Orders
-  module Operation
-    class Create
-      include Dry::Monads[:result, :do]
+# app/services/competitions/create_from_template.rb
+module Competitions
+  class CreateFromTemplate
+    include Dry::Monads[:result, :do]
 
-      def call(user:, cart:)
-        return Failure([:empty_cart, "Cart is empty"]) if cart.empty?
+    def call(template:, attributes:, race_type_ids: nil)
+      template    = yield find_template(template)
+      race_types  = yield resolve_race_types(template, race_type_ids)
+      validated   = yield validate_attributes(attributes)
+      competition = yield create_competition(template, validated, race_types)
 
-        order = nil
-        ActiveRecord::Base.transaction do
-          order = yield create_order(user, cart)
-          yield create_order_items(order, cart)
-          yield charge_payment(order, user)
-          yield clear_cart(cart)
-        end
+      Success(competition)
+    end
 
-        Success(order)
-      rescue ActiveRecord::RecordInvalid => e
-        Failure([:record_invalid, e.message])
-      rescue PaymentError => e
-        Failure([:payment_failed, e.message])
+    private
+
+    def find_template(template)
+      case template
+      when CompetitionTemplate
+        Success(template)
+      when Integer, String
+        found = CompetitionTemplate.find_by(id: template)
+        found ? Success(found) : Failure([:not_found, "Template not found"])
+      else
+        Failure([:invalid_template, "Invalid template type"])
       end
+    end
 
-      private
-
-      def create_order(user, cart)
-        order = user.orders.create!(
-          total: cart.total,
-          status: :pending
-        )
-        Success(order)
+    def resolve_race_types(template, race_type_ids)
+      if race_type_ids.present?
+        types = template.race_types.where(id: race_type_ids)
+        types.any? ? Success(types) : Failure([:no_race_types, "No matching race types"])
+      else
+        Success(template.race_types)
       end
+    end
 
-      def create_order_items(order, cart)
-        cart.items.each do |item|
-          order.order_items.create!(
-            product: item.product,
-            quantity: item.quantity,
-            price: item.price
+    def validate_attributes(attributes)
+      required = %i[name place country start_date end_date]
+      missing = required.select { |key| attributes[key].blank? }
+      missing.any? ? Failure([:validation_failed, { missing_fields: missing }]) : Success(attributes)
+    end
+
+    def create_competition(template, attributes, race_types)
+      competition = nil
+
+      ActiveRecord::Base.transaction do
+        competition = Competition.create!(attributes)
+
+        template.stage_templates.ordered.each do |stage_template|
+          stage = competition.stages.create!(
+            name: stage_template.name,
+            description: stage_template.description,
+            position: stage_template.position
           )
+
+          stage_template.race_templates.ordered.each do |race_template|
+            next unless race_types.include?(race_template.race_type)
+
+            stage.races.create!(
+              name: race_template.name,
+              race_type: race_template.race_type,
+              position: race_template.position
+            )
+          end
         end
-        Success(order)
       end
 
-      def charge_payment(order, user)
-        PaymentGateway.charge(user: user, amount: order.total)
-        order.update!(status: :paid)
-        Success(order)
-      end
-
-      def clear_cart(cart)
-        cart.clear!
-        Success(:cleared)
-      end
+      Success(competition)
+    rescue ActiveRecord::RecordInvalid => e
+      Failure([:record_invalid, e.message])
+    rescue ActiveRecord::RecordNotUnique => e
+      Failure([:duplicate_record, e.message])
     end
   end
 end
 ```
 
-### Pattern 3: Service with Dependencies
+### Pattern 3: State Transition Service
 
 ```ruby
-module Notifications
-  module Operation
-    class Send
-      include Dry::Monads[:result, :do]
+# app/services/incidents/officialize.rb
+module Incidents
+  class Officialize
+    include Dry::Monads[:result, :do]
 
-      def initialize(notifier: default_notifier, logger: Rails.logger)
-        @notifier = notifier
-        @logger = logger
-      end
+    def call(user:, incident_id:)
+      _        = yield authorize!(user)
+      incident = yield find_incident!(incident_id)
+      _        = yield validate_can_officialize!(incident)
+      result   = yield officialize!(incident)
 
-      def call(user:, message:)
-        return Failure([:disabled, "User has notifications disabled"]) unless user.notifications_enabled?
+      Success(result)
+    end
 
-        result = yield send_notification(user, message)
-        yield log_notification(user, result)
+    private
 
-        Success(result)
-      end
+    def authorize!(user)
+      return Failure([:unauthorized, "Must be logged in"]) unless user
+      return Failure([:forbidden, "Only jury president can officialize"]) unless user.jury_president?
+      Success(user)
+    end
 
-      private
+    def find_incident!(incident_id)
+      incident = Incident.find_by(id: incident_id)
+      incident ? Success(incident) : Failure([:not_found, "Incident not found"])
+    end
 
-      attr_reader :notifier, :logger
+    def validate_can_officialize!(incident)
+      incident.official? ? Failure([:already_official, "Already official"]) : Success(incident)
+    end
 
-      def default_notifier
-        Rails.env.test? ? NullNotifier.new : PushNotifier.new
-      end
-
-      def send_notification(user, message)
-        notifier.deliver(user: user, message: message)
-        Success(:delivered)
-      rescue NotificationError => e
-        Failure([:delivery_failed, e.message])
-      end
-
-      def log_notification(user, result)
-        logger.info("Notification sent to user #{user.id}: #{result}")
-        Success(:logged)
-      end
+    def officialize!(incident)
+      incident.update(status: :official) ? Success(incident) : Failure([:update_failed, incident.errors.to_h])
     end
   end
 end
 ```
 
-### Pattern 4: Calculation Service
+### Pattern 4: Multi-Record Service
 
 ```ruby
-module Entities
-  module Operation
-    class CalculateRating
-      include Dry::Monads[:result]
+# app/services/reports/attach_to_incident.rb
+module Reports
+  class AttachToIncident
+    include Dry::Monads[:result, :do]
 
-      def call(entity:)
-        average = calculate_average(entity)
-        
-        if entity.update(average_rating: average, submissions_count: count_submissions(entity))
-          Success(average)
-        else
-          Failure([:update_failed, entity.errors])
-        end
+    def call(user:, report_ids:, incident_id: nil, new_incident_params: nil)
+      _        = yield authorize!(user)
+      reports  = yield find_reports!(report_ids)
+      incident = yield resolve_incident!(incident_id, new_incident_params, reports.first.race)
+      _        = yield attach_reports!(reports, incident)
+
+      Success(incident)
+    end
+
+    private
+
+    def authorize!(user)
+      return Failure([:unauthorized, "Must be logged in"]) unless user
+      return Failure([:forbidden, "Not authorized"]) unless user.admin? || user.referee?
+      Success(user)
+    end
+
+    def find_reports!(report_ids)
+      reports = Report.where(id: report_ids)
+      return Failure([:not_found, "No reports found"]) if reports.empty?
+      return Failure([:invalid_reports, "Reports must belong to same race"]) if reports.map(&:race_id).uniq.size > 1
+      Success(reports)
+    end
+
+    def resolve_incident!(incident_id, new_incident_params, race)
+      if incident_id.present?
+        incident = Incident.find_by(id: incident_id)
+        incident ? Success(incident) : Failure([:not_found, "Incident not found"])
+      elsif new_incident_params.present?
+        incident = Incident.new(race: race, description: new_incident_params[:description], status: :unofficial)
+        incident.save ? Success(incident) : Failure([:save_failed, incident.errors.to_h])
+      else
+        Failure([:missing_incident, "Must provide incident_id or new_incident_params"])
       end
+    end
 
-      private
-
-      def calculate_average(entity)
-        return 0.0 if entity.submissions.empty?
-        entity.submissions.average(:rating).to_f.round(1)
-      end
-
-      def count_submissions(entity)
-        entity.submissions.count
-      end
+    def attach_reports!(reports, incident)
+      reports.update_all(incident_id: incident.id)
+      Success(reports)
     end
   end
 end
@@ -293,31 +368,30 @@ end
 ### Standard Pattern
 
 ```ruby
-class UsersController < ApplicationController
+class IncidentsController < ApplicationController
   def create
-    result = Users::Operation::Create.new.call(
-      params: user_params,
-      current_user: current_user
+    result = Incidents::Create.new.call(
+      user: current_user,
+      params: incident_params
     )
 
     case result
-    in Success(user)
-      redirect_to user, notice: 'User created successfully'
+    in Success(incident)
+      redirect_to incident, notice: 'Incident created successfully'
     in Failure([:validation_failed, errors])
       @errors = errors
       render :new, status: :unprocessable_entity
-    in Failure([:save_failed, errors])
-      @errors = errors
-      render :new, status: :unprocessable_entity
-    in Failure(error)
-      redirect_to users_path, alert: "Error: #{error}"
+    in Failure([:forbidden, message])
+      redirect_to incidents_path, alert: message
+    in Failure([_, message])
+      redirect_to incidents_path, alert: message
     end
   end
 
   private
 
-  def user_params
-    params.require(:user).permit(:email, :name)
+  def incident_params
+    params.require(:incident).permit(:race_id, :race_location_id, :description)
   end
 end
 ```
@@ -325,27 +399,28 @@ end
 ### With Detailed Error Handling
 
 ```ruby
-class OrdersController < ApplicationController
+class CompetitionsController < ApplicationController
   def create
-    result = Orders::Operation::Create.new.call(
-      user: current_user,
-      cart: current_cart
+    result = Competitions::CreateFromTemplate.new.call(
+      template: params[:template_id],
+      attributes: competition_params,
+      race_type_ids: params[:race_type_ids]
     )
 
     case result
-    in Success(order)
-      redirect_to order, notice: 'Order placed successfully'
-    in Failure([:empty_cart, message])
-      redirect_to cart_path, alert: message
-    in Failure([:payment_failed, message])
-      flash[:error] = "Payment failed: #{message}"
-      render :review, status: :unprocessable_entity
+    in Success(competition)
+      redirect_to competition, notice: 'Competition created'
+    in Failure([:not_found, message])
+      redirect_to new_competition_path, alert: message
+    in Failure([:validation_failed, errors])
+      @errors = errors
+      render :new, status: :unprocessable_entity
     in Failure([:record_invalid, message])
-      flash[:error] = "Order error: #{message}"
-      render :review, status: :unprocessable_entity
-    in Failure(error)
-      Bugsnag.notify(error)
-      redirect_to cart_path, alert: 'An error occurred'
+      flash[:error] = "Error: #{message}"
+      render :new, status: :unprocessable_entity
+    in Failure([code, message])
+      Rails.logger.error("Competition creation failed: #{code} - #{message}")
+      redirect_to competitions_path, alert: 'An error occurred'
     end
   end
 end
@@ -356,102 +431,86 @@ end
 ### Basic Service Spec
 
 ```ruby
-# spec/components/users/operation/create_spec.rb
+# spec/services/incidents/create_spec.rb
 require 'rails_helper'
 
-RSpec.describe Users::Operation::Create do
-  subject(:operation) { described_class.new }
+RSpec.describe Incidents::Create do
+  subject(:service) { described_class.new }
+
+  let(:user) { create(:user, :referee) }
+  let(:race) { create(:race) }
+  let(:params) { { race_id: race.id, description: 'Test incident' } }
 
   describe '#call' do
-    let(:params) { { email: 'test@example.com', name: 'Test' } }
-    let(:current_user) { create(:user) }
-
-    context 'with valid params' do
-      it 'returns Success with user' do
-        result = operation.call(params: params, current_user: current_user)
+    context 'with valid params and authorized user' do
+      it 'returns Success with incident' do
+        result = service.call(user: user, params: params)
 
         expect(result).to be_success
-        expect(result.success).to be_a(User)
-        expect(result.success.email).to eq('test@example.com')
+        expect(result.success).to be_a(Incident)
+        expect(result.success.description).to eq('Test incident')
       end
 
-      it 'creates a user record' do
+      it 'creates an incident record' do
         expect {
-          operation.call(params: params, current_user: current_user)
-        }.to change(User, :count).by(1)
+          service.call(user: user, params: params)
+        }.to change(Incident, :count).by(1)
+      end
+    end
+
+    context 'with unauthorized user' do
+      let(:user) { create(:user, :broadcast_viewer) }
+
+      it 'returns Failure with forbidden' do
+        result = service.call(user: user, params: params)
+
+        expect(result).to be_failure
+
+        case result
+        in Failure([:forbidden, message])
+          expect(message).to include('Not authorized')
+        else
+          fail "Expected forbidden failure, got #{result}"
+        end
       end
 
-      it 'sets created_by' do
-        result = operation.call(params: params, current_user: current_user)
-        expect(result.success.created_by).to eq(current_user)
+      it 'does not create an incident' do
+        expect {
+          service.call(user: user, params: params)
+        }.not_to change(Incident, :count)
       end
     end
 
     context 'with invalid params' do
-      let(:params) { { email: '', name: '' } }
+      let(:params) { { description: 'Missing race_id' } }
 
       it 'returns Failure with validation errors' do
-        result = operation.call(params: params, current_user: current_user)
+        result = service.call(user: user, params: params)
 
         expect(result).to be_failure
-        
+
         case result
         in Failure([:validation_failed, errors])
-          expect(errors).to include(:email, :name)
+          expect(errors).to have_key(:race_id)
         else
           fail "Expected validation_failed, got #{result}"
         end
       end
-
-      it 'does not create a user' do
-        expect {
-          operation.call(params: params, current_user: current_user)
-        }.not_to change(User, :count)
-      end
-    end
-  end
-end
-```
-
-### Testing with Mocked Dependencies
-
-```ruby
-RSpec.describe Notifications::Operation::Send do
-  subject(:operation) { described_class.new(notifier: notifier, logger: logger) }
-
-  let(:notifier) { instance_double(PushNotifier) }
-  let(:logger) { instance_double(Logger) }
-  let(:user) { create(:user, notifications_enabled: true) }
-  let(:message) { 'Test notification' }
-
-  before do
-    allow(notifier).to receive(:deliver).and_return(true)
-    allow(logger).to receive(:info)
-  end
-
-  describe '#call' do
-    it 'sends notification' do
-      result = operation.call(user: user, message: message)
-
-      expect(result).to be_success
-      expect(notifier).to have_received(:deliver).with(user: user, message: message)
     end
 
-    context 'when notification fails' do
-      before do
-        allow(notifier).to receive(:deliver).and_raise(NotificationError, 'Network error')
-      end
+    context 'with non-existent race' do
+      let(:params) { { race_id: 99999, description: 'Test' } }
 
-      it 'returns Failure' do
-        result = operation.call(user: user, message: message)
+      it 'returns Failure with not_found' do
+        result = service.call(user: user, params: params)
 
         expect(result).to be_failure
-        
+
         case result
-        in Failure([:delivery_failed, message])
-          expect(message).to eq('Network error')
+        in Failure([:not_found, message])
+          expect(message).to include('Race')
         else
-          fail "Expected delivery_failed, got #{result}"
+          fail "Expected not_found, got #{result}"
         end
       end
     end
@@ -462,41 +521,63 @@ end
 ### Testing Transactions
 
 ```ruby
-RSpec.describe Orders::Operation::Create do
-  subject(:operation) { described_class.new }
+# spec/services/competitions/create_from_template_spec.rb
+require 'rails_helper'
 
-  let(:user) { create(:user) }
-  let(:cart) { create(:cart, :with_items, user: user) }
+RSpec.describe Competitions::CreateFromTemplate do
+  subject(:service) { described_class.new }
+
+  let(:template) { create(:competition_template, :with_stages_and_races) }
+  let(:valid_attributes) do
+    {
+      name: "Test Competition 2025",
+      place: "Test City",
+      country: "CH",
+      start_date: Date.tomorrow,
+      end_date: Date.tomorrow + 2.days
+    }
+  end
 
   describe '#call' do
-    context 'when payment fails' do
+    context 'with valid parameters' do
+      it 'returns Success with competition' do
+        result = service.call(template: template, attributes: valid_attributes)
+
+        expect(result).to be_success
+        expect(result.success).to be_a(Competition)
+        expect(result.success.name).to eq("Test Competition 2025")
+      end
+
+      it 'creates competition with stages and races' do
+        result = service.call(template: template, attributes: valid_attributes)
+        competition = result.success
+
+        expect(competition.stages.count).to eq(template.stage_templates.count)
+      end
+    end
+
+    context 'when transaction fails' do
       before do
-        allow(PaymentGateway).to receive(:charge).and_raise(PaymentError, 'Card declined')
+        allow(Competition).to receive(:create!).and_raise(ActiveRecord::RecordInvalid.new(Competition.new))
       end
 
-      it 'does not create order (rollback)' do
-        expect {
-          operation.call(user: user, cart: cart)
-        }.not_to change(Order, :count)
-      end
-
-      it 'does not clear cart (rollback)' do
-        expect {
-          operation.call(user: user, cart: cart)
-        }.not_to change { cart.reload.items.count }
-      end
-
-      it 'returns Failure' do
-        result = operation.call(user: user, cart: cart)
+      it 'returns Failure with record_invalid' do
+        result = service.call(template: template, attributes: valid_attributes)
 
         expect(result).to be_failure
-        
+
         case result
-        in Failure([:payment_failed, message])
-          expect(message).to include('Card declined')
+        in Failure([:record_invalid, _])
+          # Expected
         else
-          fail "Expected payment_failed, got #{result}"
+          fail "Expected record_invalid, got #{result}"
         end
+      end
+
+      it 'does not create any records (rollback)' do
+        expect {
+          service.call(template: template, attributes: valid_attributes)
+        }.not_to change(Competition, :count)
       end
     end
   end
@@ -508,12 +589,12 @@ end
 ### ✅ Always Do
 
 - Use dry-monads `Success`/`Failure`
-- Use do-notation for chaining
+- Use do-notation for chaining (`yield`)
 - Write comprehensive tests
 - Follow single responsibility
-- Use dependency injection
 - Handle all error cases
-- Use descriptive failure codes
+- Use descriptive failure codes like `[:not_found, message]`
+- Place services in `app/services/domain/action.rb`
 
 ### ⚠️ Ask First
 
@@ -524,10 +605,9 @@ end
 
 ### 🚫 Never Do
 
-- Mix exceptions with monads
+- Mix exceptions with monads (use one pattern consistently)
 - Create services without tests
 - Put presentation logic in services
-- Use custom Result classes (deprecated)
 - Skip error handling
 - Create "god" services with too many responsibilities
 
@@ -553,18 +633,18 @@ end
 # ✅ Correct - clean with :do
 def call(params:)
   validated = yield validate(params)
-  user      = yield persist(validated)
-  Success(user)
+  record    = yield persist(validated)
+  Success(record)
 end
 ```
 
-### ❌ Mistake 2: Returning different types
+### ❌ Mistake 2: Returning inconsistent types
 
 ```ruby
 # ❌ Wrong - inconsistent returns
 def call(params:)
   return false unless valid?(params)  # Returns boolean
-  Success(create_user(params))         # Returns monad
+  Success(create_record(params))       # Returns monad
 end
 ```
 
@@ -572,37 +652,32 @@ end
 ```ruby
 # ✅ Correct - always return monad
 def call(params:)
-  return Failure(:invalid) unless valid?(params)
-  Success(create_user(params))
+  return Failure([:invalid, "Invalid params"]) unless valid?(params)
+  Success(create_record(params))
 end
 ```
 
-### ❌ Mistake 3: Too many responsibilities
+### ❌ Mistake 3: Not handling Failure in controller
 
 ```ruby
-# ❌ Wrong - god service
-class Users::Process
-  def call
-    # Validates
-    # Creates user
-    # Sends email
-    # Updates stats
-    # Logs analytics
-    # Notifies admin
-    # ... 500 more lines
-  end
+# ❌ Wrong - Assumes always success
+def create
+  result = MyService.new.call(params: params)
+  redirect_to result.success  # CRASHES on Failure!
 end
 ```
 
 **Fix:**
 ```ruby
-# ✅ Correct - split responsibilities
-class Users::Operation::Create
-  def call
-    user = yield create_user
-    yield Users::Operation::SendWelcomeEmail.new.call(user: user)
-    yield Users::Operation::UpdateStats.new.call(user: user)
-    Success(user)
+# ✅ Correct - Handle both cases
+def create
+  result = MyService.new.call(params: params)
+  
+  case result
+  in Success(data)
+    redirect_to data
+  in Failure([code, message])
+    redirect_to fallback_path, alert: message
   end
 end
 ```
@@ -611,20 +686,20 @@ end
 
 | Pattern | Use Case | Example |
 |---------|----------|---------|
-| Simple do-notation | Multi-step success path | User creation |
-| With transaction | Multi-model changes | Order processing |
-| With dependencies | External services | Notifications |
-| Calculation | Data transformation | Rating calculation |
+| Simple do-notation | Multi-step success path | Creating incidents |
+| With transaction | Multi-model changes | Creating from template |
+| State transition | Changing status | Officializing incidents |
+| Multi-record | Batch operations | Attaching reports |
 
 ## Additional Resources
 
 - **dry-monads patterns**: See [dry-monads-patterns skill](../dry-monads-patterns/SKILL.md)
 - **Testing standards**: See [testing-standards skill](../testing-standards/SKILL.md)
-- **kw-app policy**: See CLAUDE.md section on services
+- **Architecture overview**: See [docs/architecture-overview.md](../../docs/architecture-overview.md)
 - **Official dry-rb**: https://dry-rb.org/gems/dry-monads/
 
 ---
 
 **Version**: 2.0  
-**Last Updated**: 2024-01  
-**Maintained By**: kw-app team
+**Last Updated**: 2025-01  
+**Project**: ISMF Race Logger

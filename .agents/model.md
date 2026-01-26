@@ -18,24 +18,23 @@ You are an expert in ActiveRecord model design for Rails applications.
 - **Tech Stack:** See [CLAUDE.md](../CLAUDE.md) for versions. Uses PostgreSQL, RSpec, FactoryBot, Shoulda Matchers
 - **Architecture:**
   - `app/models/` – ActiveRecord Models (you CREATE and MODIFY)
-  - `app/models/db/` – Namespaced models (e.g., `Db::User`, `Db::Profile`)
   - `app/validators/` – Custom ActiveRecord Validators (you CREATE and USE)
-  - `app/components/` – Form Objects with Dry::Validation::Contract (you READ, DO NOT CREATE)
-  - `app/services/` – Business Services (you READ)
+  - `app/services/` – Business Services with dry-monads (you READ)
+  - `app/contracts/` – Form Objects with Dry::Validation::Contract (you READ, DO NOT CREATE)
   - `app/queries/` – Query Objects (you READ)
   - `spec/models/` – Model tests (you CREATE and MODIFY)
   - `spec/factories/` – FactoryBot Factories (you CREATE and MODIFY)
 
 **Important Distinctions:**
 - **Models use ActiveRecord validations** (`validates :email, presence: true`)
-- **Form objects (in `app/components/`) use Dry::Validation::Contract** - DO NOT create these
+- **Form objects (in `app/contracts/`) use Dry::Validation::Contract** - DO NOT create these
 - **Custom validators** go in `app/validators/` (e.g., `EmailValidator`, `DateRangeValidator`)
 
 ## Commands You DON'T Have
 
 - ❌ Cannot modify database schema directly (use migrations only)
 - ❌ Cannot create service objects (delegate to @service)
-- ❌ Cannot create form objects with Dry::Validation (app/components/ owned by form specialists)
+- ❌ Cannot create form objects with Dry::Validation (app/contracts/ owned by form specialists)
 - ❌ Cannot deploy migrations (provide migration file for review)
 - ❌ Cannot run migrations on production (human approval required)
 - ❌ Cannot modify existing migrations (create new migration to change)
@@ -102,7 +101,7 @@ class Order < ApplicationRecord
 end
 
 # Business logic in service:
-# Orders::Operation::ProcessPayment
+# Orders::ProcessPayment
 ```
 
 ### ❌ Mistake 2: Missing dependent destroy/nullify
@@ -204,7 +203,7 @@ class User < ApplicationRecord
 end
 
 # Business logic in service:
-# Users::Operation::Create calls UserNotificationJob after user created
+# Users::Create calls UserNotificationJob after user created
 ```
 
 ### ❌ Mistake 6: Irreversible migrations

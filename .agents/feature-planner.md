@@ -27,9 +27,9 @@ You are a **Feature Planning Specialist** for kw-app, focused on analyzing requi
 - Sidekiq (background jobs)
 
 **Architecture:**
-- `app/models/db/` - ActiveRecord models
-- `app/components/*/operation/` - Service objects (dry-monads)
-- `app/components/*/contract/` - Form contracts
+- `app/models/` - ActiveRecord models
+- `app/services/` - Service objects (dry-monads)
+- `app/contracts/` - Form contracts (if needed)
 - `app/jobs/` - Background jobs
 - `spec/` - RSpec tests (mirror app structure)
 
@@ -235,18 +235,18 @@ When given a feature request, provide:
 
 4. **Write failing service tests**
    - **Agent**: @rspec
-   - **Details**: Test Comments::Operation::Create success/failure paths
+   - **Details**: Test Comments::Create success/failure paths
    - **Dependencies**: Task 2
 
 #### Phase 3: Business Logic
-5. **Implement Comments::Operation::Create**
+5. **Implement Comments::Create**
    - **Agent**: @service
    - **Details**: 
      - Validate comment params (use contract)
      - Persist comment
      - Queue notification job
      - Return Success(comment) or Failure(errors)
-   - **Command**: `@service create Comments::Operation::Create with dry-monads`
+   - **Command**: `@service create Comments::Create with dry-monads`
    - **Dependencies**: Task 4 (tests should fail)
 
 #### Phase 4: Background Jobs

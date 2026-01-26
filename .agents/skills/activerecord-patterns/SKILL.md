@@ -460,7 +460,7 @@ end
 **✅ Better - Service handles business logic:**
 ```ruby
 # Service
-class Users::Operation::Create
+class Users::Create
   def call(params:)
     user = yield persist(params)
     yield send_welcome_email(user)

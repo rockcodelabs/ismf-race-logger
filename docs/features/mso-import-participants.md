@@ -659,12 +659,11 @@ Color Legend:
 #### Task 2.3: Create MSO Import Operation
 - **Owner**: Developer
 - **Agent**: @service
-- **File**: `app/components/mso/operation/import.rb`
+- **File**: `app/services/mso/import.rb`
 - **Details**:
   ```ruby
   module Mso
-    module Operation
-      class Import
+    class Import
         include Dry::Monads[:result, :do]
         
         def call(race:, file:, user:)
@@ -762,8 +761,8 @@ Color Legend:
 - **Owner**: Developer
 - **Agent**: @rspec
 - **Files**:
-  - `spec/components/mso/parser/csv_spec.rb`
-  - `spec/components/mso/operation/import_spec.rb`
+  - `spec/services/mso/csv_spec.rb`
+  - `spec/services/mso/import_spec.rb`
 - **Details**:
   - Test individual race CSV parsing
   - Test team race CSV parsing
@@ -1047,12 +1046,11 @@ Color Legend:
 #### Task 4.2: Create Add Video Operation
 - **Owner**: Developer
 - **Agent**: @service
-- **File**: `app/components/reports/operation/add_videos.rb`
+- **File**: `app/services/reports/add_videos.rb`
 - **Details**:
   ```ruby
   module Reports
-    module Operation
-      class AddVideos
+    class AddVideos
         include Dry::Monads[:result, :do]
         
         MAX_FILE_SIZE = 500.megabytes

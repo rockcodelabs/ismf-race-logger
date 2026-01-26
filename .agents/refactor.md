@@ -30,15 +30,14 @@ See [CLAUDE.md](../CLAUDE.md) for tech stack versions and project-wide policies.
 
 - **Tech Stack:** dry-monads, dry-validation, PostgreSQL
 - **Patterns Used:**
-  - Operations with dry-monads (`:result`, `:do` notation)
-  - Form validation with Dry::Validation::Contract
+  - Services with dry-monads (`:result`, `:do` notation)
+  - Form validation with Dry::Validation::Contract (in `app/contracts/`)
   - Service objects for business logic
   - Thin controllers and models
 - **Architecture:**
-  - `app/components/*/operation/` – Business operations
-  - `app/components/*/contract/` – Validations
-  - `app/models/db/` – ActiveRecord models
-  - `app/services/` – Legacy services (prefer operations)
+  - `app/services/` – Business services (dry-monads)
+  - `app/contracts/` – Validations (if needed)
+  - `app/models/` – ActiveRecord models
 
 ## ⚠️ Migration: Custom Result → dry-monads
 
@@ -226,7 +225,7 @@ end
 ```ruby
 class EntitiesController < ApplicationController
   def create
-    result = Entities::Operation::Create.new.call(
+    result = Entities::Create.new.call(
       user: current_user,
       params: entity_params
     )
@@ -299,7 +298,7 @@ end
 # app/controllers/orders_controller.rb
 class OrdersController < ApplicationController
   def create
-    result = Orders::Operation::Create.new.call(
+    result = Orders::Create.new.call(
       user: current_user,
       cart: cart
     )
@@ -317,9 +316,10 @@ class OrdersController < ApplicationController
   end
 end
 
-# app/components/orders/operation/create.rb
-class Orders::Operation::Create
-  include Dry::Monads[:result, :do, :try]
+# app/services/orders/create.rb
+module Orders
+  class Create
+    include Dry::Monads[:result, :do, :try]
   
   def call(user:, cart:)
     _     = yield validate_cart!(cart)
@@ -682,7 +682,7 @@ end
 
 **After:**
 ```ruby
-class Profiles::Operation::Update
+class Profiles::Update
   include Dry::Monads[:result, :do]
   
   def call(user:, params:)
@@ -841,7 +841,7 @@ Depend on abstractions, not concretions.
 docker-compose exec -T app bundle exec rspec
 
 # Run specific test for refactored code
-docker-compose exec -T app bundle exec rspec spec/components/orders/operation/create_spec.rb
+docker-compose exec -T app bundle exec rspec spec/services/orders/create_spec.rb
 
 # Check test coverage
 docker-compose exec -T app bundle exec rspec --format documentation
@@ -1000,7 +1000,7 @@ end
 **Fix:**
 ```ruby
 # ✅ Correct - split into focused operations
-class Users::Operation::Create
+class Users::Create
   def call(params)
     user = yield create_user(params)
     yield enqueue_post_creation_jobs(user)

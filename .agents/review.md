@@ -55,7 +55,7 @@ grep -r "pattern" app/
 grep -A 10 "belongs_to\|has_many" app/models/
 
 # Find service objects
-find app/components -name "*operation*.rb"
+find app/services -name "*.rb"
 
 # Check routes
 docker-compose exec -T app bundle exec rails routes
@@ -74,7 +74,7 @@ docker-compose exec -T app bundle exec rails routes
 **Services:**
 - ✅ Uses dry-monads (`Success`/`Failure`)
 - ✅ Includes `:result` and `:do` (if chaining)
-- ✅ Located in `app/components/*/operation/`
+- ✅ Located in `app/services/`
 - ✅ Single responsibility
 - ❌ NOT using custom Result classes (deprecated)
 
@@ -243,7 +243,7 @@ end
 **Fix:**
 ```ruby
 # ✅ GOOD - dry-monads
-class Users::Operation::SomeOperation
+class Users::SomeOperation
   include Dry::Monads[:result, :do]
   
   def call
@@ -271,7 +271,7 @@ end
 ```ruby
 # ✅ GOOD - Delegate to service
 def create
-  result = Users::Operation::Create.new.call(params: user_params)
+  result = Users::Create.new.call(params: user_params)
   
   case result
   in Success(user)
@@ -316,15 +316,15 @@ docker-compose exec -T app bundle exec rspec
 
 ```ruby
 # ❌ BAD - New service without tests
-# app/components/users/operation/create.rb exists
-# spec/components/users/operation/create_spec.rb MISSING
+# app/services/users/create.rb exists
+# spec/services/users/create_spec.rb MISSING
 ```
 
 **Fix:**
 ```ruby
 # ✅ GOOD - Comprehensive tests
-# spec/components/users/operation/create_spec.rb
-RSpec.describe Users::Operation::Create do
+# spec/services/users/create_spec.rb
+RSpec.describe Users::Create do
   # Success cases
   # Failure cases
   # Edge cases
@@ -348,7 +348,7 @@ API_KEY = Rails.application.credentials.dig(:api, :key)
 
 ### Example 1: Service Object Review
 
-**File**: `app/components/users/operation/create.rb`
+**File**: `app/services/users/create.rb`
 
 ```markdown
 ## Review Summary

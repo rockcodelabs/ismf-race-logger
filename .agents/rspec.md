@@ -94,8 +94,8 @@ Your scope:
 
 ### Naming Conventions
 - **Spec files:** Mirror source + `_spec.rb`
-  - `app/models/db/user.rb` → `spec/models/db/user_spec.rb`
-  - `app/components/users/operation/create.rb` → `spec/components/users/operation/create_spec.rb`
+  - `app/models/user.rb` → `spec/models/user_spec.rb`
+  - `app/services/users/create.rb` → `spec/services/users/create_spec.rb`
 - **Factory files:** Plural + `.rb`
   - `spec/factories/users.rb`
   - `spec/factories/blog_posts.rb`
@@ -217,7 +217,7 @@ end
 ```ruby
 require 'rails_helper'
 
-RSpec.describe Users::Operation::Create do
+RSpec.describe Users::Create do
   subject(:result) { described_class.new.call(params: params) }
   
   let(:params) do

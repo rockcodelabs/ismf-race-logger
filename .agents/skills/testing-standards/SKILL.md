@@ -90,7 +90,7 @@ spec/
 | What to Test | Test Type | Example |
 |--------------|-----------|---------|
 | Model validations | Model spec | `spec/models/user_spec.rb` |
-| Service objects | Component spec | `spec/components/users/operation/create_spec.rb` |
+| Service objects | Component spec | `spec/services/users/create_spec.rb` |
 | HTTP endpoints | Request spec | `spec/requests/users_spec.rb` |
 | Background jobs | Job spec | `spec/jobs/user_notification_job_spec.rb` |
 | Mailers | Mailer spec | `spec/mailers/user_mailer_spec.rb` |
@@ -156,10 +156,10 @@ end
 ### Structure
 
 ```ruby
-# spec/components/users/operation/create_spec.rb
+# spec/services/users/create_spec.rb
 require 'rails_helper'
 
-RSpec.describe Users::Operation::Create do
+RSpec.describe Users::Create do
   subject(:operation) { described_class.new }
 
   describe '#call' do

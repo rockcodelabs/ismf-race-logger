@@ -115,7 +115,7 @@ This document provides an overview of all planned features for the ISMF Race Log
    - Heat, active_in_heat for filtering
    - Status tracking (registered, racing, finished, DNF, DNS, DSQ)
 
-4. **MSO Import** - `app/components/mso/operation/import.rb`
+4. **MSO Import** - `app/services/mso/import.rb`
    - CSV parser for active athletes
    - Separate formats for individual vs team races
    - Upsert athletes and participations
@@ -128,7 +128,7 @@ This document provides an overview of all planned features for the ISMF Race Log
 
 ### Phase 2: FOP Interface (Week 2-3)
 
-6. **Bib Selector** - `app/components/fop/bib_selector_component.rb`
+6. **Bib Selector** - `app/components/fop/bib_selector_component.rb` (ViewComponent)
    - Pre-loaded race participation JSON
    - Heat-aware filtering (8-200 bibs)
    - Display: **bib number + country flag** (🇫🇷, 🇮🇹)
@@ -159,13 +159,13 @@ This document provides an overview of all planned features for the ISMF Race Log
 
 ### Phase 4: Video & Export (Week 4-5)
 
-11. **Multi-File Video Upload** - `app/components/reports/operation/add_videos.rb`
+11. **Multi-File Video Upload** - `app/services/reports/add_videos.rb`
     - Multiple file upload per report
     - File types: MP4, MOV, WebM
     - Progress indicators per file
     - No in-app recording in V1
 
-12. **Incident Workflow** - `app/components/incidents/operation/create_from_reports.rb`
+12. **Incident Workflow** - `app/services/incidents/create_from_reports.rb`
     - Group reports into incident
     - Add rule reference
     - Set penalty (applies to athlete, cascades to team)
@@ -247,12 +247,12 @@ This document provides an overview of all planned features for the ISMF Race Log
 - [ ] `db/migrate/*_create_mso_imports.rb`
 
 ### Services
-- [ ] `app/components/mso/parser/csv.rb`
-- [ ] `app/components/mso/parser/team_csv.rb`
-- [ ] `app/components/mso/operation/import.rb`
-- [ ] `app/components/reports/operation/create.rb`
-- [ ] `app/components/reports/operation/add_videos.rb`
-- [ ] `app/components/reports/operation/list_for_race.rb`
+- [ ] `app/services/mso/parse_csv.rb`
+- [ ] `app/services/mso/parse_team_csv.rb`
+- [ ] `app/services/mso/import.rb`
+- [ ] `app/services/reports/create.rb`
+- [ ] `app/services/reports/add_videos.rb`
+- [ ] `app/services/reports/list_for_race.rb`
 
 ### Jobs
 - [ ] `app/jobs/mso_import_job.rb`

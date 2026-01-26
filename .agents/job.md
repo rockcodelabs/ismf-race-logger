@@ -147,9 +147,9 @@ class EntityCreatedNotificationJob < ApplicationJob
 end
 ```
 
-**Usage in operation:**
+**Usage in service:**
 ```ruby
-# app/components/entities/operation/create.rb
+# app/services/entities/create.rb
 def notify!(entity)
   EntityCreatedNotificationJob.perform_later(entity.id)
   Success(entity)
@@ -292,7 +292,7 @@ class EntityRatingCalculatorJob < ApplicationJob
       
       Appsignal.set_tags(entity_id: entity_id)
       
-      result = Entities::Operation::CalculateRating.new.call(entity: entity)
+      result = Entities::CalculateRating.new.call(entity: entity)
       
       if result.failure?
         Appsignal.add_error(StandardError.new("Rating calculation failed"))
@@ -366,10 +366,10 @@ end
 ### Testing Job Enqueuing
 
 ```ruby
-# spec/components/entities/operation/create_spec.rb
+# spec/services/entities/create_spec.rb
 require 'rails_helper'
 
-RSpec.describe Entities::Operation::Create do
+RSpec.describe Entities::Create do
   describe '#call' do
     subject(:result) { described_class.new.call(user: user, params: params) }
     
@@ -528,10 +528,10 @@ end
 
 ## Common Patterns
 
-### Enqueue from Operation
+### Enqueue from Service
 
 ```ruby
-# app/components/entities/operation/create.rb
+# app/services/entities/create.rb
 def notify!(entity)
   EntityCreatedNotificationJob.perform_later(entity.id)
   Success(entity)
@@ -737,7 +737,7 @@ class ProcessOrderJob < ApplicationJob
     order = Order.find_by(id: order_id)
     return unless order
     
-    result = Orders::Operation::Process.new.call(order: order)
+    result = Orders::Process.new.call(order: order)
     
     if result.failure?
       Rails.logger.error "Order processing failed: #{result.failure}"

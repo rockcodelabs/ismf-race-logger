@@ -1,6 +1,46 @@
 # Architecture Overview
 
-This document provides a detailed overview of the architecture and models for the race system, integrating users, roles, competitions, races, locations, incidents, reports, and authorization via Pundit.
+This document provides a detailed overview of the architecture and models for the ISMF race logging system, integrating users, roles, competitions, races, locations, incidents, reports, and authorization via Pundit.
+
+---
+
+## Project Structure
+
+```
+app/
+├── models/                           # ActiveRecord models
+├── services/                         # Business logic (dry-monads)
+│   ├── competitions/
+│   │   ├── create_from_template.rb   # Competitions::CreateFromTemplate
+│   │   └── duplicate.rb              # Competitions::Duplicate
+│   ├── incidents/
+│   │   ├── create.rb                 # Incidents::Create
+│   │   └── officialize.rb            # Incidents::Officialize
+│   ├── reports/
+│   │   ├── create.rb                 # Reports::Create
+│   │   └── attach_to_incident.rb     # Reports::AttachToIncident
+│   └── races/
+│       ├── start.rb                  # Races::Start
+│       └── complete.rb               # Races::Complete
+├── contracts/                        # dry-validation (if needed)
+│   └── competitions/
+│       └── create.rb                 # Contracts::Competitions::Create
+├── policies/                         # Pundit authorization
+│   ├── application_policy.rb
+│   ├── competition_policy.rb
+│   ├── incident_policy.rb
+│   └── ...
+└── controllers/
+
+spec/
+├── models/
+├── services/
+│   ├── competitions/
+│   │   ├── create_from_template_spec.rb
+│   │   └── duplicate_spec.rb
+│   └── ...
+└── policies/
+```
 
 ---
 
@@ -17,9 +57,8 @@ This document provides a detailed overview of the architecture and models for th
 # name            :string           not null
 # email           :string           not null, unique
 # password_digest :string           not null
-# role_id         :bigint           not null, foreign_key
+# role            :enum             values: [:national_referee, :international_referee, :var_operator, :jury_president, :referee_manager, :broadcast_viewer]
 # country         :string
-# ref_level       :enum             roles: [:national, :international]
 # created_at      :datetime         not null
 # updated_at      :datetime         not null
 #
@@ -28,51 +67,72 @@ class User < ApplicationRecord
   has_secure_password
   has_many :sessions, dependent: :destroy
   has_many :magic_links, dependent: :destroy
+  has_many :reports, dependent: :nullify
 
-  belongs_to :role
+  # Role enum (replaces separate Role model for simplicity)
+  enum :role, {
+    national_referee: "national_referee",
+    international_referee: "international_referee",
+    var_operator: "var_operator",
+    jury_president: "jury_president",
+    referee_manager: "referee_manager",
+    broadcast_viewer: "broadcast_viewer"
+  }, prefix: true
 
   # Validations
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :name, presence: true
+  validates :role, presence: true
 
   # Normalizations (Rails 7.1+)
   normalizes :email, with: ->(email) { email.strip.downcase }
 
   # Scopes
-  scope :referees, -> { joins(:role).where(roles: { name: %w[national_referee international_referee] }) }
-  scope :var_operators, -> { joins(:role).where(roles: { name: 'var_operator' }) }
+  scope :referees, -> { where(role: %w[national_referee international_referee]) }
+  scope :var_operators, -> { where(role: "var_operator") }
+  scope :admins, -> { where(role: %w[jury_president referee_manager]) }
+  scope :ordered, -> { order(:name) }
 
   # Role check methods
+  def has_role?(*role_names)
+    role_names.map(&:to_s).include?(role)
+  end
+
   def var_operator?
-    role.name == "var_operator"
+    role_var_operator?
   end
 
   def referee?
-    %w[national_referee international_referee].include?(role.name)
+    role_national_referee? || role_international_referee?
   end
 
   def national_referee?
-    role.name == "national_referee"
+    role_national_referee?
   end
 
   def international_referee?
-    role.name == "international_referee"
+    role_international_referee?
   end
 
   def jury_president?
-    role.name == "jury_president"
+    role_jury_president?
   end
 
   def referee_manager?
-    role.name == "referee_manager"
+    role_referee_manager?
   end
 
   def broadcast_viewer?
-    role.name == "broadcast_viewer"
+    role_broadcast_viewer?
+  end
+
+  def admin?
+    jury_president? || referee_manager?
   end
 
   # Generate magic link token for passwordless login
   def generate_magic_link!
+    magic_links.valid.update_all(used_at: Time.current) # Invalidate old links
     magic_links.create!(
       token: SecureRandom.urlsafe_base64(32),
       expires_at: 15.minutes.from_now
@@ -99,12 +159,17 @@ end
 class Session < ApplicationRecord
   belongs_to :user
 
+  validates :token, presence: true, uniqueness: true
+
   before_create :generate_token
 
   private
 
   def generate_token
-    self.token = SecureRandom.urlsafe_base64(32)
+    loop do
+      self.token = SecureRandom.urlsafe_base64(32)
+      break unless Session.exists?(token: token)
+    end
   end
 end
 ```
@@ -149,37 +214,7 @@ class MagicLink < ApplicationRecord
 end
 ```
 
-### **2. Role**
-
-```ruby
-# == Schema Information
-#
-# Table name: roles
-#
-# id          :bigint           not null, primary key
-# name        :string           not null, unique
-# description :text
-# created_at  :datetime         not null
-# updated_at  :datetime         not null
-#
-class Role < ApplicationRecord
-  has_many :users, dependent: :restrict_with_error
-
-  # Enumerations
-  enum :name, {
-    national_referee: "national_referee",
-    international_referee: "international_referee",
-    var_operator: "var_operator",
-    jury_president: "jury_president",
-    referee_manager: "referee_manager",
-    broadcast_viewer: "broadcast_viewer"
-  }
-
-  validates :name, presence: true, uniqueness: true
-end
-```
-
-### **3. CompetitionTemplate**
+### **2. CompetitionTemplate**
 
 ```ruby
 # == Schema Information
@@ -193,42 +228,18 @@ end
 # updated_at  :datetime         not null
 #
 class CompetitionTemplate < ApplicationRecord
-  has_many :stage_templates, -> { order(:position) }, dependent: :destroy
+  has_many :stage_templates, dependent: :destroy
   has_many :competition_template_race_types, dependent: :destroy
   has_many :race_types, through: :competition_template_race_types
 
   validates :name, presence: true, uniqueness: true
 
-  # Create a new competition from this template
-  def create_competition!(attributes = {})
-    Competition.transaction do
-      competition = Competition.create!(attributes)
-
-      stage_templates.each do |stage_template|
-        stage = competition.stages.create!(
-          name: stage_template.name,
-          description: stage_template.description,
-          position: stage_template.position
-        )
-
-        stage_template.race_templates.each do |race_template|
-          next unless race_types.include?(race_template.race_type)
-
-          stage.races.create!(
-            name: race_template.name,
-            race_type: race_template.race_type,
-            position: race_template.position
-          )
-        end
-      end
-
-      competition
-    end
-  end
+  # Scopes
+  scope :ordered, -> { order(:name) }
 end
 ```
 
-### **3a. StageTemplate**
+### **2a. StageTemplate**
 
 ```ruby
 # == Schema Information
@@ -245,14 +256,19 @@ end
 #
 class StageTemplate < ApplicationRecord
   belongs_to :competition_template
-  has_many :race_templates, -> { order(:position) }, dependent: :destroy
+  has_many :race_templates, dependent: :destroy
 
   validates :name, presence: true
-  validates :position, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  validates :position, presence: true,
+                       numericality: { only_integer: true, greater_than_or_equal_to: 0 },
+                       uniqueness: { scope: :competition_template_id }
+
+  # Scopes
+  scope :ordered, -> { order(:position) }
 end
 ```
 
-### **3b. RaceTemplate**
+### **2b. RaceTemplate**
 
 ```ruby
 # == Schema Information
@@ -272,11 +288,16 @@ class RaceTemplate < ApplicationRecord
   belongs_to :race_type
 
   validates :name, presence: true
-  validates :position, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  validates :position, presence: true,
+                       numericality: { only_integer: true, greater_than_or_equal_to: 0 },
+                       uniqueness: { scope: :stage_template_id }
+
+  # Scopes
+  scope :ordered, -> { order(:position) }
 end
 ```
 
-### **3c. CompetitionTemplateRaceType**
+### **2c. CompetitionTemplateRaceType**
 
 ```ruby
 # == Schema Information
@@ -297,7 +318,7 @@ class CompetitionTemplateRaceType < ApplicationRecord
 end
 ```
 
-### **4. Competition**
+### **3. Competition**
 
 ```ruby
 # == Schema Information
@@ -316,104 +337,23 @@ end
 # updated_at  :datetime         not null
 #
 class Competition < ApplicationRecord
-  has_many :stages, -> { order(:position) }, dependent: :destroy
+  has_many :stages, dependent: :destroy
   has_many :races, through: :stages
 
   has_one_attached :logo
 
   validates :name, presence: true
-  validates :position, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
-
-  default_scope { order(:position) }
   validates :place, presence: true
   validates :country, presence: true
   validates :start_date, presence: true
   validates :end_date, presence: true
   validate :end_date_after_start_date
 
+  # Scopes
+  scope :ordered, -> { order(:start_date) }
   scope :upcoming, -> { where("start_date > ?", Date.current).order(:start_date) }
   scope :ongoing, -> { where("start_date <= ? AND end_date >= ?", Date.current, Date.current) }
   scope :past, -> { where("end_date < ?", Date.current).order(start_date: :desc) }
-
-  # Duplicate this competition with new attributes
-  # Options:
-  #   - race_type_ids: Array of race type IDs to include (default: all)
-  #   - include_locations: Copy custom locations (default: false, only template locations)
-  def duplicate!(new_attributes = {}, race_type_ids: nil, include_locations: false)
-    Competition.transaction do
-      new_competition = Competition.create!(
-        attributes.except("id", "created_at", "updated_at").merge(new_attributes)
-      )
-
-      stages.each do |stage|
-        new_stage = new_competition.stages.create!(
-          name: stage.name,
-          description: stage.description,
-          date: stage.date,
-          position: stage.position
-        )
-
-        stage.races.each do |race|
-          next if race_type_ids.present? && !race_type_ids.include?(race.race_type_id)
-
-          new_race = new_stage.races.create!(
-            name: race.name,
-            race_type: race.race_type,
-            scheduled_at: race.scheduled_at,
-            position: race.position
-          )
-
-          # Copy custom locations if requested
-          if include_locations
-            race.race_locations.custom.each do |location|
-              new_race.race_locations.create!(
-                name: location.name,
-                location_type: location.location_type,
-                has_camera: location.has_camera,
-                from_template: false,
-                position: location.position
-              )
-            end
-          end
-        end
-      end
-
-      new_competition
-    end
-  end
-
-  # Create competition from template with selected race types
-  def self.create_from_template!(template, attributes, race_type_ids: nil)
-    selected_race_types = if race_type_ids.present?
-      template.race_types.where(id: race_type_ids)
-    else
-      template.race_types
-    end
-
-    Competition.transaction do
-      competition = Competition.create!(attributes)
-
-      template.stage_templates.each do |stage_template|
-        stage = competition.stages.create!(
-          name: stage_template.name,
-          description: stage_template.description,
-          position: stage_template.position
-        )
-
-        stage_template.race_templates.each do |race_template|
-          next unless selected_race_types.include?(race_template.race_type)
-
-          stage.races.create!(
-            name: race_template.name,
-            race_type: race_template.race_type,
-            position: race_template.position
-          )
-        end
-      end
-
-      competition
-    end
-  end
 
   private
 
@@ -424,7 +364,7 @@ class Competition < ApplicationRecord
 end
 ```
 
-### **5. Stage**
+### **4. Stage**
 
 ```ruby
 # == Schema Information
@@ -445,9 +385,12 @@ class Stage < ApplicationRecord
   has_many :races, dependent: :destroy
 
   validates :name, presence: true
-  validates :position, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  validates :position, presence: true,
+                       numericality: { only_integer: true, greater_than_or_equal_to: 0 },
+                       uniqueness: { scope: :competition_id }
 
-  default_scope { order(:position) }
+  # Scopes
+  scope :ordered, -> { order(:position) }
 
   # Examples: "Qualification", "Semi-Finals", "Finals"
 end
@@ -469,8 +412,12 @@ end
 class RaceType < ApplicationRecord
   has_many :location_templates, class_name: "RaceTypeLocationTemplate", dependent: :destroy
   has_many :races, dependent: :restrict_with_error
+  has_many :race_templates, dependent: :restrict_with_error
 
   validates :name, presence: true, uniqueness: true
+
+  # Scopes
+  scope :ordered, -> { order(:name) }
 
   # Predefined race types:
   # - sprint (default locations: start, finish, top, walk, platform_1, platform_2)
@@ -504,11 +451,13 @@ class RaceTypeLocationTemplate < ApplicationRecord
     var: "var"
   }
 
-  validates :name, presence: true
-  validates :position, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
-  validates :name, uniqueness: { scope: :race_type_id }
+  validates :name, presence: true, uniqueness: { scope: :race_type_id }
+  validates :position, presence: true,
+                       numericality: { only_integer: true, greater_than_or_equal_to: 0 },
+                       uniqueness: { scope: :race_type_id }
 
-  default_scope { order(:position) }
+  # Scopes
+  scope :ordered, -> { order(:position) }
 end
 ```
 
@@ -546,6 +495,13 @@ class Race < ApplicationRecord
   }, default: :scheduled
 
   validates :name, presence: true
+  validates :position, presence: true,
+                       numericality: { only_integer: true, greater_than_or_equal_to: 0 },
+                       uniqueness: { scope: :stage_id }
+
+  # Scopes
+  scope :ordered, -> { order(:position) }
+  scope :active, -> { where(status: [:scheduled, :in_progress]) }
 
   after_create :copy_locations_from_template
 
@@ -553,7 +509,7 @@ class Race < ApplicationRecord
 
   # Automatically copy default locations from RaceType template
   def copy_locations_from_template
-    race_type.location_templates.each do |template|
+    race_type.location_templates.ordered.each do |template|
       race_locations.create!(
         name: template.name,
         location_type: template.location_type,
@@ -572,16 +528,16 @@ end
 #
 # Table name: race_locations
 #
-# id               :bigint           not null, primary key
-# race_id          :bigint           not null, foreign_key
-# name             :string           not null
-# location_type    :enum             values: [:referee, :spectator, :var]
-# has_camera       :boolean          default: false
+# id                :bigint           not null, primary key
+# race_id           :bigint           not null, foreign_key
+# name              :string           not null
+# location_type     :enum             values: [:referee, :spectator, :var]
+# has_camera        :boolean          default: false
 # camera_stream_url :string
-# from_template    :boolean          default: false, null: false
-# position         :integer          not null, default: 0
-# created_at       :datetime         not null
-# updated_at       :datetime         not null
+# from_template     :boolean          default: false, null: false
+# position          :integer          not null, default: 0
+# created_at        :datetime         not null
+# updated_at        :datetime         not null
 #
 class RaceLocation < ApplicationRecord
   belongs_to :race
@@ -594,19 +550,18 @@ class RaceLocation < ApplicationRecord
     var: "var"
   }
 
-  validates :name, presence: true
-  validates :name, uniqueness: { scope: :race_id }
+  validates :name, presence: true, uniqueness: { scope: :race_id }
   validates :position, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
 
+  # Scopes
+  scope :ordered, -> { order(:position) }
   scope :with_camera, -> { where(has_camera: true) }
   scope :from_template, -> { where(from_template: true) }
   scope :custom, -> { where(from_template: false) }
-
-  default_scope { order(:position) }
 end
 ```
 
-### **10. Incident**
+### **9. Incident**
 
 ```ruby
 # == Schema Information
@@ -614,88 +569,597 @@ end
 # Table name: incidents
 #
 # id                :bigint           not null, primary key
-# race_id           :bigint           foreign key
-# race_location_id  :bigint           foreign key
+# race_id           :bigint           not null, foreign_key
+# race_location_id  :bigint           foreign_key
 # description       :text
 # status            :enum             values: [:unofficial, :official]
-# official_status   :enum             values: [:applied, :declined]
-# unofficial_status :enum             values: [:reported, :under_verification]
+# official_status   :enum             values: [:pending, :applied, :declined]
 # created_at        :datetime         not null
 # updated_at        :datetime         not null
 #
 class Incident < ApplicationRecord
   belongs_to :race
-  belongs_to :race_location
-  has_many :reports, dependent: :destroy
+  belongs_to :race_location, optional: true
+  has_many :reports, dependent: :nullify
 
-  # Scopes for filtering
+  enum :status, {
+    unofficial: "unofficial",
+    official: "official"
+  }, default: :unofficial
+
+  enum :official_status, {
+    pending: "pending",
+    applied: "applied",
+    declined: "declined"
+  }, default: :pending, prefix: true
+
+  validates :race, presence: true
+
+  # Scopes
+  scope :ordered, -> { order(created_at: :desc) }
   scope :official, -> { where(status: :official) }
   scope :unofficial, -> { where(status: :unofficial) }
 
-  # Combine penalties and observers for display
+  # Combine penalties from all reports for display
   def combined_penalties
-    reports.pluck(:penalty).join(', ')
+    reports.pluck(:penalty).compact.join(', ')
+  end
+
+  def officialize!
+    update!(status: :official)
+  end
+
+  def apply!
+    update!(official_status: :applied)
+  end
+
+  def decline!
+    update!(official_status: :declined)
   end
 end
 ```
 
-### **11. Report**
+### **10. Report**
 
 ```ruby
 # == Schema Information
 #
 # Table name: reports
 #
-# id                :bigint           not null, primary key
-# race_id           :bigint           foreign key
-# incident_id       :bigint           nullable (not all reports become incidents)
-# rule_id           :bigint           foreign key
-# user_id           :bigint           foreign key (reporter)
-# race_location_id  :bigint           optional
-# description       :text
-# video_start_time  :integer          optional
-# video_end_time    :integer          optional
-# penalty           :string
-# status            :enum             values: [:unofficial, :official]
-# created_at        :datetime         not null
-# updated_at        :datetime         not null
+# id               :bigint           not null, primary key
+# race_id          :bigint           not null, foreign_key
+# incident_id      :bigint           nullable (not all reports become incidents)
+# rule_id          :bigint           not null, foreign_key
+# user_id          :bigint           not null, foreign_key (reporter)
+# race_location_id :bigint           optional
+# description      :text
+# video_start_time :integer          optional (seconds)
+# video_end_time   :integer          optional (seconds)
+# penalty          :string
+# status           :enum             values: [:draft, :submitted, :reviewed]
+# created_at       :datetime         not null
+# updated_at       :datetime         not null
 #
 class Report < ApplicationRecord
   belongs_to :race
-  belongs_to :incident, optional: true # Only some reports form incidents
+  belongs_to :incident, optional: true
   belongs_to :rule
-  belongs_to :user # The reporter
+  belongs_to :user
   belongs_to :race_location, optional: true
 
   has_one_attached :video
 
-  validate :validate_video_times # Custom validations allow narrowing evidence
+  enum :status, {
+    draft: "draft",
+    submitted: "submitted",
+    reviewed: "reviewed"
+  }, default: :draft
 
-  # Time range validation
+  validates :race, presence: true
+  validates :rule, presence: true
+  validates :user, presence: true
+  validate :validate_video_times
+
+  # Scopes
+  scope :ordered, -> { order(created_at: :desc) }
+  scope :by_user, ->(user) { where(user: user) }
+
+  private
+
   def validate_video_times
-    return unless video.attached? && (video_start_time.present? || video_end_time.present?)
-
-    errors.add(:video_start_time, "must be earlier than the end time") if video_start_time >= video_end_time
+    return unless video.attached? && video_start_time.present? && video_end_time.present?
+    
+    if video_start_time >= video_end_time
+      errors.add(:video_start_time, "must be earlier than end time")
+    end
+    
+    if video_start_time.negative?
+      errors.add(:video_start_time, "must be positive")
+    end
   end
 end
 ```
 
-### **12. Rule**
+### **11. Rule**
 
 ```ruby
 # == Schema Information
 #
 # Table name: rules
 #
-# id                :bigint           not null, primary key
-# number            :string           not null
-# title             :string           not null
-# description       :text
-# created_at        :datetime         not null
-# updated_at        :datetime         not null
+# id          :bigint           not null, primary key
+# number      :string           not null
+# title       :string           not null
+# description :text
+# created_at  :datetime         not null
+# updated_at  :datetime         not null
 #
 class Rule < ApplicationRecord
-  has_many :reports
+  has_many :reports, dependent: :restrict_with_error
+
+  validates :number, presence: true, uniqueness: true
+  validates :title, presence: true
+
+  # Scopes
+  scope :ordered, -> { order(:number) }
+end
+```
+
+---
+
+## **Service Objects with dry-monads**
+
+Business logic is encapsulated in service objects using dry-monads for explicit success/failure handling. All services live in `app/services/` organized by domain.
+
+### **Competitions::CreateFromTemplate**
+
+```ruby
+# app/services/competitions/create_from_template.rb
+module Competitions
+  class CreateFromTemplate
+    include Dry::Monads[:result, :do]
+
+    def call(template:, attributes:, race_type_ids: nil)
+      template       = yield find_template(template)
+      race_types     = yield resolve_race_types(template, race_type_ids)
+      validated_attrs = yield validate_attributes(attributes)
+      competition    = yield create_competition(template, validated_attrs, race_types)
+
+      Success(competition)
+    end
+
+    private
+
+    def find_template(template)
+      case template
+      when CompetitionTemplate
+        Success(template)
+      when Integer, String
+        found = CompetitionTemplate.find_by(id: template)
+        found ? Success(found) : Failure([:not_found, "Template not found"])
+      else
+        Failure([:invalid_template, "Invalid template type"])
+      end
+    end
+
+    def resolve_race_types(template, race_type_ids)
+      if race_type_ids.present?
+        types = template.race_types.where(id: race_type_ids)
+        if types.empty?
+          Failure([:no_race_types, "None of the specified race types belong to this template"])
+        else
+          Success(types)
+        end
+      else
+        Success(template.race_types)
+      end
+    end
+
+    def validate_attributes(attributes)
+      required = %i[name place country start_date end_date]
+      missing = required.select { |key| attributes[key].blank? }
+      
+      if missing.any?
+        Failure([:validation_failed, { missing_fields: missing }])
+      else
+        Success(attributes)
+      end
+    end
+
+    def create_competition(template, attributes, race_types)
+      competition = nil
+      
+      ActiveRecord::Base.transaction do
+        competition = Competition.create!(attributes)
+
+        template.stage_templates.ordered.each do |stage_template|
+          stage = competition.stages.create!(
+            name: stage_template.name,
+            description: stage_template.description,
+            position: stage_template.position
+          )
+
+          stage_template.race_templates.ordered.each do |race_template|
+            next unless race_types.include?(race_template.race_type)
+
+            stage.races.create!(
+              name: race_template.name,
+              race_type: race_template.race_type,
+              position: race_template.position
+            )
+          end
+        end
+      end
+      
+      Success(competition)
+    rescue ActiveRecord::RecordInvalid => e
+      Failure([:record_invalid, e.message])
+    rescue ActiveRecord::RecordNotUnique => e
+      Failure([:duplicate_record, e.message])
+    end
+  end
+end
+```
+
+### **Competitions::Duplicate**
+
+```ruby
+# app/services/competitions/duplicate.rb
+module Competitions
+  class Duplicate
+    include Dry::Monads[:result, :do]
+
+    def call(competition:, new_attributes:, race_type_ids: nil, include_locations: false)
+      source      = yield find_competition(competition)
+      validated   = yield validate_new_attributes(new_attributes)
+      race_types  = yield resolve_race_types(race_type_ids)
+      new_comp    = yield duplicate_competition(source, validated, race_types, include_locations)
+
+      Success(new_comp)
+    end
+
+    private
+
+    def find_competition(competition)
+      case competition
+      when Competition
+        Success(competition)
+      when Integer, String
+        found = Competition.find_by(id: competition)
+        found ? Success(found) : Failure([:not_found, "Competition not found"])
+      else
+        Failure([:invalid_competition, "Invalid competition type"])
+      end
+    end
+
+    def validate_new_attributes(attributes)
+      if attributes[:name].blank?
+        Failure([:validation_failed, { name: ["can't be blank"] }])
+      else
+        Success(attributes)
+      end
+    end
+
+    def resolve_race_types(race_type_ids)
+      if race_type_ids.present?
+        Success(RaceType.where(id: race_type_ids))
+      else
+        Success(nil) # nil means include all
+      end
+    end
+
+    def duplicate_competition(source, new_attributes, race_types, include_locations)
+      new_competition = nil
+      
+      ActiveRecord::Base.transaction do
+        new_competition = Competition.create!(
+          source.attributes
+                .except("id", "created_at", "updated_at")
+                .merge(new_attributes.stringify_keys)
+        )
+
+        source.stages.ordered.each do |stage|
+          new_stage = new_competition.stages.create!(
+            name: stage.name,
+            description: stage.description,
+            date: stage.date,
+            position: stage.position
+          )
+
+          stage.races.ordered.each do |race|
+            next if race_types.present? && !race_types.include?(race.race_type)
+
+            new_race = new_stage.races.create!(
+              name: race.name,
+              race_type: race.race_type,
+              scheduled_at: race.scheduled_at,
+              position: race.position
+            )
+
+            if include_locations
+              race.race_locations.custom.ordered.each do |location|
+                new_race.race_locations.create!(
+                  name: location.name,
+                  location_type: location.location_type,
+                  has_camera: location.has_camera,
+                  from_template: false,
+                  position: location.position
+                )
+              end
+            end
+          end
+        end
+      end
+
+      Success(new_competition)
+    rescue ActiveRecord::RecordInvalid => e
+      Failure([:record_invalid, e.message])
+    end
+  end
+end
+```
+
+### **Incidents::Create**
+
+```ruby
+# app/services/incidents/create.rb
+module Incidents
+  class Create
+    include Dry::Monads[:result, :do]
+
+    def call(user:, params:)
+      _           = yield authorize!(user)
+      validated   = yield validate!(params)
+      race        = yield find_race!(validated[:race_id])
+      location    = yield find_location(validated[:race_location_id])
+      incident    = yield persist!(race: race, location: location, params: validated)
+
+      Success(incident)
+    end
+
+    private
+
+    def authorize!(user)
+      return Failure([:unauthorized, "Must be logged in"]) unless user
+      return Failure([:forbidden, "Not authorized to create incidents"]) unless can_create?(user)
+      Success(user)
+    end
+
+    def can_create?(user)
+      user.referee? || user.var_operator? || user.admin?
+    end
+
+    def validate!(params)
+      errors = {}
+      errors[:race_id] = ["can't be blank"] if params[:race_id].blank?
+      
+      if errors.any?
+        Failure([:validation_failed, errors])
+      else
+        Success(params.to_h.symbolize_keys)
+      end
+    end
+
+    def find_race!(race_id)
+      race = Race.find_by(id: race_id)
+      race ? Success(race) : Failure([:not_found, "Race not found"])
+    end
+
+    def find_location(race_location_id)
+      return Success(nil) if race_location_id.blank?
+      
+      location = RaceLocation.find_by(id: race_location_id)
+      location ? Success(location) : Failure([:not_found, "Race location not found"])
+    end
+
+    def persist!(race:, location:, params:)
+      incident = Incident.new(
+        race: race,
+        race_location: location,
+        description: params[:description],
+        status: :unofficial
+      )
+
+      if incident.save
+        Success(incident)
+      else
+        Failure([:save_failed, incident.errors.to_h])
+      end
+    end
+  end
+end
+```
+
+### **Incidents::Officialize**
+
+```ruby
+# app/services/incidents/officialize.rb
+module Incidents
+  class Officialize
+    include Dry::Monads[:result, :do]
+
+    def call(user:, incident_id:)
+      _        = yield authorize!(user)
+      incident = yield find_incident!(incident_id)
+      _        = yield validate_can_officialize!(incident)
+      result   = yield officialize!(incident)
+
+      Success(result)
+    end
+
+    private
+
+    def authorize!(user)
+      return Failure([:unauthorized, "Must be logged in"]) unless user
+      return Failure([:forbidden, "Only jury president can officialize incidents"]) unless user.jury_president?
+      Success(user)
+    end
+
+    def find_incident!(incident_id)
+      incident = Incident.find_by(id: incident_id)
+      incident ? Success(incident) : Failure([:not_found, "Incident not found"])
+    end
+
+    def validate_can_officialize!(incident)
+      if incident.official?
+        Failure([:already_official, "Incident is already official"])
+      else
+        Success(incident)
+      end
+    end
+
+    def officialize!(incident)
+      if incident.update(status: :official)
+        Success(incident)
+      else
+        Failure([:update_failed, incident.errors.to_h])
+      end
+    end
+  end
+end
+```
+
+### **Reports::Create**
+
+```ruby
+# app/services/reports/create.rb
+module Reports
+  class Create
+    include Dry::Monads[:result, :do]
+
+    def call(user:, params:)
+      _         = yield authorize!(user)
+      validated = yield validate!(params)
+      race      = yield find_race!(validated[:race_id])
+      rule      = yield find_rule!(validated[:rule_id])
+      location  = yield find_location(validated[:race_location_id])
+      report    = yield persist!(user: user, race: race, rule: rule, location: location, params: validated)
+
+      Success(report)
+    end
+
+    private
+
+    def authorize!(user)
+      return Failure([:unauthorized, "Must be logged in"]) unless user
+      return Failure([:forbidden, "Not authorized to create reports"]) unless can_create?(user)
+      Success(user)
+    end
+
+    def can_create?(user)
+      user.referee? || user.var_operator?
+    end
+
+    def validate!(params)
+      errors = {}
+      errors[:race_id] = ["can't be blank"] if params[:race_id].blank?
+      errors[:rule_id] = ["can't be blank"] if params[:rule_id].blank?
+      
+      if errors.any?
+        Failure([:validation_failed, errors])
+      else
+        Success(params.to_h.symbolize_keys)
+      end
+    end
+
+    def find_race!(race_id)
+      race = Race.find_by(id: race_id)
+      race ? Success(race) : Failure([:not_found, "Race not found"])
+    end
+
+    def find_rule!(rule_id)
+      rule = Rule.find_by(id: rule_id)
+      rule ? Success(rule) : Failure([:not_found, "Rule not found"])
+    end
+
+    def find_location(race_location_id)
+      return Success(nil) if race_location_id.blank?
+      
+      location = RaceLocation.find_by(id: race_location_id)
+      location ? Success(location) : Failure([:not_found, "Race location not found"])
+    end
+
+    def persist!(user:, race:, rule:, location:, params:)
+      report = Report.new(
+        user: user,
+        race: race,
+        rule: rule,
+        race_location: location,
+        description: params[:description],
+        penalty: params[:penalty],
+        video_start_time: params[:video_start_time],
+        video_end_time: params[:video_end_time],
+        status: :draft
+      )
+
+      if report.save
+        Success(report)
+      else
+        Failure([:save_failed, report.errors.to_h])
+      end
+    end
+  end
+end
+```
+
+### **Reports::AttachToIncident**
+
+```ruby
+# app/services/reports/attach_to_incident.rb
+module Reports
+  class AttachToIncident
+    include Dry::Monads[:result, :do]
+
+    def call(user:, report_ids:, incident_id: nil, new_incident_params: nil)
+      _        = yield authorize!(user)
+      reports  = yield find_reports!(report_ids)
+      incident = yield resolve_incident!(incident_id, new_incident_params, reports.first.race)
+      _        = yield attach_reports!(reports, incident)
+
+      Success(incident)
+    end
+
+    private
+
+    def authorize!(user)
+      return Failure([:unauthorized, "Must be logged in"]) unless user
+      return Failure([:forbidden, "Not authorized"]) unless user.admin? || user.referee?
+      Success(user)
+    end
+
+    def find_reports!(report_ids)
+      reports = Report.where(id: report_ids)
+      
+      if reports.empty?
+        Failure([:not_found, "No reports found"])
+      elsif reports.map(&:race_id).uniq.size > 1
+        Failure([:invalid_reports, "All reports must belong to the same race"])
+      else
+        Success(reports)
+      end
+    end
+
+    def resolve_incident!(incident_id, new_incident_params, race)
+      if incident_id.present?
+        incident = Incident.find_by(id: incident_id)
+        incident ? Success(incident) : Failure([:not_found, "Incident not found"])
+      elsif new_incident_params.present?
+        incident = Incident.new(
+          race: race,
+          description: new_incident_params[:description],
+          status: :unofficial
+        )
+        incident.save ? Success(incident) : Failure([:save_failed, incident.errors.to_h])
+      else
+        Failure([:missing_incident, "Must provide incident_id or new_incident_params"])
+      end
+    end
+
+    def attach_reports!(reports, incident)
+      reports.update_all(incident_id: incident.id)
+      Success(reports)
+    end
+  end
 end
 ```
 
@@ -766,9 +1230,8 @@ class ApplicationPolicy
     false
   end
 
-  # Jury president and referee manager have full access by default
   def admin?
-    user.jury_president? || user.referee_manager?
+    user&.admin?
   end
 
   class Scope
@@ -794,19 +1257,19 @@ end
 # app/policies/incident_policy.rb
 class IncidentPolicy < ApplicationPolicy
   def index?
-    true # All authenticated users can view incidents list
+    true
   end
 
   def show?
-    true # All authenticated users can view incident details
+    true
   end
 
   def create?
-    user.referee? || user.var_operator? || admin?
+    user&.referee? || user&.var_operator? || admin?
   end
 
   def update?
-    admin? || (user.referee? && record.status == "unofficial")
+    admin? || (user&.referee? && record.unofficial?)
   end
 
   def destroy?
@@ -814,29 +1277,30 @@ class IncidentPolicy < ApplicationPolicy
   end
 
   def officialize?
-    user.jury_president?
+    user&.jury_president?
   end
 
   def apply?
-    user.jury_president?
+    user&.jury_president?
   end
 
   def decline?
-    user.jury_president?
+    user&.jury_president?
   end
 
   class Scope < Scope
     def resolve
+      return scope.none unless user
+
       if user.jury_president? || user.referee_manager?
         scope.all
       elsif user.international_referee?
-        scope.all # International referees see all incidents
+        scope.all
       elsif user.national_referee?
-        # National referees see incidents from their country's races
-        scope.joins(race: { stage: :world_cup_edition })
-             .where(races: { country: user.country })
+        scope.joins(race: { stage: :competition })
+             .where(competitions: { country: user.country })
       elsif user.var_operator?
-        scope.all # VAR operators need to see all for video review
+        scope.all
       else
         scope.none
       end
@@ -859,30 +1323,33 @@ class ReportPolicy < ApplicationPolicy
   end
 
   def create?
-    user.referee? || user.var_operator?
+    user&.referee? || user&.var_operator?
   end
 
   def update?
     return true if admin?
-    return false unless record.status == "unofficial"
-
-    record.user_id == user.id # Only the reporter can edit their own unofficial report
+    return false unless record.draft? || record.submitted?
+    
+    record.user_id == user&.id
   end
 
   def destroy?
-    admin? || (record.user_id == user.id && record.status == "unofficial")
+    return true if admin?
+    record.user_id == user&.id && record.draft?
   end
 
-  def officialize?
-    user.jury_president?
+  def submit?
+    record.user_id == user&.id && record.draft?
   end
 
   class Scope < Scope
     def resolve
+      return scope.none unless user
+
       if user.jury_president? || user.referee_manager?
         scope.all
       elsif user.referee? || user.var_operator?
-        scope.all # Referees and VAR operators can see all reports
+        scope.all
       else
         scope.none
       end
@@ -916,9 +1383,17 @@ class RacePolicy < ApplicationPolicy
     admin?
   end
 
+  def start?
+    admin?
+  end
+
+  def complete?
+    admin?
+  end
+
   class Scope < Scope
     def resolve
-      scope.all # All authenticated users can see races
+      scope.all
     end
   end
 end
@@ -939,10 +1414,9 @@ class RaceLocationPolicy < ApplicationPolicy
 
   def show_camera_stream?
     return true if admin?
-    return true if user.var_operator?
-
-    # Referees can only see cameras at their assigned locations
-    user.referee? && record.location_type == "referee"
+    return true if user&.var_operator?
+    
+    user&.referee? && record.referee?
   end
 
   def create?
@@ -954,13 +1428,15 @@ class RaceLocationPolicy < ApplicationPolicy
   end
 
   def destroy?
-    admin?
+    admin? && !record.from_template?
   end
 
   class Scope < Scope
     def resolve
+      return scope.none unless user
+
       if user.broadcast_viewer?
-        scope.with_camera # Broadcast viewers only see locations with cameras
+        scope.with_camera
       else
         scope.all
       end
@@ -991,7 +1467,11 @@ class CompetitionPolicy < ApplicationPolicy
   end
 
   def destroy?
-    user.referee_manager? # Only referee manager can delete competitions
+    user&.referee_manager?
+  end
+
+  def duplicate?
+    admin?
   end
 
   class Scope < Scope
@@ -1024,11 +1504,11 @@ class RaceTypePolicy < ApplicationPolicy
   end
 
   def destroy?
-    user.referee_manager? # Only referee manager can delete race types
+    user&.referee_manager?
   end
 
   def manage_templates?
-    admin? # Add/remove/edit location templates
+    admin?
   end
 
   class Scope < Scope
@@ -1044,8 +1524,10 @@ end
 ```ruby
 # app/controllers/incidents_controller.rb
 class IncidentsController < ApplicationController
+  before_action :authenticate_user!
+
   def index
-    @incidents = policy_scope(Incident)
+    @incidents = policy_scope(Incident).ordered
   end
 
   def show
@@ -1054,22 +1536,38 @@ class IncidentsController < ApplicationController
   end
 
   def create
-    @incident = Incident.new(incident_params)
-    authorize @incident
+    result = Incidents::Create.new.call(
+      user: current_user,
+      params: incident_params
+    )
 
-    if @incident.save
-      redirect_to @incident, notice: "Incident created."
-    else
+    case result
+    in Success(incident)
+      redirect_to incident, notice: "Incident created."
+    in Failure([:validation_failed, errors])
+      @errors = errors
       render :new, status: :unprocessable_entity
+    in Failure([:forbidden, message])
+      redirect_to incidents_path, alert: message
+    in Failure([_, message])
+      redirect_to incidents_path, alert: message
     end
   end
 
   def officialize
-    @incident = Incident.find(params[:id])
-    authorize @incident
+    result = Incidents::Officialize.new.call(
+      user: current_user,
+      incident_id: params[:id]
+    )
 
-    @incident.update!(status: :official)
-    redirect_to @incident, notice: "Incident officialized."
+    case result
+    in Success(incident)
+      redirect_to incident, notice: "Incident officialized."
+    in Failure([:forbidden, message])
+      redirect_to incidents_path, alert: message
+    in Failure([_, message])
+      redirect_to incidents_path, alert: message
+    end
   end
 
   private
@@ -1080,87 +1578,284 @@ class IncidentsController < ApplicationController
 end
 ```
 
-### **Role Permission Matrix**
+### **Competitions Controller with Services**
+
+```ruby
+# app/controllers/competitions_controller.rb
+class CompetitionsController < ApplicationController
+  before_action :authenticate_user!
+
+  def index
+    @competitions = policy_scope(Competition).ordered
+  end
+
+  def show
+    @competition = Competition.find(params[:id])
+    authorize @competition
+  end
+
+  def new
+    @competition = Competition.new
+    @templates = CompetitionTemplate.ordered
+    authorize @competition
+  end
+
+  def create
+    authorize Competition
+
+    if params[:template_id].present?
+      create_from_template
+    else
+      create_directly
+    end
+  end
+
+  def duplicate
+    @competition = Competition.find(params[:id])
+    authorize @competition
+
+    result = Competitions::Duplicate.new.call(
+      competition: @competition,
+      new_attributes: duplicate_params,
+      race_type_ids: params[:race_type_ids],
+      include_locations: params[:include_locations] == "true"
+    )
+
+    case result
+    in Success(new_competition)
+      redirect_to new_competition, notice: "Competition duplicated successfully."
+    in Failure([:validation_failed, errors])
+      @errors = errors
+      render :duplicate_form, status: :unprocessable_entity
+    in Failure([_, message])
+      redirect_to @competition, alert: message
+    end
+  end
+
+  private
+
+  def create_from_template
+    result = Competitions::CreateFromTemplate.new.call(
+      template: params[:template_id],
+      attributes: competition_params,
+      race_type_ids: params[:race_type_ids]
+    )
+
+    case result
+    in Success(competition)
+      redirect_to competition, notice: "Competition created from template."
+    in Failure([:validation_failed, errors])
+      @errors = errors
+      @templates = CompetitionTemplate.ordered
+      render :new, status: :unprocessable_entity
+    in Failure([_, message])
+      redirect_to competitions_path, alert: message
+    end
+  end
+
+  def create_directly
+    @competition = Competition.new(competition_params)
+
+    if @competition.save
+      redirect_to @competition, notice: "Competition created."
+    else
+      @templates = CompetitionTemplate.ordered
+      render :new, status: :unprocessable_entity
+    end
+  end
+
+  def competition_params
+    params.require(:competition).permit(:name, :place, :country, :description, :start_date, :end_date, :webpage_url)
+  end
+
+  def duplicate_params
+    params.require(:competition).permit(:name, :place, :country, :start_date, :end_date)
+  end
+end
+```
+
+---
+
+## **Role Permission Matrix**
 
 | Action | Jury President | Referee Manager | Int'l Referee | Nat'l Referee | VAR Operator | Broadcast Viewer |
-|--------|---------------|-----------------|---------------|---------------|--------------|------------------|
+|--------|----------------|-----------------|---------------|---------------|--------------|------------------|
 | **Incidents** |
 | View all | ✅ | ✅ | ✅ | Own country | ✅ | ❌ |
 | Create | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Update | ✅ | ✅ | Unofficial only | Unofficial only | ❌ | ❌ |
 | Officialize | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Apply/Decline | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Delete | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | **Reports** |
 | View all | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Create | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Update own | ✅ | ✅ | Unofficial only | Unofficial only | Unofficial only | ❌ |
-| Delete | ✅ | ✅ | Own unofficial | Own unofficial | Own unofficial | ❌ |
+| Update own | ✅ | ✅ | Draft/Submitted | Draft/Submitted | Draft/Submitted | ❌ |
+| Delete | ✅ | ✅ | Own draft | Own draft | Own draft | ❌ |
+| **Competitions** |
+| View | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Create | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Update | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Duplicate | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Delete | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | **Races** |
 | View | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Manage | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | **Camera Streams** |
-| View | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ (camera locations only) |
+| View all | ✅ | ✅ | ❌ | ❌ | ✅ | Camera locations only |
+| View referee locations | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 
 ---
 
 ## **Quick Summary of Each Model**
 
 ### **1. User**
-Represents a system user with attributes like name, email, and associated role. Uses Rails 8.1 authentication with `has_secure_password` for password-based login and magic links for passwordless authentication. Role-based authorization is handled via Pundit policies.
+Represents a system user with attributes like name, email, and role (enum). Uses Rails 8.1 authentication with `has_secure_password` for password-based login and magic links for passwordless authentication. Role-based authorization is handled via Pundit policies.
 
 ### **1a. Session**
-Manages user authentication sessions with secure tokens. Each session tracks the user's IP address and user agent for security auditing.
+Manages user authentication sessions with secure tokens. Each session tracks the user's IP address and user agent for security auditing. Tokens are guaranteed unique via retry loop.
 
 ### **1b. MagicLink**
-Enables passwordless authentication via email. Magic links are single-use, time-limited tokens (15 minutes) that allow users to log in without entering a password.
+Enables passwordless authentication via email. Magic links are single-use, time-limited tokens (15 minutes) that allow users to log in without entering a password. Old valid links are invalidated when new ones are created.
 
-### **2. Role**
-Defines user roles (e.g., national referee, jury president). It is associated with users and determines their authorization level via Pundit policies.
+### **2. CompetitionTemplate**
+Reusable template for creating competitions. Defines the structure (stages, races) and which race types are available. Use `Competitions::CreateFromTemplate` service to instantiate a new competition.
 
-### **3. CompetitionTemplate**
-Reusable template for creating competitions. Defines the structure (stages, races) and which race types are available. Use `create_competition!` to instantiate a new competition from this template.
+### **2a. StageTemplate**
+Defines a stage within a CompetitionTemplate. Has a name, description, and position with uniqueness constraint.
 
-### **3a. StageTemplate**
-Defines a stage within a CompetitionTemplate. Has a name, description, and position.
-
-### **3b. RaceTemplate**
+### **2b. RaceTemplate**
 Defines a race within a StageTemplate. Links to a RaceType to determine which location templates to use.
 
-### **3c. CompetitionTemplateRaceType**
+### **2c. CompetitionTemplateRaceType**
 Join table linking CompetitionTemplate to RaceType. Defines which race types are available when creating a competition from this template.
 
-### **4. Competition**
-Represents a specific competition event (e.g., "Verbier Sprint Weekend 2024") with place, dates, description, logo, and webpage URL. Can be created from a template or duplicated from an existing competition with `duplicate!` method. Supports filtering by race types when duplicating.
+### **3. Competition**
+Represents a specific competition event (e.g., "Verbier Sprint Weekend 2024") with place, dates, description, logo, and webpage URL. Can be created from a template or duplicated from an existing competition using service objects.
 
-### **5. Stage**
-Represents a stage within a Competition (e.g., "Qualification", "Semi-Finals", "Finals"). Each stage includes multiple races and has a position for ordering.
+### **4. Stage**
+Represents a stage within a Competition (e.g., "Qualification", "Semi-Finals", "Finals"). Each stage includes multiple races and has a position for ordering with uniqueness constraint.
 
-### **6. RaceType**
+### **5. RaceType**
 Defines the general type of a race (e.g., sprint, vertical, individual, relay). Contains location templates that define the default locations for races of this type.
 
-### **7. RaceTypeLocationTemplate**
-Defines default locations for a RaceType. When a new Race is created, these templates are automatically copied to create the race's actual locations. Examples: sprint type has start, finish, top, walk, platform_1, platform_2.
+### **6. RaceTypeLocationTemplate**
+Defines default locations for a RaceType. When a new Race is created, these templates are automatically copied to create the race's actual locations.
 
-### **8. Race**
+### **7. Race**
 Represents a specific race within a stage, linked to a race type. When created, automatically copies locations from the RaceType's templates. Has a status (scheduled, in_progress, completed, cancelled).
 
-### **9. RaceLocation**
+### **8. RaceLocation**
 Represents an actual location within a specific race. Created automatically from templates when a race is created (`from_template: true`), plus custom locations can be added (`from_template: false`). Tracks camera availability and stream URLs.
 
-### **10. Incident**
-Handles grouped violations or race-related issues that may involve multiple reports and statuses (e.g., unofficial and official statuses).
+### **9. Incident**
+Handles grouped violations or race-related issues that may involve multiple reports. Has status (unofficial/official) and official_status (pending/applied/declined).
 
-### **11. Report**
-Tracks individual referee-reported incidents during a race. Includes details like rule violations, videos, and penalties. Now includes `user_id` to track the reporter.
+### **10. Report**
+Tracks individual referee-reported incidents during a race. Includes details like rule violations, videos, and penalties. Includes `user_id` to track the reporter and status workflow (draft/submitted/reviewed).
 
-### **12. Rule**
+### **11. Rule**
 Defines the rules of the competition, which are referenced in reports to clarify the violated rule.
 
 ---
 
-## **Combined Business Logic**
+## **Business Logic Examples**
+
+### Creating Competition from Template
+
+```ruby
+# Using the service
+result = Competitions::CreateFromTemplate.new.call(
+  template: CompetitionTemplate.find_by!(name: "Standard ISMF Event"),
+  attributes: {
+    name: "Verbier Sprint Weekend 2025",
+    place: "Verbier",
+    country: "CH",
+    start_date: Date.new(2025, 2, 15),
+    end_date: Date.new(2025, 2, 16)
+  },
+  race_type_ids: [sprint.id, vertical.id]
+)
+
+case result
+in Success(competition)
+  puts "Created: #{competition.name}"
+in Failure([:not_found, message])
+  puts "Template not found: #{message}"
+in Failure([:validation_failed, errors])
+  puts "Validation errors: #{errors}"
+in Failure([code, message])
+  puts "Error (#{code}): #{message}"
+end
+```
+
+### Duplicating an Existing Competition
+
+```ruby
+# Duplicate with all race types
+result = Competitions::Duplicate.new.call(
+  competition: existing_competition,
+  new_attributes: {
+    name: "Verbier Sprint Weekend 2026",
+    start_date: Date.new(2026, 2, 14),
+    end_date: Date.new(2026, 2, 15)
+  }
+)
+
+# Duplicate with only specific race types and custom locations
+individual = RaceType.find_by!(name: "individual")
+result = Competitions::Duplicate.new.call(
+  competition: existing_competition,
+  new_attributes: { name: "Individual Championship 2026" },
+  race_type_ids: [individual.id],
+  include_locations: true
+)
+```
+
+### Creating an Incident
+
+```ruby
+result = Incidents::Create.new.call(
+  user: current_user,
+  params: {
+    race_id: race.id,
+    race_location_id: location.id,
+    description: "Athlete cut the course at checkpoint 2"
+  }
+)
+
+case result
+in Success(incident)
+  puts "Incident #{incident.id} created"
+in Failure([:unauthorized, _])
+  puts "Please log in"
+in Failure([:forbidden, message])
+  puts "Not allowed: #{message}"
+in Failure([:validation_failed, errors])
+  puts "Invalid: #{errors}"
+end
+```
+
+### Attaching Reports to an Incident
+
+```ruby
+# Combine existing reports into a new incident
+result = Reports::AttachToIncident.new.call(
+  user: current_user,
+  report_ids: [report1.id, report2.id],
+  new_incident_params: { description: "Multiple violations at start line" }
+)
+
+# Or attach to existing incident
+result = Reports::AttachToIncident.new.call(
+  user: current_user,
+  report_ids: [report3.id],
+  incident_id: existing_incident.id
+)
+```
 
 ### Authorizing Actions with Pundit
+
 ```ruby
 # In controller
 def show
@@ -1175,61 +1870,150 @@ end
 ```
 
 ### Scoping Records by Authorization
+
 ```ruby
 # Only returns incidents the user is authorized to see
-@incidents = policy_scope(Incident)
+@incidents = policy_scope(Incident).ordered
 ```
 
-### Aggregating Race Information
+---
+
+## **Database Indexes**
+
+Ensure these indexes exist for optimal query performance:
+
 ```ruby
-race.all_locations.each do |location|
-  puts location.name
+# db/migrate/xxx_add_indexes.rb
+class AddIndexes < ActiveRecord::Migration[7.1]
+  def change
+    # Users
+    add_index :users, :email, unique: true
+    add_index :users, :role
+
+    # Sessions
+    add_index :sessions, :token, unique: true
+    add_index :sessions, :user_id
+
+    # Magic Links
+    add_index :magic_links, :token, unique: true
+    add_index :magic_links, :user_id
+    add_index :magic_links, [:user_id, :expires_at, :used_at]
+
+    # Templates
+    add_index :stage_templates, [:competition_template_id, :position], unique: true
+    add_index :race_templates, [:stage_template_id, :position], unique: true
+    add_index :competition_template_race_types, [:competition_template_id, :race_type_id], unique: true, name: 'idx_comp_template_race_types_unique'
+
+    # Competitions
+    add_index :stages, [:competition_id, :position], unique: true
+    add_index :races, [:stage_id, :position], unique: true
+    add_index :races, :race_type_id
+    add_index :races, :status
+
+    # Race Types
+    add_index :race_types, :name, unique: true
+    add_index :race_type_location_templates, [:race_type_id, :position], unique: true
+    add_index :race_type_location_templates, [:race_type_id, :name], unique: true
+
+    # Locations
+    add_index :race_locations, [:race_id, :name], unique: true
+    add_index :race_locations, [:race_id, :position]
+    add_index :race_locations, :has_camera
+
+    # Incidents & Reports
+    add_index :incidents, :race_id
+    add_index :incidents, :status
+    add_index :reports, :race_id
+    add_index :reports, :incident_id
+    add_index :reports, :user_id
+    add_index :reports, :rule_id
+
+    # Rules
+    add_index :rules, :number, unique: true
+  end
 end
 ```
 
-### Incident Creation (From Multiple Reports)
+---
+
+## **Testing Services**
+
 ```ruby
-# Combine reports into one incident
-incident = Incident.create!(race: race, description: "Multiple incidents reported")
-report1.update!(incident: incident)
-report2.update!(incident: incident)
-```
+# spec/services/competitions/create_from_template_spec.rb
+require 'rails_helper'
 
-### Creating Competition from Template
-```ruby
-# Find template and select race types
-template = CompetitionTemplate.find_by!(name: "Standard ISMF Event")
-sprint = RaceType.find_by!(name: "sprint")
-vertical = RaceType.find_by!(name: "vertical")
+RSpec.describe Competitions::CreateFromTemplate do
+  subject(:service) { described_class.new }
 
-# Create competition with only sprint and vertical races
-competition = Competition.create_from_template!(
-  template,
-  {
-    name: "Verbier Sprint Weekend 2025",
-    place: "Verbier",
-    country: "CH",
-    start_date: Date.new(2025, 2, 15),
-    end_date: Date.new(2025, 2, 16)
-  },
-  race_type_ids: [sprint.id, vertical.id]
-)
-```
+  let(:template) { create(:competition_template, :with_stages_and_races) }
+  let(:sprint) { create(:race_type, name: "sprint") }
+  let(:valid_attributes) do
+    {
+      name: "Test Competition 2025",
+      place: "Test City",
+      country: "CH",
+      start_date: Date.tomorrow,
+      end_date: Date.tomorrow + 2.days
+    }
+  end
 
-### Duplicating an Existing Competition
-```ruby
-# Duplicate with all race types
-new_competition = existing_competition.duplicate!(
-  name: "Verbier Sprint Weekend 2026",
-  start_date: Date.new(2026, 2, 14),
-  end_date: Date.new(2026, 2, 15)
-)
+  describe '#call' do
+    context 'with valid parameters' do
+      it 'returns Success with competition' do
+        result = service.call(
+          template: template,
+          attributes: valid_attributes
+        )
 
-# Duplicate with only individual races
-individual = RaceType.find_by!(name: "individual")
-new_competition = existing_competition.duplicate!(
-  { name: "Individual Championship 2026" },
-  race_type_ids: [individual.id],
-  include_locations: true  # Also copy custom locations
-)
+        expect(result).to be_success
+        expect(result.success).to be_a(Competition)
+        expect(result.success.name).to eq("Test Competition 2025")
+      end
+
+      it 'creates stages from template' do
+        result = service.call(template: template, attributes: valid_attributes)
+
+        expect(result.success.stages.count).to eq(template.stage_templates.count)
+      end
+    end
+
+    context 'with missing required attributes' do
+      let(:invalid_attributes) { { name: "Test" } }
+
+      it 'returns Failure with validation errors' do
+        result = service.call(
+          template: template,
+          attributes: invalid_attributes
+        )
+
+        expect(result).to be_failure
+        
+        case result
+        in Failure([:validation_failed, errors])
+          expect(errors[:missing_fields]).to include(:place, :country)
+        else
+          fail "Expected validation_failed"
+        end
+      end
+    end
+
+    context 'with non-existent template' do
+      it 'returns Failure with not_found' do
+        result = service.call(
+          template: 99999,
+          attributes: valid_attributes
+        )
+
+        expect(result).to be_failure
+        
+        case result
+        in Failure([:not_found, message])
+          expect(message).to include("Template")
+        else
+          fail "Expected not_found"
+        end
+      end
+    end
+  end
+end
 ```

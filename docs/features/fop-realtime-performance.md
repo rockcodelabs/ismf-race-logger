@@ -292,7 +292,7 @@ end
 #### Task 3.3: Create Optimized Report Query Service
 - **Owner**: Developer
 - **Agent**: @service
-- **File**: `app/components/reports/operation/list_for_race.rb`
+- **File**: `app/services/reports/list_for_race.rb`
 - **Details**:
   ```ruby
   # Uses dry-monads
@@ -321,7 +321,7 @@ end
 - **Agent**: @rspec
 - **Files**:
   - `spec/components/fop/report_card_component_spec.rb`
-  - `spec/components/reports/operation/list_for_race_spec.rb`
+  - `spec/services/reports/list_for_race_spec.rb`
 - **Details**:
   - Test caching behavior
   - Test eager loading (no N+1 with Bullet gem)
