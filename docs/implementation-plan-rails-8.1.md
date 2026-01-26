@@ -1808,9 +1808,32 @@ Based on https://ismf-ski.com/:
 
 ### Phase 14: FOP Real-Time Performance & Report Grouping
 
-> **Reference**: See `docs/features/fop-realtime-performance.md` for complete implementation details.
+> **Reference**: 
+> - `docs/features/fop-realtime-performance.md` - Complete implementation details
+> - `docs/architecture/report-incident-model.md` - Data model architecture (Report/Incident)
 
 This phase implements real-time notifications for desktop devices and the report grouping workflow for incident management.
+
+**Key Design Decisions:**
+- **Reports are observations** - No status on reports, just data
+- **Incidents are cases** - All status/decision logic lives here
+- **1:1 auto-create** - Every report creates its own incident (referees don't think)
+- **Two-level status** - Level 1: unofficial→official (lifecycle), Level 2: pending→penalty_applied/rejected/no_action (decision)
+- **Merge = transfer reports** - Move reports from source incidents to target, delete empty incidents
+- **Speed target**: < 100ms for report creation on FOP devices
+
+#### Task 14.0: Speed-Optimized Report Creation
+- **Owner**: Developer
+- **Services**:
+  - `app/services/reports/create.rb` - Creates report + incident in single transaction
+  - `app/jobs/reports/broadcast_job.rb` - Background broadcast (non-blocking)
+- **Performance Target**: < 100ms total response time
+- **Details**:
+  - 2 INSERTs per report (Incident + Report)
+  - Minimal validations
+  - Background job for Action Cable broadcast
+  - JSON API response (no view rendering)
+- **Dependencies**: Phase 7
 
 #### Task 14.1: Configure Solid Cable for Real-Time
 - **Owner**: Developer
@@ -1876,29 +1899,39 @@ This phase implements real-time notifications for desktop devices and the report
   - Only shown for officialized incidents with pending status
 - **Dependencies**: Task 14.5
 
-#### Task 14.7: Add Incident Status Enum Extension
+#### Task 14.7: Create Incident Model with Two-Level Status
 - **Owner**: Developer
-- **Migration**: Add `no_action` to `official_status` enum
+- **Migration**: Create incidents table with integer enums
 - **Model Update**: 
   ```ruby
-  enum :official_status, {
-    pending: "pending",
-    applied: "applied",
-    declined: "declined",
-    no_action: "no_action"
-  }, default: :pending, prefix: true
+  # Level 1: Lifecycle status
+  enum :status, { unofficial: 0, official: 1 }
+  
+  # Level 2: Decision (only when official)
+  enum :decision, {
+    pending: 0,
+    penalty_applied: 1,
+    rejected: 2,
+    no_action: 3
+  }, prefix: :decision
   ```
+- **Additional Fields**:
+  - `officialized_at`, `officialized_by` (user_id)
+  - `decided_at`, `decided_by` (user_id)
+  - `reports_count` (counter cache)
 - **Dependencies**: Task 14.6
 
-#### Task 14.8: Create Report Grouping Services
+#### Task 14.8: Create Incident Services
 - **Owner**: Developer
 - **Services**:
-  - `app/services/incidents/group_reports.rb` - Create incident from selected reports
-  - `app/services/incidents/update_status.rb` - Apply/Reject/No Action
+  - `app/services/incidents/merge.rb` - Merge incidents (move reports to target)
+  - `app/services/incidents/officialize.rb` - Status: unofficial → official
+  - `app/services/incidents/make_decision.rb` - Decision: penalty_applied/rejected/no_action
 - **Details**: 
   - Uses dry-monads (Success/Failure)
-  - Validates all reports belong to same race
-  - Validates reports not already in incident
+  - Merge: transfer reports, delete empty incidents
+  - Officialize: only Jury President can do this
+  - Decision: only after officialized, records who/when
   - Broadcasts updates via IncidentsChannel
 - **Dependencies**: Task 14.7
 
@@ -1909,10 +1942,13 @@ This phase implements real-time notifications for desktop devices and the report
   resources :races do
     resources :incidents do
       member do
-        patch :apply
-        patch :reject
-        patch :no_action
-        patch :officialize
+        patch :officialize    # Status: unofficial → official
+        patch :apply_penalty  # Decision: penalty_applied
+        patch :reject         # Decision: rejected
+        patch :no_action      # Decision: no_action
+      end
+      collection do
+        post :merge           # Merge multiple incidents
       end
     end
   end

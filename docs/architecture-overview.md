@@ -572,54 +572,165 @@ end
 # race_id           :bigint           not null, foreign_key
 # race_location_id  :bigint           foreign_key
 # description       :text
-# status            :enum             values: [:unofficial, :official]
-# official_status   :enum             values: [:pending, :applied, :declined]
+# status            :integer          not null, default: 0 (unofficial)
+# decision          :integer          not null, default: 0 (pending)
+# description       :text             optional
+# officialized_at   :datetime         optional
+# officialized_by   :bigint           optional (user_id)
+# decided_at        :datetime         optional
+# decided_by        :bigint           optional (user_id)
+# reports_count     :integer          default: 0 (counter cache)
 # created_at        :datetime         not null
 # updated_at        :datetime         not null
 #
+# Two-Level Status System:
+# - Level 1 (status): unofficial → official (lifecycle)
+# - Level 2 (decision): pending → penalty_applied/rejected/no_action (only when official)
+#
 class Incident < ApplicationRecord
+  # ═══════════════════════════════════════════════════════════════════
+  # ASSOCIATIONS
+  # ═══════════════════════════════════════════════════════════════════
   belongs_to :race
   belongs_to :race_location, optional: true
-  has_many :reports, dependent: :nullify
+  belongs_to :officialized_by_user, class_name: "User",
+             foreign_key: :officialized_by, optional: true
+  belongs_to :decided_by_user, class_name: "User",
+             foreign_key: :decided_by, optional: true
 
+  has_many :reports, dependent: :destroy
+
+  # ═══════════════════════════════════════════════════════════════════
+  # ENUMS - Two-Level Status System
+  # ═══════════════════════════════════════════════════════════════════
+
+  # Level 1: Lifecycle status (who is responsible)
+  # - unofficial: Being reviewed by VAR/Referee
+  # - official: Confirmed by Jury President, ready for decision
   enum :status, {
-    unofficial: "unofficial",
-    official: "official"
-  }, default: :unofficial
+    unofficial: 0,
+    official: 1
+  }
 
-  enum :official_status, {
-    pending: "pending",
-    applied: "applied",
-    declined: "declined"
-  }, default: :pending, prefix: true
+  # Level 2: Decision (only meaningful when official)
+  # - pending: Awaiting jury decision
+  # - penalty_applied: Penalty enforced
+  # - rejected: No violation found
+  # - no_action: Acknowledged, no penalty
+  enum :decision, {
+    pending: 0,
+    penalty_applied: 1,
+    rejected: 2,
+    no_action: 3
+  }, prefix: :decision
 
+  # ═══════════════════════════════════════════════════════════════════
+  # VALIDATIONS
+  # ═══════════════════════════════════════════════════════════════════
   validates :race, presence: true
+  validates :status, presence: true
+  validates :decision, presence: true
+  validate :decision_change_requires_official
 
-  # Scopes
+  # ═══════════════════════════════════════════════════════════════════
+  # SCOPES
+  # ═══════════════════════════════════════════════════════════════════
   scope :ordered, -> { order(created_at: :desc) }
-  scope :official, -> { where(status: :official) }
   scope :unofficial, -> { where(status: :unofficial) }
+  scope :official, -> { where(status: :official) }
+  scope :pending_decision, -> { official.decision_pending }
+  scope :decided, -> { official.where.not(decision: :pending) }
+  scope :with_reports, -> { includes(:reports) }
 
-  # Combine penalties from all reports for display
-  def combined_penalties
-    reports.pluck(:penalty).compact.join(', ')
+  # ═══════════════════════════════════════════════════════════════════
+  # INSTANCE METHODS
+  # ═══════════════════════════════════════════════════════════════════
+
+  def single_report?
+    reports_count == 1
   end
 
-  def officialize!
-    update!(status: :official)
+  def multiple_reports?
+    reports_count > 1
   end
 
-  def apply!
-    update!(official_status: :applied)
+  # For UI: show "Report" for 1-report incidents, "Incident" for merged
+  def display_type
+    single_report? ? "Report" : "Incident"
   end
 
-  def decline!
-    update!(official_status: :declined)
+  def can_officialize?
+    unofficial? && reports.any?
+  end
+
+  def can_decide?
+    official? && decision_pending?
+  end
+
+  def officialize!(by_user:)
+    return false unless can_officialize?
+
+    update!(
+      status: :official,
+      officialized_at: Time.current,
+      officialized_by: by_user.id
+    )
+  end
+
+  def apply_penalty!(by_user:)
+    return false unless can_decide?
+
+    update!(
+      decision: :penalty_applied,
+      decided_at: Time.current,
+      decided_by: by_user.id
+    )
+  end
+
+  def reject!(by_user:)
+    return false unless can_decide?
+
+    update!(
+      decision: :rejected,
+      decided_at: Time.current,
+      decided_by: by_user.id
+    )
+  end
+
+  def mark_no_action!(by_user:)
+    return false unless can_decide?
+
+    update!(
+      decision: :no_action,
+      decided_at: Time.current,
+      decided_by: by_user.id
+    )
+  end
+
+  # ═══════════════════════════════════════════════════════════════════
+  # CALLBACKS
+  # ═══════════════════════════════════════════════════════════════════
+  after_update_commit :broadcast_updated
+
+  private
+
+  def decision_change_requires_official
+    return unless decision_changed? && !decision_pending?
+
+    unless official?
+      errors.add(:decision, "can only be set when incident is official")
+    end
+  end
+
+  def broadcast_updated
+    Incidents::BroadcastJob.perform_later(id)
   end
 end
 ```
 
 ### **10. Report**
+
+Reports are **observations only** - they have NO status. All status/decision logic lives on the Incident.
 
 ```ruby
 # == Schema Information
@@ -627,55 +738,82 @@ end
 # Table name: reports
 #
 # id               :bigint           not null, primary key
-# race_id          :bigint           not null, foreign_key
-# incident_id      :bigint           nullable (not all reports become incidents)
-# rule_id          :bigint           not null, foreign_key
-# user_id          :bigint           not null, foreign_key (reporter)
-# race_location_id :bigint           optional
-# description      :text
-# video_start_time :integer          optional (seconds)
-# video_end_time   :integer          optional (seconds)
-# penalty          :string
-# status           :enum             values: [:draft, :submitted, :reviewed]
-# created_at       :datetime         not null
+# race_id          :bigint           not null, index
+# incident_id      :bigint           not null, index (always belongs to incident)
+# user_id          :bigint           not null, index (reporter)
+# race_location_id :bigint           optional, index
+# participant_id   :bigint           optional, index
+# bib_number       :integer          not null, index
+# description      :text             optional
+# video_clip       :jsonb            optional {start_time, end_time}
+# created_at       :datetime         not null, index
 # updated_at       :datetime         not null
 #
+# NOTE: Reports have NO STATUS - they are observations only.
+# Status and decisions live on the Incident model.
+#
 class Report < ApplicationRecord
+  # ═══════════════════════════════════════════════════════════════════
+  # ASSOCIATIONS
+  # ═══════════════════════════════════════════════════════════════════
   belongs_to :race
-  belongs_to :incident, optional: true
-  belongs_to :rule
+  belongs_to :incident, counter_cache: true
   belongs_to :user
   belongs_to :race_location, optional: true
+  belongs_to :participant, optional: true
 
   has_one_attached :video
 
-  enum :status, {
-    draft: "draft",
-    submitted: "submitted",
-    reviewed: "reviewed"
-  }, default: :draft
+  # ═══════════════════════════════════════════════════════════════════
+  # VALIDATIONS (minimal for speed - target < 100ms creation)
+  # ═══════════════════════════════════════════════════════════════════
+  validates :race_id, presence: true
+  validates :incident_id, presence: true
+  validates :user_id, presence: true
+  validates :bib_number, presence: true,
+                         numericality: { only_integer: true, greater_than: 0 }
+  validate :validate_video_clip
 
-  validates :race, presence: true
-  validates :rule, presence: true
-  validates :user, presence: true
-  validate :validate_video_times
+  # ═══════════════════════════════════════════════════════════════════
+  # NO STATUS ON REPORT
+  # Reports are observations, not decisions.
+  # All status logic lives on Incident.
+  # ═══════════════════════════════════════════════════════════════════
 
-  # Scopes
+  # ═══════════════════════════════════════════════════════════════════
+  # SCOPES
+  # ═══════════════════════════════════════════════════════════════════
   scope :ordered, -> { order(created_at: :desc) }
+  scope :by_bib, ->(bib) { where(bib_number: bib) }
   scope :by_user, ->(user) { where(user: user) }
+  scope :recent, -> { where("created_at > ?", 1.hour.ago) }
+
+  # ═══════════════════════════════════════════════════════════════════
+  # CALLBACKS (minimal - heavy work in background)
+  # ═══════════════════════════════════════════════════════════════════
+  after_create_commit :broadcast_created
 
   private
 
-  def validate_video_times
-    return unless video.attached? && video_start_time.present? && video_end_time.present?
-    
-    if video_start_time >= video_end_time
-      errors.add(:video_start_time, "must be earlier than end time")
+  def validate_video_clip
+    return unless video_clip.present?
+
+    start_time = video_clip["start_time"]
+    end_time = video_clip["end_time"]
+
+    return unless start_time.present? && end_time.present?
+
+    if start_time >= end_time
+      errors.add(:video_clip, "start_time must be before end_time")
     end
-    
-    if video_start_time.negative?
-      errors.add(:video_start_time, "must be positive")
+
+    if start_time.negative?
+      errors.add(:video_clip, "start_time must be positive")
     end
+  end
+
+  def broadcast_created
+    Reports::BroadcastJob.perform_later(id)
   end
 end
 ```

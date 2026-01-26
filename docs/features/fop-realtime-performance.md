@@ -685,39 +685,176 @@ end
 
 This phase adds the ability to select multiple reports and group them into a single incident, then take action on that incident.
 
-#### Task 8.1: Add Incident Status Enum Extension
+#### Task 8.0: Speed-Optimized Report Creation (FOP Devices)
 - **Owner**: Developer
-- **Agent**: @model
-- **File**: `db/migrate/XXXXXX_add_no_action_to_incident_status.rb`
+- **Agent**: @service
+- **File**: `app/services/reports/create.rb`
+- **Performance Target**: < 100ms total response time
 - **Details**:
-  ```ruby
-  # Extend official_status enum to support "no action" decisions
-  # Current: pending, applied, declined
-  # New: pending, applied, declined, no_action
   
-  class AddNoActionToIncidentStatus < ActiveRecord::Migration[8.1]
-    def up
-      # PostgreSQL enum extension
-      execute <<-SQL
-        ALTER TYPE incident_official_status ADD VALUE IF NOT EXISTS 'no_action';
-      SQL
-    end
-    
-    def down
-      # Enums cannot easily remove values in PostgreSQL
-      # Would need to recreate the type
+  **Key Design: Every Report auto-creates its own Incident (1:1)**
+  - Referees don't think about grouping - just tap bib and go
+  - Incident created in same transaction
+  - Broadcast happens in background job (non-blocking)
+  
+  ```ruby
+  # app/services/reports/create.rb
+  module Reports
+    class Create
+      include Dry::Monads[:result]
+
+      # Target: < 50ms database time, < 100ms total
+      def call(user:, race_id:, bib_number:, race_location_id: nil, description: nil)
+        race = Race.find(race_id)
+
+        # Single transaction, minimal work (2 INSERTs only)
+        ActiveRecord::Base.transaction do
+          # 1. Create incident (auto 1:1)
+          incident = Incident.create!(
+            race_id: race_id,
+            race_location_id: race_location_id,
+            status: :unofficial,
+            decision: :pending
+          )
+
+          # 2. Create report attached to incident
+          report = Report.create!(
+            race_id: race_id,
+            incident_id: incident.id,
+            user_id: user.id,
+            bib_number: bib_number,
+            race_location_id: race_location_id,
+            description: description
+          )
+
+          # 3. Background job handles broadcast (non-blocking)
+          # after_create_commit callback enqueues job
+
+          return Success(report)
+        end
+      rescue ActiveRecord::RecordInvalid => e
+        Failure([:validation_failed, e.record.errors.to_h])
+      end
     end
   end
   ```
   
-  Update model enum:
+  **Controller (thin, fast response)**:
   ```ruby
-  enum :official_status, {
-    pending: "pending",
-    applied: "applied",
-    declined: "declined",
-    no_action: "no_action"
-  }, default: :pending, prefix: true
+  # app/controllers/api/reports_controller.rb
+  module Api
+    class ReportsController < ApplicationController
+      # POST /api/races/:race_id/reports
+      # Target: < 100ms total response time
+      def create
+        result = Reports::Create.new.call(
+          user: current_user,
+          race_id: params[:race_id],
+          bib_number: report_params[:bib_number],
+          race_location_id: report_params[:race_location_id],
+          description: report_params[:description]
+        )
+
+        case result
+        in Success(report)
+          render json: {
+            id: report.id,
+            incident_id: report.incident_id,
+            bib_number: report.bib_number,
+            created_at: report.created_at.iso8601
+          }, status: :created
+        in Failure([:validation_failed, errors])
+          render json: { errors: errors }, status: :unprocessable_entity
+        end
+      end
+
+      private
+
+      def report_params
+        params.require(:report).permit(:bib_number, :race_location_id, :description)
+      end
+    end
+  end
+  ```
+  
+  **Background Job for Broadcast**:
+  ```ruby
+  # app/jobs/reports/broadcast_job.rb
+  module Reports
+    class BroadcastJob < ApplicationJob
+      queue_as :default
+
+      def perform(report_id)
+        report = Report.find_by(id: report_id)
+        return unless report
+
+        ReportsChannel.broadcast_to(report.race, {
+          action: "created",
+          report_id: report.id,
+          incident_id: report.incident_id,
+          bib_number: report.bib_number,
+          athlete_name: report.participant&.athlete_name,
+          html: ApplicationController.render(
+            partial: "reports/report_card",
+            locals: { report: report }
+          )
+        })
+      end
+    end
+  end
+  ```
+- **Performance Optimizations**:
+  - Minimal validations on Report (just required fields)
+  - No eager loading on creation path
+  - Broadcast in background job (after_commit)
+  - Single transaction (2 INSERTs)
+  - JSON response (no view rendering)
+- **Dependencies**: Phase 7 (Domain Models)
+
+#### Task 8.1: Create Incident Model with Two-Level Status
+- **Owner**: Developer
+- **Agent**: @model
+- **File**: `db/migrate/XXXXXX_create_incidents.rb`
+- **Details**:
+  ```ruby
+  # Two-Level Status System:
+  # - Level 1 (status): unofficial → official (lifecycle)
+  # - Level 2 (decision): pending → penalty_applied/rejected/no_action
+  
+  class CreateIncidents < ActiveRecord::Migration[8.1]
+    def change
+      create_table :incidents do |t|
+        t.references :race, null: false, foreign_key: true, index: true
+        t.references :race_location, foreign_key: true, index: true
+        t.integer :status, null: false, default: 0      # unofficial=0, official=1
+        t.integer :decision, null: false, default: 0    # pending=0, penalty_applied=1, rejected=2, no_action=3
+        t.text :description
+        t.datetime :officialized_at
+        t.bigint :officialized_by                        # user_id
+        t.datetime :decided_at
+        t.bigint :decided_by                             # user_id
+        t.integer :reports_count, default: 0             # counter cache
+        t.timestamps
+      end
+      
+      add_index :incidents, [:race_id, :status, :created_at], order: { created_at: :desc }
+      add_index :incidents, [:race_id, :decision], where: "status = 1"
+    end
+  end
+  ```
+  
+  Model enums:
+  ```ruby
+  # Level 1: Lifecycle status
+  enum :status, { unofficial: 0, official: 1 }
+  
+  # Level 2: Decision (only when official)
+  enum :decision, {
+    pending: 0,
+    penalty_applied: 1,
+    rejected: 2,
+    no_action: 3
+  }, prefix: :decision
   ```
 - **Dependencies**: Phase 7
 
@@ -942,7 +1079,7 @@ This phase adds the ability to select multiple reports and group them into a sin
       end
       
       def can_take_action?
-        incident.official? && incident.official_status_pending?
+        incident.official? && incident.decision_pending?
       end
     end
   end
@@ -955,8 +1092,8 @@ This phase adds the ability to select multiple reports and group them into a sin
       <h3 class="text-lg font-semibold text-gray-700 mb-4">Decision</h3>
       
       <div class="grid grid-cols-1 tablet:grid-cols-3 gap-4">
-        <%# Apply Penalty Button - Primary action %>
-        <%= button_to incident_apply_path(incident),
+        <%# Apply Penalty Button - Primary action (decision: penalty_applied) %>
+        <%= button_to incident_apply_penalty_path(incident),
             method: :patch,
             class: "flex items-center justify-center gap-3 
                     bg-fop-danger text-white font-bold py-4 px-6 
@@ -1012,7 +1149,7 @@ This phase adds the ability to select multiple reports and group them into a sin
     </div>
   <% else %>
     <%# Show current status badge for already-decided incidents %>
-    <% if incident.official_status_applied? %>
+    <% if incident.decision_penalty_applied? %>
       <div class="bg-fop-danger/10 border-2 border-fop-danger rounded-xl p-4 mt-6">
         <div class="flex items-center gap-3">
           <span class="bg-fop-danger text-white rounded-full p-2">
@@ -1024,7 +1161,7 @@ This phase adds the ability to select multiple reports and group them into a sin
           <span class="font-bold text-fop-danger">Penalty Applied</span>
         </div>
       </div>
-    <% elsif incident.official_status_declined? %>
+    <% elsif incident.decision_rejected? %>
       <div class="bg-gray-100 border-2 border-gray-300 rounded-xl p-4 mt-6">
         <div class="flex items-center gap-3">
           <span class="bg-gray-400 text-white rounded-full p-2">
@@ -1036,7 +1173,7 @@ This phase adds the ability to select multiple reports and group them into a sin
           <span class="font-bold text-gray-600">Rejected</span>
         </div>
       </div>
-    <% elsif incident.official_status_no_action? %>
+    <% elsif incident.decision_no_action? %>
       <div class="bg-fop-info/10 border-2 border-fop-info rounded-xl p-4 mt-6">
         <div class="flex items-center gap-3">
           <span class="bg-fop-info text-white rounded-full p-2">
@@ -1199,21 +1336,25 @@ This phase adds the ability to select multiple reports and group them into a sin
           return Failure([:not_official, "Incident must be officialized first"])
         end
         
-        unless incident.official_status_pending?
+        unless incident.decision_pending?
           return Failure([:already_decided, "Decision already made on this incident"])
         end
         
         Success(incident)
       end
       
-      def perform_action!(incident, action)
-        new_status = case action.to_s
-                     when "apply" then :applied
-                     when "reject" then :declined
-                     when "no_action" then :no_action
-                     end
+      def perform_action!(incident, action, user)
+        new_decision = case action.to_s
+                       when "apply_penalty" then :penalty_applied
+                       when "reject" then :rejected
+                       when "no_action" then :no_action
+                       end
         
-        incident.update!(official_status: new_status)
+        incident.update!(
+          decision: new_decision,
+          decided_at: Time.current,
+          decided_by: user.id
+        )
         Success(incident)
       rescue ActiveRecord::RecordInvalid => e
         Failure([:save_failed, e.message])
@@ -1221,9 +1362,9 @@ This phase adds the ability to select multiple reports and group them into a sin
       
       def broadcast_update!(incident, action)
         IncidentsChannel.broadcast_to(incident.race, {
-          action: "status_changed",
+          action: "decision_made",
           incident_id: incident.id,
-          new_status: incident.official_status,
+          new_decision: incident.decision,
           performed_action: action,
           html: ApplicationController.render(
             partial: "incidents/incident_card",
@@ -1267,10 +1408,10 @@ This phase adds the ability to select multiple reports and group them into a sin
   resources :races do
     resources :incidents, only: [:index, :show, :create] do
       member do
-        patch :apply    # Apply penalty
-        patch :reject   # Reject (no violation)
-        patch :no_action # Acknowledged, no action
-        patch :officialize # Make official
+        patch :officialize    # Status: unofficial → official
+        patch :apply_penalty  # Decision: penalty_applied
+        patch :reject         # Decision: rejected
+        patch :no_action      # Decision: no_action
       end
     end
     resources :reports, only: [:index, :show, :create]
@@ -1324,19 +1465,19 @@ This phase adds the ability to select multiple reports and group them into a sin
       end
     end
     
-    def apply
-      authorize @incident, :update?
-      handle_status_action("apply", "Penalty applied")
+    def apply_penalty
+      authorize @incident, :decide?
+      handle_decision_action("apply_penalty", "Penalty applied")
     end
     
     def reject
-      authorize @incident, :update?
-      handle_status_action("reject", "Incident rejected")
+      authorize @incident, :decide?
+      handle_decision_action("reject", "Incident rejected")
     end
     
     def no_action
-      authorize @incident, :update?
-      handle_status_action("no_action", "Marked as no action")
+      authorize @incident, :decide?
+      handle_decision_action("no_action", "Marked as no action")
     end
     
     def officialize
@@ -1366,8 +1507,8 @@ This phase adds the ability to select multiple reports and group them into a sin
       []
     end
     
-    def handle_status_action(action, success_message)
-      result = Incidents::UpdateStatus.new.call(
+    def handle_decision_action(action, success_message)
+      result = Incidents::MakeDecision.new.call(
         user: current_user,
         incident_id: @incident.id,
         action: action
@@ -1401,11 +1542,12 @@ This phase adds the ability to select multiple reports and group them into a sin
   - `spec/system/report_grouping_spec.rb`
 - **Details**:
   - Test multi-report selection
-  - Test incident creation from reports
-  - Test status transitions (apply/reject/no_action)
-  - Test authorization (only jury can decide)
+  - Test incident creation from reports (1:1 auto-create)
+  - Test two-level status: unofficial → official
+  - Test decision transitions (penalty_applied/rejected/no_action)
+  - Test authorization (VAR can merge, only Jury can decide)
   - Test real-time broadcast
-  - System test: full flow from selection to decision
+  - System test: full flow from report → incident → decision
 - **Dependencies**: Task 8.10
 
 #### Task 8.12: Create Desktop Reports View with Selection
@@ -1703,7 +1845,7 @@ proxy:
 │                                                                         │
 │  Incident #42 - Bib #34 Jean Dupont                                    │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │ Status: UNOFFICIAL                                               │   │
+│   Status: UNOFFICIAL (Level 1: Lifecycle)                             │
 │  │ Reports: 3                                                       │   │
 │  │ Location: Start Area, Transition, Climb 2                        │   │
 │  ├─────────────────────────────────────────────────────────────────┤   │
@@ -1729,7 +1871,7 @@ proxy:
 │                                                                         │
 │  Incident #42 - Bib #34 Jean Dupont                                    │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │ Status: OFFICIAL              Decision: PENDING                  │   │
+│  │ Status: OFFICIAL (Level 1)    Decision: PENDING (Level 2)        │   │
 │  └─────────────────────────────────────────────────────────────────┘   │
 │                                                                         │
 │  Step 4: Take Action (Touch-Optimized 56px Buttons)                    │
@@ -1760,17 +1902,17 @@ proxy:
 │                                                                         │
 │   official_status (decision, only when OFFICIAL):                      │
 │                                                                         │
-│                          ┌─────────────┐                               │
-│                ┌────────►│   APPLIED   │  Penalty enforced             │
-│                │         └─────────────┘                               │
+│                          ┌─────────────────┐                           │
+│                ┌────────►│ PENALTY_APPLIED │  Penalty enforced         │
+│                │         └─────────────────┘                           │
 │                │                                                        │
-│     ┌──────────┴─┐       ┌─────────────┐                               │
-│     │  PENDING   │──────►│  DECLINED   │  No violation found           │
-│     └──────────┬─┘       └─────────────┘                               │
+│     ┌──────────┴─┐       ┌─────────────────┐                           │
+│     │  PENDING   │──────►│    REJECTED     │  No violation found       │
+│     └──────────┬─┘       └─────────────────┘                           │
 │                │                                                        │
-│                │         ┌─────────────┐                               │
-│                └────────►│  NO_ACTION  │  Acknowledged, no penalty     │
-│                          └─────────────┘                               │
+│                │         ┌─────────────────┐                           │
+│                └────────►│    NO_ACTION    │  Acknowledged, no penalty │
+│                          └─────────────────┘                           │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 
