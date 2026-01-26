@@ -24,11 +24,11 @@
   <body class="h-full" style="font-family: 'Poppins', system-ui, sans-serif;">
     <div class="min-h-full flex">
       <!-- Sidebar -->
-      <aside class="hidden md:flex md:w-64 md:flex-col">
+      <aside class="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
         <div class="flex flex-col flex-grow pt-5 bg-ismf-navy overflow-y-auto">
           <!-- Logo -->
           <div class="flex items-center flex-shrink-0 px-4">
-            <div class="flex items-center gap-3">
+            <%= link_to root_path, class: "flex items-center gap-3 hover:opacity-90 transition-opacity" do %>
               <div class="w-10 h-10 bg-ismf-red rounded-lg flex items-center justify-center">
                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -38,7 +38,7 @@
                 <span class="text-white font-semibold text-lg">ISMF</span>
                 <span class="text-ismf-red font-medium text-sm block -mt-1">Race Logger</span>
               </div>
-            </div>
+            <% end %>
           </div>
           
           <!-- Navigation -->
@@ -87,7 +87,7 @@
       </aside>
 
       <!-- Main content -->
-      <div class="flex-1 flex flex-col">
+      <div class="flex-1 flex flex-col md:pl-64">
         <!-- Mobile header -->
         <header class="md:hidden bg-ismf-navy">
           <div class="flex items-center justify-between px-4 py-3">
