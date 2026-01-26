@@ -16,9 +16,12 @@ services:
       - DB_PORT=5432
       - POSTGRES_USER=ismf_dev
       - POSTGRES_PASSWORD=ismf_dev_password
+      - MAILCATCHER_HOST=mailcatcher
     depends_on:
       postgres:
         condition: service_healthy
+      mailcatcher:
+        condition: service_started
     tty: true
     stdin_open: true
     networks:
@@ -64,6 +67,15 @@ services:
       - POSTGRES_PASSWORD=ismf_dev_password
     depends_on:
       - app
+    networks:
+      - ismf-network
+
+  mailcatcher:
+    container_name: ismf-mailcatcher
+    image: schickling/mailcatcher:latest
+    ports:
+      - "1080:1080"   # Web UI - view emails at http://localhost:1080
+      - "1025:1025"   # SMTP port
     networks:
       - ismf-network
 
