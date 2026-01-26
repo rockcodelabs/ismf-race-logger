@@ -18,7 +18,9 @@ What do you need to do?
 ├─ Refactor existing code           → @refactor
 ├─ Plan a new feature               → @feature-planner
 ├─ Review implementation            → @review
-└─ Security audit                   → @security
+├─ Security audit                   → @security
+├─ Accessibility patterns           → @accessibility
+└─ Performance optimization         → @performance
 ```
 
 ---
@@ -44,11 +46,19 @@ What do you need to do?
 | **[@review](.agents/review.md)** | Code review before merge | "Review my changes for issues" |
 | **[@security](.agents/security.md)** | Security audit | "Check for security vulnerabilities" |
 
+### 🎨 Frontend & UX
+
+| Agent | Use When | Quick Example |
+|-------|----------|---------------|
+| **[@accessibility](.agents/accessibility.md)** | ARIA, keyboard nav, screen readers | "Add accessible dialog pattern" |
+| **[@performance](.agents/performance.md)** | N+1, caching, video optimization | "Optimize report list loading" |
+
 ### 🔧 Maintenance
 
 | Agent | Use When | Quick Example |
 |-------|----------|---------------|
 | **[@refactor](.agents/refactor.md)** | Improving code structure | "Extract service from controller" |
+| **[@performance](.agents/performance.md)** | Database/rendering optimization | "Add preloaded scope to model" |
 
 ### 🎯 Planning & Orchestration
 
@@ -104,6 +114,13 @@ Deep-dive knowledge modules for specific patterns (see [skills/](skills/) direct
 - **[testing-standards](skills/testing-standards/SKILL.md)** - RSpec + FactoryBot best practices
 - **[rails-service-object](skills/rails-service-object/SKILL.md)** - Service object architecture
 - **[performance-optimization](skills/performance-optimization/SKILL.md)** - N+1 prevention, caching
+
+### 🎨 37signals Frontend Patterns (New)
+
+Reference guides extracted from 37signals' Fizzy codebase:
+
+- **[@accessibility](.agents/accessibility.md)** - ARIA patterns, keyboard navigation, focus management, screen reader support
+- **[@performance](.agents/performance.md)** - CSS performance, database optimization, Active Storage, video handling
 
 ---
 

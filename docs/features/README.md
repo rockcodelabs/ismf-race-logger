@@ -11,6 +11,7 @@ This document provides an overview of all planned features for the ISMF Race Log
 | [MSO Import & Athletes](./mso-import-participants.md) | 🔴 Critical | Planned | None |
 | [FOP Real-Time Performance](./fop-realtime-performance.md) | 🔴 Critical | Planned | MSO Import |
 | Multi-File Video Upload | 🟡 High | Planned | FOP Performance |
+| [Video Clip Selector](./video-clip-selector.md) | 🟡 High | Planned | Multi-File Video Upload |
 | Report → Incident Workflow | 🟡 High | Planned | FOP Performance |
 | Rules Management | 🟢 Medium | Planned | None |
 | PDF Report Export | 🟢 Medium | Planned | Report Workflow |
