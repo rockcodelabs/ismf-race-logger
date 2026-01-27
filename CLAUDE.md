@@ -4,6 +4,8 @@
 
 ISMF Race Logger - Professional race incident tracking and management system for the International Ski Mountaineering Federation (ISMF).
 
+**Architecture**: Hanami-compatible layered architecture using Rails 8.1 + dry-rb (NO Hanami gem installed)
+
 ## Tech Stack
 
 - **Framework**: Ruby on Rails 8.1.2
@@ -100,42 +102,66 @@ docker compose build --no-cache
 docker compose down
 ```
 
-## Project Structure
+## Project Structure (Hanami-Compatible Architecture)
 
 ```
 ismf-race-logger/
 ├── app/
-│   ├── controllers/
-│   │   ├── admin/           # Admin namespace (requires admin role)
-│   │   ├── concerns/
-│   │   │   └── authentication.rb  # Rails 8.1 native auth
-│   │   └── sessions_controller.rb
-│   ├── models/
-│   │   ├── user.rb          # has_secure_password, admin flag
-│   │   ├── session.rb       # User sessions
-│   │   └── current.rb       # Current.user, Current.session
-│   ├── views/
-│   │   ├── admin/           # Admin views
-│   │   ├── layouts/
-│   │   │   ├── application.html.erb
-│   │   │   └── admin.html.erb
-│   │   └── sessions/        # Login views
-│   └── assets/
-│       └── tailwind/
-│           └── application.css  # ISMF brand styles
+│   ├── domain/                          # Layer 1: Pure business logic
+│   │   ├── entities/                    # Business objects (dry-struct)
+│   │   ├── value_objects/               # Immutable data
+│   │   ├── contracts/                   # Validation rules (dry-validation)
+│   │   ├── services/                    # Pure calculations
+│   │   └── types.rb                     # Custom dry-types
+│   │
+│   ├── application/                     # Layer 2: Use cases
+│   │   ├── commands/                    # Write operations
+│   │   ├── queries/                     # Read operations
+│   │   ├── contracts/                   # Input validation
+│   │   └── container.rb                 # DI container
+│   │
+│   ├── infrastructure/                  # Layer 3: Adapters
+│   │   ├── persistence/
+│   │   │   ├── records/                 # ActiveRecord models (suffixed with "Record")
+│   │   │   └── repositories/            # Data access layer
+│   │   ├── jobs/                        # Background jobs
+│   │   ├── mailers/                     # Email senders
+│   │   └── storage/                     # File handling
+│   │
+│   └── web/                             # Layer 4: HTTP interface
+│       ├── controllers/                 # Thin adapters
+│       │   ├── concerns/
+│       │   │   └── authentication.rb    # Rails 8.1 native auth
+│       │   ├── admin/                   # Admin namespace
+│       │   └── api/                     # API endpoints
+│       ├── views/                       # HTML templates
+│       └── components/                  # ViewComponent
+│
 ├── config/
 │   ├── routes.rb
+│   ├── initializers/
+│   │   └── dry_container.rb             # Dependency injection setup
 │   └── environments/
-│       ├── development.rb   # Hosts: localhost, 127.0.0.1
-│       └── test.rb          # Hosts cleared for testing
 ├── spec/
-│   ├── factories/           # FactoryBot factories
-│   ├── requests/            # Request specs (preferred)
-│   ├── support/             # Test helpers
-│   └── rails_helper.rb
-├── docker-compose.yml
-├── Dockerfile.dev
-└── docs/                    # Feature documentation
+│   ├── domain/                          # Fast unit tests (no DB)
+│   ├── application/                     # Integration tests
+│   ├── infrastructure/                  # Repository tests
+│   ├── web/                             # Request specs
+│   └── support/
+├── docs/
+│   ├── architecture/                    # Architecture documentation
+│   │   ├── README.md                    # Start here
+│   │   ├── hanami-architecture-implementation-plan.md
+│   │   ├── getting-started-hanami-architecture.md
+│   │   ├── packwerk-boundaries.md
+│   │   └── hanami-migration-guide.md
+│   └── features/
+├── package.yml                          # Packwerk root config
+├── app/domain/package.yml               # Domain boundaries
+├── app/application/package.yml          # Application boundaries
+├── app/infrastructure/package.yml       # Infrastructure boundaries
+├── app/web/package.yml                  # Web boundaries
+└── docker-compose.yml
 ```
 
 ## Authentication
@@ -187,16 +213,71 @@ end
 | Blue  | #0f3460   | --color-ismf-blue   |
 | Gray  | #6b7280   | --color-ismf-gray   |
 
-## Code Style
+## Code Style & Architecture Rules
 
-- Models: No namespace (e.g., `User`, not `Db::User`)
-- Services: TBD (will use dry-monads)
-- Views: ERB with TailwindCSS classes
-- Tests: RSpec with FactoryBot
+### Layer Separation (ENFORCED by Packwerk)
+- **Domain**: Pure Ruby + dry-rb only (NO Rails, NO ActiveRecord)
+- **Application**: Orchestrates domain + infrastructure via DI
+- **Infrastructure**: ActiveRecord models suffixed with "Record" (e.g., `UserRecord`, `ReportRecord`)
+- **Web**: Thin controllers, delegate to application layer
+
+### Dependencies Flow Downward
+- Web → Application → Domain
+- Infrastructure → Domain (read-only for mapping)
+- **Never upward** (Packwerk enforces this)
+
+### Naming Conventions
+- Entities: `Domain::Entities::Report` (dry-struct)
+- Records: `Infrastructure::Persistence::Records::ReportRecord` (ActiveRecord)
+- Repositories: `Infrastructure::Persistence::Repositories::ReportRepository`
+- Commands: `Application::Commands::Reports::Create`
+- Controllers: `Web::Controllers::Api::ReportsController`
+
+### Testing
+- Domain: Fast unit tests (no DB) - `spec/domain/`
+- Application: Integration tests - `spec/application/`
+- Infrastructure: Repository tests - `spec/infrastructure/`
+- Web: Request specs - `spec/web/`
+
+### Technology Stack
+- **dry-struct** - Domain entities
+- **dry-validation** - Validation contracts
+- **dry-monads** - Result objects
+- **dry-auto_inject** - Dependency injection
+- **packwerk** - Boundary enforcement
+- **NO Hanami gem** (architecture is Hanami-compatible for future migration)
 
 ## Documentation
 
-- `docs/implementation-plan-rails-8.1.md` - Full implementation plan
+### Architecture (READ FIRST)
+- `docs/architecture/README.md` - **Start here for architecture overview**
+- `docs/architecture/getting-started-hanami-architecture.md` - How to work with layers
+- `docs/architecture/hanami-architecture-implementation-plan.md` - Complete implementation guide
+- `docs/architecture/packwerk-boundaries.md` - Boundary enforcement
+- `docs/architecture/architecture-comparison.md` - Rails vs Hanami-compatible
+- `docs/architecture/hanami-migration-guide.md` - Future: Creating Hanami 2 version
+
+### Features & Implementation
+- `docs/implementation-plan-rails-8.1.md` - Original Rails 8.1 setup
 - `docs/architecture/report-incident-model.md` - Data model design
 - `docs/features/fop-realtime-performance.md` - Real-time features
+
+### AI Agents
 - `.agents/` - AI agent instructions (rspec, console, etc.)
+
+## Key Commands
+
+```bash
+# Check architecture boundaries (run before committing)
+docker compose exec app bundle exec packwerk check
+
+# Run domain tests (fast, no DB)
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/domain
+
+# Run all tests
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec
+
+# Rails console (access DI container)
+docker compose exec app bin/rails console
+# ApplicationContainer.resolve("commands.reports.create")
+```
