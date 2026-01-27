@@ -2,9 +2,9 @@
 
 require 'rails_helper'
 
-RSpec.describe MagicLink, type: :model do
+RSpec.describe Infrastructure::Persistence::Records::MagicLinkRecord, type: :model do
   describe 'associations' do
-    it { is_expected.to belong_to(:user) }
+    it { is_expected.to belong_to(:user).class_name('Infrastructure::Persistence::Records::UserRecord') }
   end
 
   describe 'validations' do

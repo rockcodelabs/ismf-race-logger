@@ -36,6 +36,12 @@ module IsmfRaceLogger
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
 
+    # Hanami-compatible architecture: Add autoload paths for layered structure
+    config.paths.add "app/domain", eager_load: true
+    config.paths.add "app/application", eager_load: true
+    config.paths.add "app/infrastructure", eager_load: true
+    config.paths.add "app/web", eager_load: true
+
     # Don't generate system test files.
     config.generators.system_tests = nil
   end

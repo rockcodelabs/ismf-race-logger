@@ -6,6 +6,8 @@ ISMF Race Logger - Professional race incident tracking and management system for
 
 **Architecture**: Hanami-compatible layered architecture using Rails 8.1 + dry-rb (NO Hanami gem installed)
 
+**🎉 REFACTOR STATUS**: User & Authentication system successfully migrated to Hanami-compatible architecture. See [REFACTOR-COMPLETE.md](REFACTOR-COMPLETE.md) for details.
+
 ## Tech Stack
 
 - **Framework**: Ruby on Rails 8.1.2
@@ -265,19 +267,30 @@ end
 ### AI Agents
 - `.agents/` - AI agent instructions (rspec, console, etc.)
 
+### Refactor Status
+- `REFACTOR-COMPLETE.md` - User & Authentication refactor summary
+- `.deprecated/` - Old Rails code (to be deleted after verification)
+
 ## Key Commands
 
 ```bash
 # Check architecture boundaries (run before committing)
 docker compose exec app bundle exec packwerk check
 
-# Run domain tests (fast, no DB)
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/domain
+# Run tests by layer (fastest to slowest)
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/domain         # ~2ms/test (NO DB)
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/application   # ~50ms/test
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/infrastructure # ~50ms/test
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/web           # ~100ms/test
 
 # Run all tests
 docker compose exec -T -e RAILS_ENV=test app bundle exec rspec
 
 # Rails console (access DI container)
 docker compose exec app bin/rails console
-# ApplicationContainer.resolve("commands.reports.create")
+# Example: ApplicationContainer.resolve("commands.users.authenticate")
+
+# Verify old code references are gone
+grep -r "^User\." app/ --exclude-dir=infrastructure
+grep -r "^Role\." app/ --exclude-dir=infrastructure
 ```

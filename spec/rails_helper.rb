@@ -6,6 +6,13 @@ ENV['RAILS_ENV'] ||= 'test'
 require 'spec_helper'
 require_relative '../config/environment'
 
+# Explicitly require Hanami-compatible architecture directories
+# This ensures Domain, Application, Infrastructure, and Web modules are loaded
+Rails.root.glob('app/domain/**/*.rb').sort.each { |f| require f }
+Rails.root.glob('app/application/**/*.rb').sort.each { |f| require f }
+Rails.root.glob('app/infrastructure/**/*.rb').sort.each { |f| require f }
+Rails.root.glob('app/web/**/*.rb').sort.each { |f| require f }
+
 # Prevent database truncation if the environment is production
 abort("The Rails environment is running in production mode!") if Rails.env.production?
 

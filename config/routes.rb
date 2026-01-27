@@ -1,6 +1,6 @@
 Rails.application.routes.draw do
-  # Authentication routes
-  resource :session
+  # Authentication routes - using web layer controllers
+  resource :session, controller: "web/controllers/sessions"
   resources :passwords, param: :token
 
   # Admin namespace
