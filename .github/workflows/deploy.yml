@@ -11,8 +11,6 @@ on:
 
 jobs:
   deploy:
-    # Uses organization runner: pi5main-org (ARM64)
-    # Runs directly on Pi server, deploying to localhost
     runs-on: [self-hosted, Linux, ARM64]
     timeout-minutes: 20
     env:
@@ -20,13 +18,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
+      
       # Install Bitwarden Secrets Manager CLI
       - name: Install Bitwarden Secrets Manager CLI
         run: |
           if ! command -v bws &> /dev/null; then
             echo "Installing Bitwarden Secrets Manager CLI v1.0.0..."
             
+            # Download ARM64 binary for v1.0.0
             curl -L -o bws-aarch64-unknown-linux-gnu.zip \
               "https://github.com/bitwarden/sdk-sm/releases/download/bws-v1.0.0/bws-aarch64-unknown-linux-gnu-1.0.0.zip"
             
@@ -39,7 +38,7 @@ jobs:
           fi
           
           bws --version
-
+      
       # Fetch secrets from Bitwarden Secrets Manager
       - name: Get Secrets from Bitwarden
         env:
@@ -47,21 +46,15 @@ jobs:
         run: |
           echo "Fetching secrets from Bitwarden Secrets Manager..."
           
-          # Fetch each secret by ID
-          KAMAL_REGISTRY_USERNAME=$(bws secret get ${{ secrets.BW_SECRET_REGISTRY_USERNAME }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
-          KAMAL_REGISTRY_PASSWORD=$(bws secret get ${{ secrets.BW_SECRET_REGISTRY_PASSWORD }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
-          RAILS_MASTER_KEY=$(bws secret get ${{ secrets.BW_SECRET_ISMF_MASTER_KEY }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
+          # Fetch each secret by ID and export as environment variable
+          export KAMAL_REGISTRY_USERNAME=$(bws secret get ${{ secrets.BW_SECRET_REGISTRY_USERNAME }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
+          export KAMAL_REGISTRY_PASSWORD=$(bws secret get ${{ secrets.BW_SECRET_REGISTRY_PASSWORD }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
+          export RAILS_MASTER_KEY=$(bws secret get ${{ secrets.BW_SECRET_ISMF_MASTER_KEY }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
           
           # Save to GITHUB_ENV for subsequent steps
           echo "KAMAL_REGISTRY_USERNAME=$KAMAL_REGISTRY_USERNAME" >> $GITHUB_ENV
           echo "KAMAL_REGISTRY_PASSWORD=$KAMAL_REGISTRY_PASSWORD" >> $GITHUB_ENV
           echo "RAILS_MASTER_KEY=$RAILS_MASTER_KEY" >> $GITHUB_ENV
-          
-          # Create .kamal/secrets file for Kamal to read
-          mkdir -p .kamal
-          echo "KAMAL_REGISTRY_USERNAME=$KAMAL_REGISTRY_USERNAME" > .kamal/secrets
-          echo "KAMAL_REGISTRY_PASSWORD=$KAMAL_REGISTRY_PASSWORD" >> .kamal/secrets
-          echo "RAILS_MASTER_KEY=$RAILS_MASTER_KEY" >> .kamal/secrets
           
           # Verify secrets are set (without exposing values)
           [[ -n "$KAMAL_REGISTRY_USERNAME" ]] && echo "✅ KAMAL_REGISTRY_USERNAME fetched" || { echo "❌ KAMAL_REGISTRY_USERNAME missing"; exit 1; }
@@ -69,8 +62,8 @@ jobs:
           [[ -n "$RAILS_MASTER_KEY" ]] && echo "✅ RAILS_MASTER_KEY fetched (length: ${#RAILS_MASTER_KEY})" || { echo "❌ RAILS_MASTER_KEY missing"; exit 1; }
           
           echo ""
-          echo "✅ All secrets fetched successfully and written to .kamal/secrets!"
-
+          echo "✅ All secrets fetched successfully from Bitwarden Secrets Manager!"
+      
       - name: Install jq
         run: |
           if ! command -v jq &> /dev/null; then
@@ -80,92 +73,109 @@ jobs:
           else
             echo "✅ jq already installed"
           fi
-
-      - name: Check and install Ruby if needed
+      
+      - name: Configure hostname resolution
         run: |
-          # Check if Ruby version is >= 3.0
-          if command -v ruby &> /dev/null; then
-            RUBY_VERSION=$(ruby -e 'puts RUBY_VERSION')
-            RUBY_MAJOR=$(echo $RUBY_VERSION | cut -d. -f1)
-            echo "Current Ruby version: $RUBY_VERSION"
+          # Map pi5main.local to localhost for runner container
+          echo "127.0.0.1 pi5main.local" | sudo tee -a /etc/hosts
+          echo "✅ Added pi5main.local to /etc/hosts"
+      
+      - name: Set up Ruby 3.3.0 with ruby-build
+        run: |
+          RUBY_VERSION="3.3.0"
+          RUBY_INSTALL_DIR="/opt/hostedtoolcache/Ruby/${RUBY_VERSION}/arm64"
+          
+          # Check if Ruby is already installed in tool cache
+          if [ -f "${RUBY_INSTALL_DIR}.complete" ]; then
+            echo "✅ Ruby ${RUBY_VERSION} already installed in tool cache"
+          else
+            echo "Installing Ruby ${RUBY_VERSION} to tool cache..."
             
-            if [ "$RUBY_MAJOR" -ge 3 ]; then
-              echo "✅ Ruby $RUBY_VERSION is compatible"
-              exit 0
-            else
-              echo "⚠️  Ruby $RUBY_VERSION is too old, need >= 3.0"
+            # Install ruby-build if not present
+            if ! command -v ruby-build &> /dev/null; then
+              echo "Installing ruby-build..."
+              git clone https://github.com/rbenv/ruby-build.git /tmp/ruby-build
+              sudo /tmp/ruby-build/install.sh
+              rm -rf /tmp/ruby-build
             fi
+            
+            # Install build dependencies
+            sudo apt-get update -qq
+            sudo apt-get install -y build-essential libssl-dev libreadline-dev zlib1g-dev
+            
+            # Create tool cache directory
+            sudo mkdir -p /opt/hostedtoolcache/Ruby
+            sudo chown -R $USER:$USER /opt/hostedtoolcache
+            
+            # Build Ruby
+            ruby-build ${RUBY_VERSION} ${RUBY_INSTALL_DIR}
+            
+            # Mark as complete
+            touch ${RUBY_INSTALL_DIR}.complete
+            
+            echo "✅ Ruby ${RUBY_VERSION} installed successfully"
           fi
           
-          # Install ruby-install and chruby
-          echo "Installing ruby-install and chruby..."
-          cd /tmp
+          # Add Ruby to PATH
+          echo "${RUBY_INSTALL_DIR}/bin" >> $GITHUB_PATH
           
-          # Install ruby-install
-          wget -O ruby-install-0.9.3.tar.gz https://github.com/postmodern/ruby-install/releases/download/v0.9.3/ruby-install-0.9.3.tar.gz
-          tar -xzvf ruby-install-0.9.3.tar.gz
-          cd ruby-install-0.9.3/
-          sudo make install
-          
-          # Install chruby
-          cd /tmp
-          wget -O chruby-0.3.9.tar.gz https://github.com/postmodern/chruby/archive/v0.3.9.tar.gz
-          tar -xzvf chruby-0.3.9.tar.gz
-          cd chruby-0.3.9/
-          sudo make install
-          
-          # Install Ruby 3.3.0
-          echo "Installing Ruby 3.3.0..."
-          sudo ruby-install ruby 3.3.0
-          
-          # Setup chruby for this session
-          source /usr/local/share/chruby/chruby.sh
-          chruby ruby-3.3.0
-          
-          ruby -v
-
-      - name: Setup Ruby gem paths
-        run: |
-          # Load chruby if installed
-          if [ -f /usr/local/share/chruby/chruby.sh ]; then
-            source /usr/local/share/chruby/chruby.sh
-            chruby ruby-3.3.0 || true
-          fi
-          
-          echo "GEM_HOME=$(ruby -r rubygems -e 'puts Gem.user_dir')" >> $GITHUB_ENV
-          echo "$(ruby -r rubygems -e 'puts Gem.user_dir')/bin" >> $GITHUB_PATH
-
+          # Verify installation
+          ${RUBY_INSTALL_DIR}/bin/ruby -v
+      
       - name: Install Kamal
         run: |
-          # Load chruby if installed
-          if [ -f /usr/local/share/chruby/chruby.sh ]; then
-            source /usr/local/share/chruby/chruby.sh
-            chruby ruby-3.3.0 || true
-          fi
-          
           if ! command -v kamal &> /dev/null; then
             gem install kamal --no-document
           fi
           kamal version
-
-      - name: Login to Docker Hub
+      
+      - name: Set up SSH for deployment
         run: |
-          echo "$KAMAL_REGISTRY_PASSWORD" | docker login -u "$KAMAL_REGISTRY_USERNAME" --password-stdin
-
-      - name: Release deploy lock
-        run: kamal lock release || true
-
-      - name: Deploy locally
-        run: |
-          # Load chruby if installed
-          if [ -f /usr/local/share/chruby/chruby.sh ]; then
-            source /usr/local/share/chruby/chruby.sh
-            chruby ruby-3.3.0 || true
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          
+          # Generate SSH key if not exists
+          if [ ! -f ~/.ssh/id_ed25519 ]; then
+            ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -C "github-actions-runner"
+            echo "✅ Generated new SSH key"
+          else
+            echo "✅ SSH key already exists"
           fi
           
-          # Deploy to localhost since runner IS the deployment server
-          kamal deploy --skip-push
-
+          # Add runner's public key to host's authorized_keys using Docker volume mount
+          # This allows the runner container to SSH to the host as user 'rege'
+          echo "Adding SSH key to host..."
+          docker run --rm -v /home:/hosthome alpine sh -c "
+            mkdir -p /hosthome/rege/.ssh
+            chmod 700 /hosthome/rege/.ssh
+            grep -qF '$(cat ~/.ssh/id_ed25519.pub)' /hosthome/rege/.ssh/authorized_keys 2>/dev/null || echo '$(cat ~/.ssh/id_ed25519.pub)' >> /hosthome/rege/.ssh/authorized_keys
+            chmod 600 /hosthome/rege/.ssh/authorized_keys
+          "
+          echo "✅ SSH key added to host"
+          
+          # Configure SSH client
+          cat > ~/.ssh/config << 'EOF'
+          Host pi5main.local localhost 127.0.0.1
+            User rege
+            IdentityFile ~/.ssh/id_ed25519
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+            IdentitiesOnly yes
+          EOF
+          chmod 600 ~/.ssh/config
+          
+          echo "✅ SSH configured"
+      
+      - name: Login to Docker Hub
+        run: |
+          echo "${{ env.KAMAL_REGISTRY_PASSWORD }}" | docker login -u "${{ env.KAMAL_REGISTRY_USERNAME }}" --password-stdin
+      
+      - name: Release deploy lock
+        run: kamal lock release || true
+      
+      - name: Deploy to production
+        run: kamal deploy
+      
       - name: Cleanup old Docker images
         run: kamal prune all || true
         continue-on-error: true
