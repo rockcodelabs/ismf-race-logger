@@ -27,7 +27,7 @@ deploy_timeout: 120
 proxy:
   ssl: false
   host: ismf.taterniczek.pl
-  app_port: 3002
+  app_port: 3005
   healthcheck:
     path: /up
     interval: 2
@@ -38,7 +38,7 @@ env:
   clear:
     RAILS_ENV: production
     SOLID_QUEUE_IN_PUMA: true
-    PORT: 3002
+    PORT: 3005
     DB_HOST: ismf-race-logger-postgres
     POSTGRES_USER: ismf_production
     POSTGRES_DB: ismf_race_logger_production
