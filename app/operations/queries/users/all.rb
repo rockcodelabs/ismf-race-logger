@@ -2,7 +2,7 @@
 
 require "dry/monads"
 
-module Application
+module Operations
   module Queries
     module Users
       class All

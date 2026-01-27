@@ -13,7 +13,7 @@ module Domain
       attribute :name, Types::String
       attribute :race_date, Types::Params::Date
       attribute :location, Types::String
-      attribute :status, Types::RaceStatus.default("upcoming")
+      attribute :status, Types::Strict::String.default("upcoming").enum("upcoming", "active", "completed")
       attribute :created_at, Types::FlexibleDateTime
       attribute :updated_at, Types::FlexibleDateTime
 
