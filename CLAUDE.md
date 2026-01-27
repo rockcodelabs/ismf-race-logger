@@ -247,6 +247,71 @@ end
 | Blue  | #0f3460   | --color-ismf-blue   |
 | Gray  | #6b7280   | --color-ismf-gray   |
 
+## Code Quality
+
+### RuboCop - Style & Linting
+
+RuboCop enforces consistent code style across the project. **Run before committing!**
+
+```bash
+# Quick check (recommended before commit)
+bin/rubocop-check
+
+# Auto-fix simple issues (trailing whitespace, newlines, spacing)
+bin/rubocop-check --fix
+
+# Check specific file/directory
+bin/rubocop-check app/domain/
+
+# GitHub Actions format (CI/CD)
+docker compose exec -T app bin/rubocop -f github
+
+# Manual fix in container
+docker compose exec -T app bin/rubocop -A
+```
+
+#### Common Issues Auto-Fixed
+
+- ✅ Trailing whitespace
+- ✅ Missing final newlines
+- ✅ Array bracket spacing (`[1, 2]` → `[ 1, 2 ]`)
+- ✅ String literal quotes (prefer double quotes)
+- ✅ Indentation and alignment
+
+#### When to Run
+
+1. **Before committing** - `bin/rubocop-check --fix`
+2. **In CI/CD** - Automated via GitHub Actions
+3. **After refactoring** - Ensure style consistency
+
+### Test Coverage
+
+All layers must have comprehensive tests:
+
+```bash
+# Run all tests (fast to slow)
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/domain         # ~2ms/test
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/operations    # ~50ms/test
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/infrastructure
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/web
+
+# Current status: 619 examples, 0 failures ✅
+```
+
+### Architecture Boundaries
+
+Packwerk enforces layer separation:
+
+```bash
+# Check boundaries (run before committing)
+docker compose exec app bundle exec packwerk check
+
+# Update dependencies after adding new references
+docker compose exec app bundle exec packwerk update-todo
+```
+
+**Violations are not allowed in new code!**
+
 ## Code Style & Architecture Rules
 
 ### Layer Separation (ENFORCED by Packwerk)
@@ -317,6 +382,12 @@ docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/web         
 
 # Run all tests
 docker compose exec -T -e RAILS_ENV=test app bundle exec rspec
+
+# RuboCop - Code style checks (run before committing)
+bin/rubocop-check              # Check all files
+bin/rubocop-check --fix        # Auto-fix simple issues
+docker compose exec -T app bin/rubocop -f github  # GitHub Actions format
+docker compose exec -T app bin/rubocop -A         # Auto-correct in container
 
 # Rails console (access DI container)
 docker compose exec app bin/rails console
