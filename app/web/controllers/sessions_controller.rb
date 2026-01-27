@@ -26,7 +26,7 @@ module Web
       private
 
       def authenticate_user_command
-        @authenticate_user_command ||= Application::Commands::Users::Authenticate.new
+        @authenticate_user_command ||= Operations::Commands::Users::Authenticate.new
       end
 
       def handle_authentication_result(result)

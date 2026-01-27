@@ -3,7 +3,7 @@
 require "dry/monads"
 require "dry/monads/do"
 
-module Application
+module Operations
   module Commands
     module Users
       class Authenticate

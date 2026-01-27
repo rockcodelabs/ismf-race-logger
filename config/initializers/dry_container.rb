@@ -20,14 +20,14 @@ class ApplicationContainer
   # Application layer - write operations (commands that change state)
   namespace :commands do
     # Commands will be registered here
-    # Example: register(:users_authenticate) { Application::Commands::Users::Authenticate.new }
+    # Example: register(:users_authenticate) { Operations::Commands::Users::Authenticate.new }
   end
 
   # Queries namespace
   # Application layer - read operations (queries that fetch data)
   namespace :queries do
     # Queries will be registered here
-    # Example: register(:users_find) { Application::Queries::Users::Find.new }
+    # Example: register(:users_find) { Operations::Queries::Users::Find.new }
   end
 end
 

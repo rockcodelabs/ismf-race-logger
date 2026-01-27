@@ -317,8 +317,8 @@ RSpec.describe Web::Controllers::SessionsController, type: :request do
 
     it 'uses Authenticate command for authentication' do
       # This test verifies the controller uses the application layer
-      command_double = instance_double(Application::Commands::Users::Authenticate)
-      allow(Application::Commands::Users::Authenticate).to receive(:new).and_return(command_double)
+      command_double = instance_double(Operations::Commands::Users::Authenticate)
+      allow(Operations::Commands::Users::Authenticate).to receive(:new).and_return(command_double)
 
       user_entity = Domain::Entities::User.new(
         id: user_record.id,
@@ -340,8 +340,8 @@ RSpec.describe Web::Controllers::SessionsController, type: :request do
     end
 
     it 'handles command failure gracefully' do
-      command_double = instance_double(Application::Commands::Users::Authenticate)
-      allow(Application::Commands::Users::Authenticate).to receive(:new).and_return(command_double)
+      command_double = instance_double(Operations::Commands::Users::Authenticate)
+      allow(Operations::Commands::Users::Authenticate).to receive(:new).and_return(command_double)
 
       expect(command_double).to receive(:call)
         .and_return(Dry::Monads::Failure(:invalid_credentials))

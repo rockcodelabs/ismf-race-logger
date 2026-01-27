@@ -41,16 +41,17 @@ module IsmfRaceLogger
     # This allows app/domain/entities/user.rb to define Domain::Entities::User
     
     # Define the namespace modules first (required before push_dir)
+    # Note: We DON'T require application.rb because it conflicts with Rails' IsmfRaceLogger::Application
     require_relative "../app/domain"
-    require_relative "../app/application"
+    require_relative "../app/operations"
     require_relative "../app/infrastructure"
     require_relative "../app/web"
     
     # Configure Zeitwerk to use custom root namespaces
-    Rails.autoloaders.main.push_dir(Rails.root.join("app/domain"), namespace: Domain)
-    Rails.autoloaders.main.push_dir(Rails.root.join("app/application"), namespace: Application)
-    Rails.autoloaders.main.push_dir(Rails.root.join("app/infrastructure"), namespace: Infrastructure)
-    Rails.autoloaders.main.push_dir(Rails.root.join("app/web"), namespace: Web)
+    Rails.autoloaders.main.push_dir(Rails.root.join("app/domain"), namespace: ::Domain)
+    Rails.autoloaders.main.push_dir(Rails.root.join("app/operations"), namespace: ::Operations)
+    Rails.autoloaders.main.push_dir(Rails.root.join("app/infrastructure"), namespace: ::Infrastructure)
+    Rails.autoloaders.main.push_dir(Rails.root.join("app/web"), namespace: ::Web)
 
     # Don't generate system test files.
     config.generators.system_tests = nil

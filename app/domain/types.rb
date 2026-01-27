@@ -39,5 +39,17 @@ module Domain
     
     # Race statuses
     RaceStatus = Strict::String.enum("upcoming", "active", "completed")
+    
+    # Flexible DateTime type that accepts Time, DateTime, and ActiveSupport::TimeWithZone
+    FlexibleDateTime = Nominal::Any.constructor { |value|
+      case value
+      when ::DateTime, ::Time
+        value
+      when ::ActiveSupport::TimeWithZone
+        value.to_datetime
+      else
+        DateTime.parse(value.to_s)
+      end
+    }
   end
 end

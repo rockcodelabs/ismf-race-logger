@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Application::Commands::Users::Authenticate do
+RSpec.describe Operations::Commands::Users::Authenticate do
   let(:command) { described_class.new }
 
   describe '#call' do
@@ -214,7 +214,9 @@ RSpec.describe Application::Commands::Users::Authenticate do
           id: 1,
           email_address: 'user@example.com',
           name: 'Test User',
-          admin: false
+          admin: false,
+          created_at: Time.current,
+          updated_at: Time.current
         )
       end
 

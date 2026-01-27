@@ -1,58 +1,66 @@
-module Authentication
-  extend ActiveSupport::Concern
+# frozen_string_literal: true
 
-  included do
-    before_action :restore_authentication
-    before_action :require_authentication
-    helper_method :authenticated?
-  end
+module Web
+  module Controllers
+    module Concerns
+      module Authentication
+        extend ActiveSupport::Concern
 
-  class_methods do
-    def allow_unauthenticated_access(**options)
-      skip_before_action :require_authentication, **options
-    end
-  end
+        included do
+          before_action :restore_authentication
+          before_action :require_authentication
+          helper_method :authenticated?
+        end
 
-  private
-    def authenticated?
-      Current.session.present?
-    end
+        class_methods do
+          def allow_unauthenticated_access(**options)
+            skip_before_action :require_authentication, **options
+          end
+        end
 
-    def restore_authentication
-      Current.session ||= find_session_by_cookie
-    end
+        private
+          def authenticated?
+            Current.session.present?
+          end
 
-    def require_authentication
-      restore_authentication
-      resume_session || request_authentication
-    end
+          def restore_authentication
+            Current.session ||= find_session_by_cookie
+          end
 
-    def resume_session
-      Current.session
-    end
+          def require_authentication
+            restore_authentication
+            resume_session || request_authentication
+          end
 
-    def find_session_by_cookie
-      Session.find_by(id: cookies.signed[:session_id]) if cookies.signed[:session_id]
-    end
+          def resume_session
+            Current.session
+          end
 
-    def request_authentication
-      session[:return_to_after_authenticating] = request.url
-      redirect_to new_session_path
-    end
+          def find_session_by_cookie
+            Session.find_by(id: cookies.signed[:session_id]) if cookies.signed[:session_id]
+          end
 
-    def after_authentication_url
-      session.delete(:return_to_after_authenticating) || root_url
-    end
+          def request_authentication
+            session[:return_to_after_authenticating] = request.url
+            redirect_to new_session_path
+          end
 
-    def start_new_session_for(user)
-      user.sessions.create!(user_agent: request.user_agent, ip_address: request.remote_ip).tap do |session|
-        Current.session = session
-        cookies.signed.permanent[:session_id] = { value: session.id, httponly: true, same_site: :lax }
+          def after_authentication_url
+            session.delete(:return_to_after_authenticating) || root_url
+          end
+
+          def start_new_session_for(user)
+            user.sessions.create!(user_agent: request.user_agent, ip_address: request.remote_ip).tap do |session|
+              Current.session = session
+              cookies.signed.permanent[:session_id] = { value: session.id, httponly: true, same_site: :lax }
+            end
+          end
+
+          def terminate_session
+            Current.session.destroy
+            cookies.delete(:session_id)
+          end
       end
     end
-
-    def terminate_session
-      Current.session.destroy
-      cookies.delete(:session_id)
-    end
+  end
 end

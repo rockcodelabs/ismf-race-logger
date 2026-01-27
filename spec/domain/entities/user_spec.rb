@@ -6,9 +6,12 @@ RSpec.describe Domain::Entities::User do
   describe 'initialization' do
     it 'creates a user with required attributes' do
       user = described_class.new(
+        id: 1,
         email_address: 'test@example.com',
         name: 'Test User',
-        admin: false
+        admin: false,
+        created_at: Time.current,
+        updated_at: Time.current
       )
 
       expect(user.email_address).to eq('test@example.com')
@@ -33,8 +36,11 @@ RSpec.describe Domain::Entities::User do
 
     it 'defaults admin to false' do
       user = described_class.new(
+        id: 1,
         email_address: 'test@example.com',
-        name: 'Test User'
+        name: 'Test User',
+        created_at: Time.current,
+        updated_at: Time.current
       )
 
       expect(user.admin).to be false
@@ -44,9 +50,12 @@ RSpec.describe Domain::Entities::User do
   describe '#admin?' do
     it 'returns true when admin is true' do
       user = described_class.new(
+        id: 1,
         email_address: 'admin@example.com',
         name: 'Admin User',
-        admin: true
+        admin: true,
+        created_at: Time.current,
+        updated_at: Time.current
       )
 
       expect(user.admin?).to be true
@@ -54,9 +63,12 @@ RSpec.describe Domain::Entities::User do
 
     it 'returns false when admin is false' do
       user = described_class.new(
+        id: 1,
         email_address: 'user@example.com',
         name: 'Regular User',
-        admin: false
+        admin: false,
+        created_at: Time.current,
+        updated_at: Time.current
       )
 
       expect(user.admin?).to be false
@@ -66,8 +78,11 @@ RSpec.describe Domain::Entities::User do
   describe '#display_name' do
     it 'returns the name when present' do
       user = described_class.new(
+        id: 1,
         email_address: 'john@example.com',
-        name: 'John Doe'
+        name: 'John Doe',
+        created_at: Time.current,
+        updated_at: Time.current
       )
 
       expect(user.display_name).to eq('John Doe')
@@ -75,8 +90,11 @@ RSpec.describe Domain::Entities::User do
 
     it 'returns email prefix when name is empty' do
       user = described_class.new(
+        id: 1,
         email_address: 'john@example.com',
-        name: ''
+        name: '',
+        created_at: Time.current,
+        updated_at: Time.current
       )
 
       expect(user.display_name).to eq('john')
@@ -87,9 +105,12 @@ RSpec.describe Domain::Entities::User do
     describe '#var_operator?' do
       it 'returns true for var_operator role' do
         user = described_class.new(
+          id: 1,
           email_address: 'operator@example.com',
           name: 'Operator',
-          role_name: 'var_operator'
+          role_name: 'var_operator',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.var_operator?).to be true
@@ -97,9 +118,12 @@ RSpec.describe Domain::Entities::User do
 
       it 'returns false for other roles' do
         user = described_class.new(
+          id: 1,
           email_address: 'referee@example.com',
           name: 'Referee',
-          role_name: 'national_referee'
+          role_name: 'national_referee',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.var_operator?).to be false
@@ -107,9 +131,11 @@ RSpec.describe Domain::Entities::User do
 
       it 'returns false when role_name is nil' do
         user = described_class.new(
+          id: 1,
           email_address: 'user@example.com',
           name: 'User',
-          role_name: nil
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.var_operator?).to be false
@@ -119,9 +145,12 @@ RSpec.describe Domain::Entities::User do
     describe '#national_referee?' do
       it 'returns true for national_referee role' do
         user = described_class.new(
-          email_address: 'ref@example.com',
-          name: 'Referee',
-          role_name: 'national_referee'
+          id: 1,
+          email_address: 'referee@example.com',
+          name: 'National Referee',
+          role_name: 'national_referee',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.national_referee?).to be true
@@ -129,9 +158,12 @@ RSpec.describe Domain::Entities::User do
 
       it 'returns false for other roles' do
         user = described_class.new(
-          email_address: 'op@example.com',
+          id: 1,
+          email_address: 'operator@example.com',
           name: 'Operator',
-          role_name: 'var_operator'
+          role_name: 'var_operator',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.national_referee?).to be false
@@ -141,9 +173,12 @@ RSpec.describe Domain::Entities::User do
     describe '#international_referee?' do
       it 'returns true for international_referee role' do
         user = described_class.new(
+          id: 1,
           email_address: 'intref@example.com',
-          name: 'Int Referee',
-          role_name: 'international_referee'
+          name: 'International Referee',
+          role_name: 'international_referee',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.international_referee?).to be true
@@ -151,9 +186,12 @@ RSpec.describe Domain::Entities::User do
 
       it 'returns false for other roles' do
         user = described_class.new(
-          email_address: 'ref@example.com',
-          name: 'Referee',
-          role_name: 'national_referee'
+          id: 1,
+          email_address: 'operator@example.com',
+          name: 'Operator',
+          role_name: 'var_operator',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.international_referee?).to be false
@@ -163,9 +201,12 @@ RSpec.describe Domain::Entities::User do
     describe '#referee?' do
       it 'returns true for national_referee' do
         user = described_class.new(
-          email_address: 'ref@example.com',
+          id: 1,
+          email_address: 'referee@example.com',
           name: 'Referee',
-          role_name: 'national_referee'
+          role_name: 'national_referee',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.referee?).to be true
@@ -173,9 +214,12 @@ RSpec.describe Domain::Entities::User do
 
       it 'returns true for international_referee' do
         user = described_class.new(
+          id: 2,
           email_address: 'intref@example.com',
-          name: 'Int Referee',
-          role_name: 'international_referee'
+          name: 'International Referee',
+          role_name: 'international_referee',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.referee?).to be true
@@ -183,9 +227,12 @@ RSpec.describe Domain::Entities::User do
 
       it 'returns false for non-referee roles' do
         user = described_class.new(
-          email_address: 'op@example.com',
+          id: 1,
+          email_address: 'operator@example.com',
           name: 'Operator',
-          role_name: 'var_operator'
+          role_name: 'var_operator',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.referee?).to be false
@@ -193,9 +240,11 @@ RSpec.describe Domain::Entities::User do
 
       it 'returns false when no role' do
         user = described_class.new(
+          id: 1,
           email_address: 'user@example.com',
           name: 'User',
-          role_name: nil
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.referee?).to be false
@@ -205,9 +254,12 @@ RSpec.describe Domain::Entities::User do
     describe '#jury_president?' do
       it 'returns true for jury_president role' do
         user = described_class.new(
-          email_address: 'jury@example.com',
+          id: 1,
+          email_address: 'president@example.com',
           name: 'Jury President',
-          role_name: 'jury_president'
+          role_name: 'jury_president',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.jury_president?).to be true
@@ -217,9 +269,12 @@ RSpec.describe Domain::Entities::User do
     describe '#referee_manager?' do
       it 'returns true for referee_manager role' do
         user = described_class.new(
+          id: 1,
           email_address: 'manager@example.com',
-          name: 'Manager',
-          role_name: 'referee_manager'
+          name: 'Referee Manager',
+          role_name: 'referee_manager',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.referee_manager?).to be true
@@ -229,9 +284,12 @@ RSpec.describe Domain::Entities::User do
     describe '#broadcast_viewer?' do
       it 'returns true for broadcast_viewer role' do
         user = described_class.new(
+          id: 1,
           email_address: 'viewer@example.com',
-          name: 'Viewer',
-          role_name: 'broadcast_viewer'
+          name: 'Broadcast Viewer',
+          role_name: 'broadcast_viewer',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.broadcast_viewer?).to be true
@@ -241,9 +299,12 @@ RSpec.describe Domain::Entities::User do
     describe '#has_role?' do
       it 'returns true when role matches' do
         user = described_class.new(
-          email_address: 'op@example.com',
+          id: 1,
+          email_address: 'operator@example.com',
           name: 'Operator',
-          role_name: 'var_operator'
+          role_name: 'var_operator',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.has_role?('var_operator')).to be true
@@ -252,9 +313,12 @@ RSpec.describe Domain::Entities::User do
 
       it 'returns false when role does not match' do
         user = described_class.new(
-          email_address: 'op@example.com',
+          id: 1,
+          email_address: 'operator@example.com',
           name: 'Operator',
-          role_name: 'var_operator'
+          role_name: 'var_operator',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.has_role?('national_referee')).to be false
@@ -262,9 +326,11 @@ RSpec.describe Domain::Entities::User do
 
       it 'returns false when user has no role' do
         user = described_class.new(
+          id: 1,
           email_address: 'user@example.com',
           name: 'User',
-          role_name: nil
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.has_role?('var_operator')).to be false
@@ -275,20 +341,26 @@ RSpec.describe Domain::Entities::User do
   describe 'authorization methods' do
     describe '#can_officialize_incident?' do
       it 'returns true for admin' do
-        user = described_class.new(
+        admin = described_class.new(
+          id: 1,
           email_address: 'admin@example.com',
           name: 'Admin',
-          admin: true
+          admin: true,
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
-        expect(user.can_officialize_incident?).to be true
+        expect(admin.can_officialize_incident?).to be true
       end
 
       it 'returns true for national referee' do
         user = described_class.new(
-          email_address: 'ref@example.com',
-          name: 'Referee',
-          role_name: 'national_referee'
+          id: 2,
+          email_address: 'referee@example.com',
+          name: 'National Referee',
+          role_name: 'national_referee',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.can_officialize_incident?).to be true
@@ -296,9 +368,12 @@ RSpec.describe Domain::Entities::User do
 
       it 'returns true for international referee' do
         user = described_class.new(
+          id: 3,
           email_address: 'intref@example.com',
-          name: 'Int Referee',
-          role_name: 'international_referee'
+          name: 'International Referee',
+          role_name: 'international_referee',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.can_officialize_incident?).to be true
@@ -306,9 +381,12 @@ RSpec.describe Domain::Entities::User do
 
       it 'returns true for referee manager' do
         user = described_class.new(
+          id: 4,
           email_address: 'manager@example.com',
-          name: 'Manager',
-          role_name: 'referee_manager'
+          name: 'Referee Manager',
+          role_name: 'referee_manager',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.can_officialize_incident?).to be true
@@ -316,9 +394,12 @@ RSpec.describe Domain::Entities::User do
 
       it 'returns false for var operator' do
         user = described_class.new(
-          email_address: 'op@example.com',
-          name: 'Operator',
-          role_name: 'var_operator'
+          id: 5,
+          email_address: 'operator@example.com',
+          name: 'VAR Operator',
+          role_name: 'var_operator',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.can_officialize_incident?).to be false
@@ -327,20 +408,26 @@ RSpec.describe Domain::Entities::User do
 
     describe '#can_decide_incident?' do
       it 'returns true for admin' do
-        user = described_class.new(
+        admin = described_class.new(
+          id: 1,
           email_address: 'admin@example.com',
           name: 'Admin',
-          admin: true
+          admin: true,
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
-        expect(user.can_decide_incident?).to be true
+        expect(admin.can_decide_incident?).to be true
       end
 
       it 'returns true for referee manager' do
         user = described_class.new(
+          id: 2,
           email_address: 'manager@example.com',
-          name: 'Manager',
-          role_name: 'referee_manager'
+          name: 'Referee Manager',
+          role_name: 'referee_manager',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.can_decide_incident?).to be true
@@ -348,9 +435,12 @@ RSpec.describe Domain::Entities::User do
 
       it 'returns true for international referee' do
         user = described_class.new(
+          id: 3,
           email_address: 'intref@example.com',
-          name: 'Int Referee',
-          role_name: 'international_referee'
+          name: 'International Referee',
+          role_name: 'international_referee',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.can_decide_incident?).to be true
@@ -358,9 +448,12 @@ RSpec.describe Domain::Entities::User do
 
       it 'returns false for national referee' do
         user = described_class.new(
-          email_address: 'ref@example.com',
-          name: 'Referee',
-          role_name: 'national_referee'
+          id: 4,
+          email_address: 'referee@example.com',
+          name: 'National Referee',
+          role_name: 'national_referee',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.can_decide_incident?).to be false
@@ -368,9 +461,12 @@ RSpec.describe Domain::Entities::User do
 
       it 'returns false for var operator' do
         user = described_class.new(
-          email_address: 'op@example.com',
-          name: 'Operator',
-          role_name: 'var_operator'
+          id: 5,
+          email_address: 'operator@example.com',
+          name: 'VAR Operator',
+          role_name: 'var_operator',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.can_decide_incident?).to be false
@@ -379,20 +475,26 @@ RSpec.describe Domain::Entities::User do
 
     describe '#can_merge_incidents?' do
       it 'returns true for admin' do
-        user = described_class.new(
+        admin = described_class.new(
+          id: 1,
           email_address: 'admin@example.com',
           name: 'Admin',
-          admin: true
+          admin: true,
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
-        expect(user.can_merge_incidents?).to be true
+        expect(admin.can_merge_incidents?).to be true
       end
 
       it 'returns true for referee manager' do
         user = described_class.new(
+          id: 2,
           email_address: 'manager@example.com',
-          name: 'Manager',
-          role_name: 'referee_manager'
+          name: 'Referee Manager',
+          role_name: 'referee_manager',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.can_merge_incidents?).to be true
@@ -400,9 +502,12 @@ RSpec.describe Domain::Entities::User do
 
       it 'returns false for referee' do
         user = described_class.new(
-          email_address: 'ref@example.com',
-          name: 'Referee',
-          role_name: 'national_referee'
+          id: 3,
+          email_address: 'referee@example.com',
+          name: 'National Referee',
+          role_name: 'national_referee',
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.can_merge_incidents?).to be false
@@ -411,20 +516,26 @@ RSpec.describe Domain::Entities::User do
 
     describe '#can_manage_users?' do
       it 'returns true for admin' do
-        user = described_class.new(
+        admin = described_class.new(
+          id: 1,
           email_address: 'admin@example.com',
           name: 'Admin',
-          admin: true
+          admin: true,
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
-        expect(user.can_manage_users?).to be true
+        expect(admin.can_manage_users?).to be true
       end
 
       it 'returns false for non-admin' do
         user = described_class.new(
-          email_address: 'manager@example.com',
-          name: 'Manager',
-          role_name: 'referee_manager'
+          id: 2,
+          email_address: 'user@example.com',
+          name: 'Regular User',
+          admin: false,
+          created_at: Time.current,
+          updated_at: Time.current
         )
 
         expect(user.can_manage_users?).to be false
@@ -435,8 +546,12 @@ RSpec.describe Domain::Entities::User do
   describe 'immutability' do
     it 'cannot modify attributes after creation' do
       user = described_class.new(
+        id: 1,
         email_address: 'test@example.com',
-        name: 'Test User'
+        name: 'Test User',
+        admin: false,
+        created_at: Time.current,
+        updated_at: Time.current
       )
 
       expect { user.name = 'New Name' }.to raise_error(NoMethodError)
@@ -444,9 +559,12 @@ RSpec.describe Domain::Entities::User do
 
     it 'creates a new instance when changing attributes' do
       user = described_class.new(
-        email_address: 'test@example.com',
+        id: 1,
+        email_address: 'user@example.com',
         name: 'Test User',
-        admin: false
+        admin: false,
+        created_at: Time.current,
+        updated_at: Time.current
       )
 
       new_user = user.new(admin: true)

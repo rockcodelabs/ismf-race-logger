@@ -8,13 +8,16 @@ module Domain
     class User < Dry::Struct
       transform_keys(&:to_sym)
 
-      attribute :id, Types::Integer.optional
+      # Required attributes - entities represent persisted domain objects
+      attribute :id, Types::Integer
       attribute :email_address, Types::Email
       attribute :name, Types::String
       attribute :admin, Types::Bool.default(false)
-      attribute :role_name, Types::RoleName.optional
-      attribute :created_at, Types::Params::DateTime.optional
-      attribute :updated_at, Types::Params::DateTime.optional
+      attribute :created_at, Types::FlexibleDateTime
+      attribute :updated_at, Types::FlexibleDateTime
+      
+      # Optional attributes
+      attribute? :role_name, Types::RoleName.optional
 
       # Business logic methods
       def admin?

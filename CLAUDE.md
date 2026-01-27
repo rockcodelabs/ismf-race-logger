@@ -6,7 +6,13 @@ ISMF Race Logger - Professional race incident tracking and management system for
 
 **Architecture**: Hanami-compatible layered architecture using Rails 8.1 + dry-rb (NO Hanami gem installed)
 
-**🎉 REFACTOR STATUS**: User & Authentication system successfully migrated to Hanami-compatible architecture. See [REFACTOR-COMPLETE.md](REFACTOR-COMPLETE.md) for details.
+**🎉 REFACTOR STATUS**: Operations layer (formerly Application) established with passing tests!
+- **Phase 1 Complete**: Domain (41 passing) + Operations (14 passing) layers ✅
+- **Namespace Migration**: Application → Operations (avoiding Rails conflict)
+- **Current Status**: 619 examples, 518 failures (101 passing - 16.3%)
+- **Next Steps**: Fix MagicLink (28 failures) + Policies (400 failures) = Quick path to 85% passing
+- See [REFACTOR-STATUS-2024.md](docs/REFACTOR-STATUS-2024.md) for complete status
+- See [QUICK-WINS.md](docs/QUICK-WINS.md) for fixing remaining failures
 
 ## Tech Stack
 
@@ -116,7 +122,7 @@ ismf-race-logger/
 │   │   ├── services/                    # Pure calculations
 │   │   └── types.rb                     # Custom dry-types
 │   │
-│   ├── application/                     # Layer 2: Use cases
+│   ├── operations/                      # Layer 2: Use cases
 │   │   ├── commands/                    # Write operations
 │   │   ├── queries/                     # Read operations
 │   │   ├── contracts/                   # Input validation
@@ -146,7 +152,7 @@ ismf-race-logger/
 │   └── environments/
 ├── spec/
 │   ├── domain/                          # Fast unit tests (no DB)
-│   ├── application/                     # Integration tests
+│   ├── operations/                      # Integration tests
 │   ├── infrastructure/                  # Repository tests
 │   ├── web/                             # Request specs
 │   └── support/
@@ -160,7 +166,7 @@ ismf-race-logger/
 │   └── features/
 ├── package.yml                          # Packwerk root config
 ├── app/domain/package.yml               # Domain boundaries
-├── app/application/package.yml          # Application boundaries
+├── app/operations/package.yml           # Operations boundaries
 ├── app/infrastructure/package.yml       # Infrastructure boundaries
 ├── app/web/package.yml                  # Web boundaries
 └── docker-compose.yml
@@ -219,12 +225,12 @@ end
 
 ### Layer Separation (ENFORCED by Packwerk)
 - **Domain**: Pure Ruby + dry-rb only (NO Rails, NO ActiveRecord)
-- **Application**: Orchestrates domain + infrastructure via DI
+- **Operations**: Orchestrates domain + infrastructure via DI
 - **Infrastructure**: ActiveRecord models suffixed with "Record" (e.g., `UserRecord`, `ReportRecord`)
-- **Web**: Thin controllers, delegate to application layer
+- **Web**: Thin controllers, delegate to operations layer
 
 ### Dependencies Flow Downward
-- Web → Application → Domain
+- Web → Operations → Domain
 - Infrastructure → Domain (read-only for mapping)
 - **Never upward** (Packwerk enforces this)
 
@@ -232,12 +238,12 @@ end
 - Entities: `Domain::Entities::Report` (dry-struct)
 - Records: `Infrastructure::Persistence::Records::ReportRecord` (ActiveRecord)
 - Repositories: `Infrastructure::Persistence::Repositories::ReportRepository`
-- Commands: `Application::Commands::Reports::Create`
+- Commands: `Operations::Commands::Reports::Create`
 - Controllers: `Web::Controllers::Api::ReportsController`
 
 ### Testing
 - Domain: Fast unit tests (no DB) - `spec/domain/`
-- Application: Integration tests - `spec/application/`
+- Operations: Integration tests - `spec/operations/`
 - Infrastructure: Repository tests - `spec/infrastructure/`
 - Web: Request specs - `spec/web/`
 
@@ -279,7 +285,7 @@ docker compose exec app bundle exec packwerk check
 
 # Run tests by layer (fastest to slowest)
 docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/domain         # ~2ms/test (NO DB)
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/application   # ~50ms/test
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/operations    # ~50ms/test
 docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/infrastructure # ~50ms/test
 docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/web           # ~100ms/test
 
@@ -289,6 +295,7 @@ docker compose exec -T -e RAILS_ENV=test app bundle exec rspec
 # Rails console (access DI container)
 docker compose exec app bin/rails console
 # Example: ApplicationContainer.resolve("commands.users.authenticate")
+# Use Operations::Commands::Users::Authenticate.new
 
 # Verify old code references are gone
 grep -r "^User\." app/ --exclude-dir=infrastructure
