@@ -1,0 +1,8 @@
+# Infrastructure Layer Package
+# Adapters for external systems (database, external APIs, file storage)
+# Maps between domain entities and external representations
+
+enforce_dependencies: true
+
+dependencies:
+  - app/domain

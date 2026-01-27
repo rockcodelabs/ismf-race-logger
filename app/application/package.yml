@@ -1,0 +1,8 @@
+# Application Layer Package
+# Use cases and business workflows
+# Orchestrates domain entities and infrastructure adapters
+
+enforce_dependencies: true
+
+dependencies:
+  - app/domain

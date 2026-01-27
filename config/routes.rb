@@ -3,8 +3,8 @@ Rails.application.routes.draw do
   resource :session, controller: "web/controllers/sessions"
   resources :passwords, param: :token
 
-  # Admin namespace
-  namespace :admin do
+  # Admin namespace - using web layer controllers
+  namespace :admin, module: "web/controllers/admin" do
     root to: "dashboard#index"
     resources :users
   end
@@ -17,6 +17,6 @@ Rails.application.routes.draw do
   get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
-  # Root path - redirect to admin for now
-  root "home#index"
+  # Root path - using web layer controllers
+  root "web/controllers/home#index"
 end

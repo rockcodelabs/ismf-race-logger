@@ -1,0 +1,9 @@
+# Web Layer Package
+# HTTP interface and presentation logic
+# Thin controllers that delegate to application layer commands and queries
+
+enforce_dependencies: true
+
+dependencies:
+  - app/application
+  - app/domain

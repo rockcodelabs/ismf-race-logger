@@ -36,11 +36,21 @@ module IsmfRaceLogger
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
 
-    # Hanami-compatible architecture: Add autoload paths for layered structure
-    config.paths.add "app/domain", eager_load: true
-    config.paths.add "app/application", eager_load: true
-    config.paths.add "app/infrastructure", eager_load: true
-    config.paths.add "app/web", eager_load: true
+    # Hanami-compatible architecture: Configure Zeitwerk for custom namespaces
+    # We use push_dir with namespace option to map directories to their modules
+    # This allows app/domain/entities/user.rb to define Domain::Entities::User
+    
+    # Define the namespace modules first (required before push_dir)
+    require_relative "../app/domain"
+    require_relative "../app/application"
+    require_relative "../app/infrastructure"
+    require_relative "../app/web"
+    
+    # Configure Zeitwerk to use custom root namespaces
+    Rails.autoloaders.main.push_dir(Rails.root.join("app/domain"), namespace: Domain)
+    Rails.autoloaders.main.push_dir(Rails.root.join("app/application"), namespace: Application)
+    Rails.autoloaders.main.push_dir(Rails.root.join("app/infrastructure"), namespace: Infrastructure)
+    Rails.autoloaders.main.push_dir(Rails.root.join("app/web"), namespace: Web)
 
     # Don't generate system test files.
     config.generators.system_tests = nil
