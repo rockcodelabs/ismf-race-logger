@@ -52,6 +52,28 @@ App runs at: http://localhost:3003
 | PostgreSQL | ismf-postgres   | 5433 |
 | Tailwind   | ismf-tailwind   | -    |
 
+## Troubleshooting
+
+### "Server already running" error
+
+If you see `A server is already running (pid: X, file: /rails/tmp/pids/server.pid)`:
+
+```bash
+# The dev-entrypoint script should handle this automatically,
+# but if needed, manually remove the PID file:
+docker compose exec app rm -f tmp/pids/server.pid
+
+# Or rebuild containers:
+docker compose down
+docker compose up --build
+```
+
+### "watchman: not found" warning
+
+The Tailwind container may show `sh: 1: watchman: not found`. This is **harmless and expected**. Watchman is an optional Facebook file-watching tool that Tailwind can use for optimization, but it's not available in default Debian repositories and is not required.
+
+**TL;DR**: Ignore this warning. Tailwind CSS works perfectly fine without watchman - it has its own built-in file watching.
+
 ## ⚠️ CRITICAL: Running Tests
 
 **ALWAYS run tests with explicit `RAILS_ENV=test`:**
@@ -103,11 +125,15 @@ docker compose exec -T app bin/rails db:drop db:create db:migrate db:seed
 # View logs
 docker compose logs -f app
 
-# Rebuild containers
+# Rebuild containers (after Dockerfile changes)
 docker compose build --no-cache
 
 # Stop everything
 docker compose down
+
+# Clean restart (removes stale PID files)
+docker compose down
+docker compose up --build
 ```
 
 ## Project Structure (Hanami-Compatible Architecture)

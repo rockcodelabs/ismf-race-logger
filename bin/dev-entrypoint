@@ -1,0 +1,10 @@
+#!/bin/bash -e
+
+# Remove stale PID file if it exists (prevents "server already running" error)
+if [ -f tmp/pids/server.pid ]; then
+  echo "Removing stale PID file..."
+  rm -f tmp/pids/server.pid
+fi
+
+# Execute the command passed to the container
+exec "${@}"

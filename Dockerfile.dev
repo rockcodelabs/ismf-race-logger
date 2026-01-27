@@ -37,8 +37,14 @@ RUN bundle install
 # Copy the rest of the application
 COPY . .
 
+# Make entrypoint executable
+RUN chmod +x bin/dev-entrypoint
+
 # Expose port for Rails server
 EXPOSE 3000
+
+# Use custom entrypoint to handle PID cleanup
+ENTRYPOINT ["/rails/bin/dev-entrypoint"]
 
 # Default command
 CMD ["./bin/rails", "server", "-b", "0.0.0.0"]

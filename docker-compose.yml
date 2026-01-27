@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     container_name: ismf-app
+    entrypoint: ["/rails/bin/dev-entrypoint"]
     command: ./bin/rails server -p 3000 -b 0.0.0.0
     volumes:
       - .:/rails
@@ -51,6 +52,7 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     container_name: ismf-tailwind
+    entrypoint: ["/rails/bin/dev-entrypoint"]
     command: >
       sh -c "bundle exec tailwindcss 
       -i ./app/assets/tailwind/application.css 
