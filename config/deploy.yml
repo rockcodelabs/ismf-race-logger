@@ -8,7 +8,7 @@ image: regedarek/ismf-race-logger
 servers:
   web:
     hosts:
-      - localhost
+      - pi5main.local
 
 # Docker registry configuration
 registry:
