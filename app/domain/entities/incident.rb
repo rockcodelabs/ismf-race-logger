@@ -11,8 +11,8 @@ module Domain
       # Required attributes - entities represent persisted domain objects
       attribute :id, Types::Integer
       attribute :race_id, Types::Integer
-      attribute :status, Types::IncidentStatus.default("unofficial")
-      attribute :decision, Types::DecisionType.default("pending")
+      attribute :status, Types::Strict::String.default("unofficial").enum("unofficial", "official")
+      attribute :decision, Types::Strict::String.default("pending").enum("pending", "penalty_applied", "rejected", "no_action")
       attribute :created_at, Types::FlexibleDateTime
       attribute :updated_at, Types::FlexibleDateTime
 
