@@ -15,7 +15,7 @@ module Domain
       attribute :decision, Types::DecisionType.default("pending")
       attribute :created_at, Types::FlexibleDateTime
       attribute :updated_at, Types::FlexibleDateTime
-      
+
       # Optional attributes
       attribute? :race_location_id, Types::Integer
       attribute? :officialized_by_user_id, Types::Integer

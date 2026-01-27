@@ -8,7 +8,7 @@ module Web
       # This allows controllers in Web::Controllers namespace to use standard view paths
       # Example: Web::Controllers::SessionsController -> views/sessions/
       def self.controller_path
-        @controller_path ||= name.sub(/^Web::Controllers::/, '').sub(/Controller$/, '').underscore
+        @controller_path ||= name.sub(/^Web::Controllers::/, "").sub(/Controller$/, "").underscore
       end
 
       # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.

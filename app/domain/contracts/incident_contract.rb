@@ -19,13 +19,13 @@ module Domain
       end
 
       rule(:status) do
-        unless ["unofficial", "official"].include?(value)
+        unless [ "unofficial", "official" ].include?(value)
           key.failure("must be either 'unofficial' or 'official'")
         end
       end
 
       rule(:decision) do
-        unless ["pending", "penalty_applied", "rejected", "no_action"].include?(value)
+        unless [ "pending", "penalty_applied", "rejected", "no_action" ].include?(value)
           key.failure("must be one of: pending, penalty_applied, rejected, no_action")
         end
       end

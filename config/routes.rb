@@ -1,10 +1,10 @@
 Rails.application.routes.draw do
   # Authentication routes - using web layer controllers
-  resource :session, controller: 'web/controllers/sessions'
-  resources :passwords, param: :token, controller: 'web/controllers/passwords'
+  resource :session, controller: "web/controllers/sessions"
+  resources :passwords, param: :token, controller: "web/controllers/passwords"
 
   # Admin namespace - using web layer controllers
-  namespace :admin, module: 'web/controllers/admin' do
+  namespace :admin, module: "web/controllers/admin" do
     root to: "dashboard#index"
     resources :users
   end
@@ -19,7 +19,7 @@ Rails.application.routes.draw do
 
   # Root path - using web layer controllers
   root "web/controllers/home#index"
-  
+
   # Make controllers from app/web findable
   # Rails expects controllers in app/controllers, but ours are in app/web/controllers
   # This is handled by Zeitwerk configuration in config/application.rb

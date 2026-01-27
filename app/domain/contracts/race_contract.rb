@@ -30,7 +30,7 @@ module Domain
       end
 
       rule(:status) do
-        unless ["upcoming", "active", "completed"].include?(value)
+        unless [ "upcoming", "active", "completed" ].include?(value)
           key.failure("must be one of: upcoming, active, completed")
         end
       end

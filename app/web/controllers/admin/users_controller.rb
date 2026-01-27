@@ -4,7 +4,7 @@ module Web
   module Controllers
     module Admin
       class UsersController < BaseController
-        before_action :set_user, only: [:show, :edit, :update, :destroy]
+        before_action :set_user, only: [ :show, :edit, :update, :destroy ]
 
         def index
           @users = Infrastructure::Persistence::Records::UserRecord.order(created_at: :desc)
@@ -34,7 +34,7 @@ module Web
         def update
           @user.assign_attributes(user_params)
           @user.admin = params[:user][:admin] == "1" || params[:user][:admin] == true
-          
+
           if @user.save
             redirect_to admin_user_path(@user), notice: "User was successfully updated."
           else

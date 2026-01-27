@@ -15,7 +15,7 @@ module Domain
       attribute :admin, Types::Bool.default(false)
       attribute :created_at, Types::FlexibleDateTime
       attribute :updated_at, Types::FlexibleDateTime
-      
+
       # Optional attributes
       attribute? :role_name, Types::RoleName.optional
 

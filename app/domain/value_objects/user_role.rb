@@ -18,7 +18,7 @@ module Domain
       }.freeze
 
       def referee?
-        name.in?(["national_referee", "international_referee"])
+        name.in?([ "national_referee", "international_referee" ])
       end
 
       def operator?

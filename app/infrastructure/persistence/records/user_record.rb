@@ -8,21 +8,21 @@ module Infrastructure
 
         has_secure_password
 
-        has_many :session_records, 
+        has_many :session_records,
                  class_name: "Infrastructure::Persistence::Records::SessionRecord",
                  foreign_key: "user_id",
                  dependent: :destroy
-        
+
         has_many :magic_links,
                  class_name: "Infrastructure::Persistence::Records::MagicLinkRecord",
                  foreign_key: "user_id",
                  dependent: :destroy
-        
+
         belongs_to :role_record,
                    class_name: "Infrastructure::Persistence::Records::RoleRecord",
                    foreign_key: "role_id",
                    optional: true
-        
+
         # Alias for convenience in factories and tests
         alias_method :role, :role_record
         alias_method :role=, :role_record=
@@ -35,8 +35,8 @@ module Infrastructure
         # Simple scopes for data retrieval only
         scope :ordered, -> { order(created_at: :desc) }
         scope :admins, -> { where(admin: true) }
-        scope :with_role, ->(role_name) { 
-          joins(:role_record).where(role_records: { name: role_name }) 
+        scope :with_role, ->(role_name) {
+          joins(:role_record).where(role_records: { name: role_name })
         }
         scope :referees, -> {
           joins(:role_record).where(role_records: { name: %w[national_referee international_referee] })

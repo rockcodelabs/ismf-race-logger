@@ -36,7 +36,7 @@ module Operations
           if result.success?
             Success(result.to_h)
           else
-            Failure([:validation_failed, result.errors.to_h])
+            Failure([ :validation_failed, result.errors.to_h ])
           end
         end
       end

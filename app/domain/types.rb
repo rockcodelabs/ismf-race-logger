@@ -12,7 +12,7 @@ module Domain
     UUID = String.constrained(
       format: /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i
     )
-    
+
     # User role types
     RoleName = Strict::String.enum(
       "var_operator",
@@ -22,10 +22,10 @@ module Domain
       "referee_manager",
       "broadcast_viewer"
     )
-    
+
     # Incident statuses
     IncidentStatus = Strict::String.enum("unofficial", "official")
-    
+
     # Decision types
     DecisionType = Strict::String.enum(
       "pending",
@@ -33,13 +33,13 @@ module Domain
       "rejected",
       "no_action"
     )
-    
+
     # Bib number (1-9999)
     BibNumber = Coercible::Integer.constrained(gteq: 1, lteq: 9999)
-    
+
     # Race statuses
     RaceStatus = Strict::String.enum("upcoming", "active", "completed")
-    
+
     # Flexible DateTime type that accepts Time, DateTime, and ActiveSupport::TimeWithZone
     FlexibleDateTime = Nominal::Any.constructor { |value|
       case value

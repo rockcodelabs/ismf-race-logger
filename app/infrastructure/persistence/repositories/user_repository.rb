@@ -27,7 +27,7 @@ module Infrastructure
             email_address: email_address,
             password: password
           )
-          
+
           return Failure(:invalid_credentials) unless record
 
           Success(to_entity(record))
@@ -37,7 +37,7 @@ module Infrastructure
           role_record = nil
           if attributes[:role_name]
             role_record = Records::RoleRecord.find_by(name: attributes[:role_name])
-            return Failure([:role_not_found, attributes[:role_name]]) unless role_record
+            return Failure([ :role_not_found, attributes[:role_name] ]) unless role_record
           end
 
           record = Records::UserRecord.new(
@@ -52,7 +52,7 @@ module Infrastructure
           if record.save
             Success(to_entity(record))
           else
-            Failure([:validation_failed, record.errors.to_hash])
+            Failure([ :validation_failed, record.errors.to_hash ])
           end
         end
 
@@ -62,7 +62,7 @@ module Infrastructure
           # Handle role change if provided
           if attributes[:role_name]
             role_record = Records::RoleRecord.find_by(name: attributes[:role_name])
-            return Failure([:role_not_found, attributes[:role_name]]) unless role_record
+            return Failure([ :role_not_found, attributes[:role_name] ]) unless role_record
             attributes[:role_id] = role_record.id
             attributes.delete(:role_name)
           end
@@ -70,7 +70,7 @@ module Infrastructure
           if record.update(attributes)
             Success(to_entity(record))
           else
-            Failure([:validation_failed, record.errors.to_hash])
+            Failure([ :validation_failed, record.errors.to_hash ])
           end
         rescue ActiveRecord::RecordNotFound
           Failure(:not_found)

@@ -17,7 +17,7 @@ module Domain
       attribute :description, Types::String
       attribute :created_at, Types::FlexibleDateTime
       attribute :updated_at, Types::FlexibleDateTime
-      
+
       # Optional attributes
       attribute? :incident_id, Types::Integer
       attribute? :race_location_id, Types::Integer
