@@ -8,11 +8,7 @@ image: regedarek/ismf-race-logger
 servers:
   web:
     hosts:
-      - pi5main.local
-    labels:
-      traefik.http.routers.ismf.rule: Host(\`ismf.taterniczek.pl\`)
-      traefik.http.routers.ismf.entrypoints: websecure
-      traefik.http.routers.ismf.tls: true
+      - localhost
 
 # Docker registry configuration
 registry:
@@ -30,12 +26,11 @@ deploy_timeout: 120
 # Proxy configuration (kamal-proxy)
 proxy:
   ssl: false
-  hosts:
-    - ismf.taterniczek.pl
+  host: ismf.taterniczek.pl
   app_port: 3002
   healthcheck:
     path: /up
-    interval: 10
+    interval: 2
     timeout: 5
 
 # Environment variables

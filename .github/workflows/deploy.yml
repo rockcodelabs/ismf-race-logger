@@ -12,7 +12,7 @@ on:
 jobs:
   deploy:
     # Uses organization runner: pi5main-org (ARM64)
-    # Ensure this repo is added to runner's "Repository access" in organization settings
+    # Runs directly on Pi server, deploying to localhost
     runs-on: [self-hosted, Linux, ARM64]
     timeout-minutes: 20
     env:
@@ -155,7 +155,7 @@ jobs:
       - name: Release deploy lock
         run: kamal lock release || true
 
-      - name: Deploy
+      - name: Deploy locally
         run: |
           # Load chruby if installed
           if [ -f /usr/local/share/chruby/chruby.sh ]; then
@@ -163,7 +163,8 @@ jobs:
             chruby ruby-3.3.0 || true
           fi
           
-          kamal deploy
+          # Deploy to localhost since runner IS the deployment server
+          kamal deploy --skip-push
 
       - name: Cleanup old Docker images
         run: kamal prune all || true
