@@ -11,6 +11,8 @@ on:
 
 jobs:
   deploy:
+    # Uses organization runner: pi5main-org (ARM64)
+    # Ensure this repo is added to runner's "Repository access" in organization settings
     runs-on: [self-hosted, Linux, ARM64]
     timeout-minutes: 20
     env:
