@@ -50,11 +50,13 @@ jobs:
           export KAMAL_REGISTRY_USERNAME=$(bws secret get ${{ secrets.BW_SECRET_REGISTRY_USERNAME }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
           export KAMAL_REGISTRY_PASSWORD=$(bws secret get ${{ secrets.BW_SECRET_REGISTRY_PASSWORD }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
           export RAILS_MASTER_KEY=$(bws secret get ${{ secrets.BW_SECRET_ISMF_MASTER_KEY }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
+          export POSTGRES_PASSWORD=$(bws secret get ${{ secrets.BW_SECRET_POSTGRES_PASSWORD }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
           
           # Save to GITHUB_ENV for subsequent steps
           echo "KAMAL_REGISTRY_USERNAME=$KAMAL_REGISTRY_USERNAME" >> $GITHUB_ENV
           echo "KAMAL_REGISTRY_PASSWORD=$KAMAL_REGISTRY_PASSWORD" >> $GITHUB_ENV
           echo "RAILS_MASTER_KEY=$RAILS_MASTER_KEY" >> $GITHUB_ENV
+          echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" >> $GITHUB_ENV
           
           # Create .kamal/secrets file for Kamal
           mkdir -p .kamal
@@ -62,6 +64,7 @@ jobs:
           KAMAL_REGISTRY_USERNAME=$KAMAL_REGISTRY_USERNAME
           KAMAL_REGISTRY_PASSWORD=$KAMAL_REGISTRY_PASSWORD
           RAILS_MASTER_KEY=$RAILS_MASTER_KEY
+          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
           EOF
           
           # Create config/master.key for Rails
@@ -72,6 +75,7 @@ jobs:
           [[ -n "$KAMAL_REGISTRY_USERNAME" ]] && echo "✅ KAMAL_REGISTRY_USERNAME fetched" || { echo "❌ KAMAL_REGISTRY_USERNAME missing"; exit 1; }
           [[ -n "$KAMAL_REGISTRY_PASSWORD" ]] && echo "✅ KAMAL_REGISTRY_PASSWORD fetched" || { echo "❌ KAMAL_REGISTRY_PASSWORD missing"; exit 1; }
           [[ -n "$RAILS_MASTER_KEY" ]] && echo "✅ RAILS_MASTER_KEY fetched (length: ${#RAILS_MASTER_KEY})" || { echo "❌ RAILS_MASTER_KEY missing"; exit 1; }
+          [[ -n "$POSTGRES_PASSWORD" ]] && echo "✅ POSTGRES_PASSWORD fetched" || { echo "❌ POSTGRES_PASSWORD missing"; exit 1; }
           
           echo ""
           echo "✅ All secrets fetched successfully and written to .kamal/secrets and config/master.key!"
@@ -184,6 +188,10 @@ jobs:
       
       - name: Release deploy lock
         run: kamal lock release || true
+      
+      - name: Boot PostgreSQL accessory
+        run: |
+          kamal accessory boot postgres || echo "PostgreSQL already running"
       
       - name: Deploy to production
         run: kamal deploy
