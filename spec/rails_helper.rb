@@ -38,6 +38,11 @@ RSpec.configure do |config|
 
   # Time travel helpers (travel_to, freeze_time, etc.)
   config.include ActiveSupport::Testing::TimeHelpers
+
+  # Clear cache after each test to prevent rate limit interference
+  config.after(:each) do
+    Rails.cache.clear
+  end
 end
 
 # Shoulda Matchers configuration

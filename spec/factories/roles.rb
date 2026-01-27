@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 FactoryBot.define do
-  factory :role do
-    name { Role::NAMES.sample }
+  factory :role, class: 'Infrastructure::Persistence::Records::RoleRecord' do
+    name { %w[var_operator national_referee international_referee jury_president referee_manager broadcast_viewer].sample }
 
     # Use initialize_with to find or create roles by name
     # This prevents unique constraint violations when creating multiple users with the same role
-    initialize_with { Role.find_or_create_by(name: name) }
+    initialize_with { Infrastructure::Persistence::Records::RoleRecord.find_or_create_by(name: name) }
 
     trait :var_operator do
       name { "var_operator" }

@@ -194,11 +194,25 @@ RSpec.describe Web::Controllers::SessionsController, type: :request do
         )
       end
 
-      # Note: Rate limiting test might need special configuration
-      # This is a placeholder for rate limit testing
+      # Rate limiting is set to 10 attempts per 3 minutes in the controller
       it 'rate limits excessive login attempts' do
-        # Skip or configure rate limiting for tests
-        pending "Rate limiting configuration needed for testing"
+        # Make 10 failed login attempts (should succeed)
+        10.times do
+          post session_path, params: {
+            email_address: 'user@example.com',
+            password: 'wrong_password'
+          }
+          expect(response).to redirect_to(new_session_path)
+        end
+
+        # 11th attempt should be rate limited
+        post session_path, params: {
+          email_address: 'user@example.com',
+          password: 'password123'
+        }
+
+        expect(response).to redirect_to(new_session_path)
+        expect(flash[:alert]).to eq("Try again later.")
       end
     end
   end
@@ -324,7 +338,9 @@ RSpec.describe Web::Controllers::SessionsController, type: :request do
         id: user_record.id,
         email_address: 'user@example.com',
         name: 'Test User',
-        admin: false
+        admin: false,
+        created_at: Time.current,
+        updated_at: Time.current
       )
 
       expect(command_double).to receive(:call)

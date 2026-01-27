@@ -7,18 +7,18 @@ module Web
         before_action :set_user, only: [:show, :edit, :update, :destroy]
 
         def index
-          @users = User.order(created_at: :desc)
+          @users = Infrastructure::Persistence::Records::UserRecord.order(created_at: :desc)
         end
 
         def show
         end
 
         def new
-          @user = User.new
+          @user = Infrastructure::Persistence::Records::UserRecord.new
         end
 
         def create
-          @user = User.new(user_params)
+          @user = Infrastructure::Persistence::Records::UserRecord.new(user_params)
           @user.admin = params[:user][:admin] == "1" || params[:user][:admin] == true
 
           if @user.save
@@ -54,7 +54,7 @@ module Web
         private
 
         def set_user
-          @user = User.find(params[:id])
+          @user = Infrastructure::Persistence::Records::UserRecord.find(params[:id])
         end
 
         def user_params

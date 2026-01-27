@@ -10,6 +10,9 @@ module Infrastructure
                    class_name: "Infrastructure::Persistence::Records::UserRecord",
                    foreign_key: "user_id"
 
+        # Alias for convenience (Current.user delegates to session.user)
+        alias_method :user, :user_record
+
         # NO validations (domain handles this)
         # NO callbacks
         # NO business logic

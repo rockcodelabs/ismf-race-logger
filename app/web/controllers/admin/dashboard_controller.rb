@@ -5,9 +5,9 @@ module Web
     module Admin
       class DashboardController < BaseController
         def index
-          @total_users = User.count
-          @admin_users = User.admins.count
-          @recent_users = User.order(created_at: :desc).limit(5)
+          @total_users = Infrastructure::Persistence::Records::UserRecord.count
+          @admin_users = Infrastructure::Persistence::Records::UserRecord.admins.count
+          @recent_users = Infrastructure::Persistence::Records::UserRecord.order(created_at: :desc).limit(5)
         end
       end
     end

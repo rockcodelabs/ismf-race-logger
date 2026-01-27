@@ -13,7 +13,7 @@ module Infrastructure
                  foreign_key: "user_id",
                  dependent: :destroy
         
-        has_many :magic_link_records,
+        has_many :magic_links,
                  class_name: "Infrastructure::Persistence::Records::MagicLinkRecord",
                  foreign_key: "user_id",
                  dependent: :destroy
@@ -22,6 +22,11 @@ module Infrastructure
                    class_name: "Infrastructure::Persistence::Records::RoleRecord",
                    foreign_key: "role_id",
                    optional: true
+        
+        # Alias for convenience in factories and tests
+        alias_method :role, :role_record
+        alias_method :role=, :role_record=
+        alias_method :sessions, :session_records
 
         # NO validations (domain handles this)
         # NO callbacks (application layer handles this)
@@ -42,6 +47,16 @@ module Infrastructure
         def self.authenticate_by(credentials)
           find_by(email_address: credentials[:email_address])
             &.authenticate(credentials[:password])
+        end
+
+        # Generate magic link for passwordless authentication
+        def generate_magic_link!
+          magic_links.create!
+        end
+
+        # Display name for views (convenience method from domain logic)
+        def display_name
+          name.presence || email_address.split("@").first
         end
       end
     end

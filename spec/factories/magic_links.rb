@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 FactoryBot.define do
-  factory :magic_link do
+  factory :magic_link, class: 'Infrastructure::Persistence::Records::MagicLinkRecord' do
     association :user
     token { nil } # Let the model generate it
     expires_at { nil } # Let the model set default (15 minutes from now)

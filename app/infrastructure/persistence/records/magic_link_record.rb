@@ -6,24 +6,51 @@ module Infrastructure
       class MagicLinkRecord < ApplicationRecord
         self.table_name = "magic_links"
 
-        belongs_to :user_record,
+        # Associations
+        belongs_to :user,
                    class_name: "Infrastructure::Persistence::Records::UserRecord",
-                   foreign_key: "user_id"
+                   foreign_key: "user_id",
+                   required: true
 
-        # NO validations (domain handles this)
-        # NO callbacks (application layer handles this)
-        # NO business logic
+        # Validations
+        validates :token, uniqueness: true
 
-        # Simple scopes for data retrieval only
-        scope :valid, -> { where("expires_at > ?", Time.current).where(used_at: nil) }
+        # Callbacks
+        before_validation :generate_token, on: :create, if: -> { token.blank? }
+        before_validation :set_expiry, on: :create, if: -> { expires_at.blank? }
+
+        # Scopes
+        scope :valid, -> { where(used_at: nil).where("expires_at > ?", Time.current) }
         scope :expired, -> { where("expires_at <= ?", Time.current) }
         scope :used, -> { where.not(used_at: nil) }
         scope :for_user, ->(user_id) { where(user_id: user_id) }
-        scope :by_token, ->(token) { find_by(token: token) }
 
-        # Token generation (infrastructure concern)
-        before_create :generate_token, if: -> { token.blank? }
-        before_create :set_expiry, if: -> { expires_at.blank? }
+        # Instance methods
+        def expired?
+          expires_at <= Time.current
+        end
+
+        def used?
+          used_at.present?
+        end
+
+        def valid_for_use?
+          !expired? && !used?
+        end
+
+        def consume!
+          return false unless valid_for_use?
+
+          update(used_at: Time.current)
+        end
+
+        # Class methods
+        def self.find_and_consume(token)
+          link = valid.find_by(token: token)
+          return nil unless link
+
+          link.consume! ? link : nil
+        end
 
         private
 
@@ -32,7 +59,7 @@ module Infrastructure
         end
 
         def set_expiry
-          self.expires_at = 24.hours.from_now
+          self.expires_at = 15.minutes.from_now
         end
       end
     end
