@@ -1,0 +1,115 @@
+name: Deploy to Production
+concurrency:
+  group: production
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, Linux, ARM64]
+    timeout-minutes: 20
+    env:
+      DOCKER_BUILDKIT: 1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Install Bitwarden Secrets Manager CLI
+      - name: Install Bitwarden Secrets Manager CLI
+        run: |
+          if ! command -v bws &> /dev/null; then
+            echo "Installing Bitwarden Secrets Manager CLI v1.0.0..."
+            
+            curl -L -o bws-aarch64-unknown-linux-gnu.zip \
+              "https://github.com/bitwarden/sdk-sm/releases/download/bws-v1.0.0/bws-aarch64-unknown-linux-gnu-1.0.0.zip"
+            
+            unzip -o bws-aarch64-unknown-linux-gnu.zip
+            chmod +x bws
+            sudo mv bws /usr/local/bin/
+            rm bws-aarch64-unknown-linux-gnu.zip
+          else
+            echo "✅ Bitwarden Secrets Manager CLI already installed"
+          fi
+          
+          bws --version
+
+      # Fetch secrets from Bitwarden Secrets Manager
+      - name: Get Secrets from Bitwarden
+        env:
+          BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
+        run: |
+          echo "Fetching secrets from Bitwarden Secrets Manager..."
+          
+          # Fetch each secret by ID
+          KAMAL_REGISTRY_USERNAME=$(bws secret get ${{ secrets.BW_SECRET_REGISTRY_USERNAME }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
+          KAMAL_REGISTRY_PASSWORD=$(bws secret get ${{ secrets.BW_SECRET_REGISTRY_PASSWORD }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
+          RAILS_MASTER_KEY=$(bws secret get ${{ secrets.BW_SECRET_ISMF_MASTER_KEY }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
+          
+          # Save to GITHUB_ENV for subsequent steps
+          echo "KAMAL_REGISTRY_USERNAME=$KAMAL_REGISTRY_USERNAME" >> $GITHUB_ENV
+          echo "KAMAL_REGISTRY_PASSWORD=$KAMAL_REGISTRY_PASSWORD" >> $GITHUB_ENV
+          echo "RAILS_MASTER_KEY=$RAILS_MASTER_KEY" >> $GITHUB_ENV
+          
+          # Create .kamal/secrets file for Kamal to read
+          mkdir -p .kamal
+          echo "KAMAL_REGISTRY_USERNAME=$KAMAL_REGISTRY_USERNAME" > .kamal/secrets
+          echo "KAMAL_REGISTRY_PASSWORD=$KAMAL_REGISTRY_PASSWORD" >> .kamal/secrets
+          echo "RAILS_MASTER_KEY=$RAILS_MASTER_KEY" >> .kamal/secrets
+          
+          # Verify secrets are set (without exposing values)
+          [[ -n "$KAMAL_REGISTRY_USERNAME" ]] && echo "✅ KAMAL_REGISTRY_USERNAME fetched" || { echo "❌ KAMAL_REGISTRY_USERNAME missing"; exit 1; }
+          [[ -n "$KAMAL_REGISTRY_PASSWORD" ]] && echo "✅ KAMAL_REGISTRY_PASSWORD fetched" || { echo "❌ KAMAL_REGISTRY_PASSWORD missing"; exit 1; }
+          [[ -n "$RAILS_MASTER_KEY" ]] && echo "✅ RAILS_MASTER_KEY fetched (length: ${#RAILS_MASTER_KEY})" || { echo "❌ RAILS_MASTER_KEY missing"; exit 1; }
+          
+          echo ""
+          echo "✅ All secrets fetched successfully and written to .kamal/secrets!"
+
+      - name: Install jq
+        run: |
+          if ! command -v jq &> /dev/null; then
+            echo "Installing jq..."
+            sudo apt-get update -qq
+            sudo apt-get install -y jq
+          else
+            echo "✅ jq already installed"
+          fi
+
+      - name: Check and install Ruby if needed
+        run: |
+          if ! command -v ruby &> /dev/null; then
+            echo "Ruby not found, installing..."
+            sudo apt-get update -qq
+            sudo apt-get install -y ruby-full
+          fi
+          ruby -v
+
+      - name: Setup Ruby gem paths
+        run: |
+          echo "GEM_HOME=$(ruby -r rubygems -e 'puts Gem.user_dir')" >> $GITHUB_ENV
+          echo "$(ruby -r rubygems -e 'puts Gem.user_dir')/bin" >> $GITHUB_PATH
+
+      - name: Install Kamal
+        run: |
+          if ! command -v kamal &> /dev/null; then
+            gem install kamal --no-document
+          fi
+          kamal version
+
+      - name: Login to Docker Hub
+        run: |
+          echo "$KAMAL_REGISTRY_PASSWORD" | docker login -u "$KAMAL_REGISTRY_USERNAME" --password-stdin
+
+      - name: Release deploy lock
+        run: kamal lock release || true
+
+      - name: Deploy
+        run: kamal deploy
+
+      - name: Cleanup old Docker images
+        run: kamal prune all || true
+        continue-on-error: true
