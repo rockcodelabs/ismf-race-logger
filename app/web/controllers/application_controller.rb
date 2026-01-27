@@ -4,6 +4,9 @@ module Web
       include Concerns::Authentication
       include Pundit::Authorization
 
+      # Explicitly set application layout
+      layout "application"
+
       # Override controller_path to remove Web::Controllers namespace from view lookup
       # This allows controllers in Web::Controllers namespace to use standard view paths
       # Example: Web::Controllers::SessionsController -> views/sessions/

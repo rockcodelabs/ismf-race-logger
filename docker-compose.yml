@@ -10,7 +10,7 @@ services:
       - .:/rails
       - bundle_cache:/usr/local/bundle
     ports:
-      - "3003:3000"
+      - "3005:3000"
     environment:
       - RAILS_ENV=development
       - DB_HOST=postgres

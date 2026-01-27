@@ -42,13 +42,13 @@ docker compose run -T --rm app bin/rails db:create db:migrate db:seed
 docker compose up
 ```
 
-App runs at: http://localhost:3003
+App runs at: http://localhost:3005
 
 ### Services
 
 | Service    | Container       | Port |
 |------------|-----------------|------|
-| Rails App  | ismf-app        | 3003 |
+| Rails App  | ismf-app        | 3005 |
 | PostgreSQL | ismf-postgres   | 5433 |
 | Tailwind   | ismf-tailwind   | -    |
 
