@@ -83,20 +83,66 @@ jobs:
 
       - name: Check and install Ruby if needed
         run: |
-          if ! command -v ruby &> /dev/null; then
-            echo "Ruby not found, installing..."
-            sudo apt-get update -qq
-            sudo apt-get install -y ruby-full
+          # Check if Ruby version is >= 3.0
+          if command -v ruby &> /dev/null; then
+            RUBY_VERSION=$(ruby -e 'puts RUBY_VERSION')
+            RUBY_MAJOR=$(echo $RUBY_VERSION | cut -d. -f1)
+            echo "Current Ruby version: $RUBY_VERSION"
+            
+            if [ "$RUBY_MAJOR" -ge 3 ]; then
+              echo "✅ Ruby $RUBY_VERSION is compatible"
+              exit 0
+            else
+              echo "⚠️  Ruby $RUBY_VERSION is too old, need >= 3.0"
+            fi
           fi
+          
+          # Install ruby-install and chruby
+          echo "Installing ruby-install and chruby..."
+          cd /tmp
+          
+          # Install ruby-install
+          wget -O ruby-install-0.9.3.tar.gz https://github.com/postmodern/ruby-install/releases/download/v0.9.3/ruby-install-0.9.3.tar.gz
+          tar -xzvf ruby-install-0.9.3.tar.gz
+          cd ruby-install-0.9.3/
+          sudo make install
+          
+          # Install chruby
+          cd /tmp
+          wget -O chruby-0.3.9.tar.gz https://github.com/postmodern/chruby/archive/v0.3.9.tar.gz
+          tar -xzvf chruby-0.3.9.tar.gz
+          cd chruby-0.3.9/
+          sudo make install
+          
+          # Install Ruby 3.3.0
+          echo "Installing Ruby 3.3.0..."
+          sudo ruby-install ruby 3.3.0
+          
+          # Setup chruby for this session
+          source /usr/local/share/chruby/chruby.sh
+          chruby ruby-3.3.0
+          
           ruby -v
 
       - name: Setup Ruby gem paths
         run: |
+          # Load chruby if installed
+          if [ -f /usr/local/share/chruby/chruby.sh ]; then
+            source /usr/local/share/chruby/chruby.sh
+            chruby ruby-3.3.0 || true
+          fi
+          
           echo "GEM_HOME=$(ruby -r rubygems -e 'puts Gem.user_dir')" >> $GITHUB_ENV
           echo "$(ruby -r rubygems -e 'puts Gem.user_dir')/bin" >> $GITHUB_PATH
 
       - name: Install Kamal
         run: |
+          # Load chruby if installed
+          if [ -f /usr/local/share/chruby/chruby.sh ]; then
+            source /usr/local/share/chruby/chruby.sh
+            chruby ruby-3.3.0 || true
+          fi
+          
           if ! command -v kamal &> /dev/null; then
             gem install kamal --no-document
           fi
@@ -110,7 +156,14 @@ jobs:
         run: kamal lock release || true
 
       - name: Deploy
-        run: kamal deploy
+        run: |
+          # Load chruby if installed
+          if [ -f /usr/local/share/chruby/chruby.sh ]; then
+            source /usr/local/share/chruby/chruby.sh
+            chruby ruby-3.3.0 || true
+          fi
+          
+          kamal deploy
 
       - name: Cleanup old Docker images
         run: kamal prune all || true
