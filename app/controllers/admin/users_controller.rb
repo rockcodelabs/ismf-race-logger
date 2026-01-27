@@ -17,6 +17,7 @@ module Admin
 
     def create
       @user = User.new(user_params)
+      @user.admin = params[:user][:admin] == "1" || params[:user][:admin] == true
 
       if @user.save
         redirect_to admin_user_path(@user), notice: "User was successfully created."
@@ -29,7 +30,10 @@ module Admin
     end
 
     def update
-      if @user.update(user_params)
+      @user.assign_attributes(user_params)
+      @user.admin = params[:user][:admin] == "1" || params[:user][:admin] == true
+      
+      if @user.save
         redirect_to admin_user_path(@user), notice: "User was successfully updated."
       else
         render :edit, status: :unprocessable_entity
@@ -52,7 +56,7 @@ module Admin
     end
 
     def user_params
-      params.require(:user).permit(:name, :email_address, :password, :password_confirmation, :admin)
+      params.require(:user).permit(:name, :email_address, :password, :password_confirmation)
     end
   end
 end
