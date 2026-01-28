@@ -19,15 +19,7 @@ RSpec.describe Web::Controllers::SessionsController, type: :request do
 
   describe 'POST /session' do
     context 'with valid credentials' do
-      let!(:user_record) do
-        Infrastructure::Persistence::Records::UserRecord.create!(
-          email_address: 'user@example.com',
-          name: 'Test User',
-          password: 'password123',
-          password_confirmation: 'password123',
-          admin: false
-        )
-      end
+      let!(:user) { create(:user, email_address: 'user@example.com', name: 'Test User') }
 
       it 'creates a session' do
         expect {
@@ -35,7 +27,7 @@ RSpec.describe Web::Controllers::SessionsController, type: :request do
             email_address: 'user@example.com',
             password: 'password123'
           }
-        }.to change(Infrastructure::Persistence::Records::SessionRecord, :count).by(1)
+        }.to change(Session, :count).by(1)
       end
 
       it 'redirects to root path' do
@@ -57,15 +49,7 @@ RSpec.describe Web::Controllers::SessionsController, type: :request do
       end
 
       context 'with admin user' do
-        let!(:admin_record) do
-          Infrastructure::Persistence::Records::UserRecord.create!(
-            email_address: 'admin@example.com',
-            name: 'Admin User',
-            password: 'password123',
-            password_confirmation: 'password123',
-            admin: true
-          )
-        end
+        let!(:admin) { create(:user, :admin, email_address: 'admin@example.com', name: 'Admin User') }
 
         it 'authenticates and creates session' do
           post session_path, params: {
@@ -74,27 +58,13 @@ RSpec.describe Web::Controllers::SessionsController, type: :request do
           }
 
           expect(response).to redirect_to(root_path)
-          session_record = Infrastructure::Persistence::Records::SessionRecord.last
-          expect(session_record.user_record).to eq(admin_record)
+          session_record = Session.last
+          expect(session_record.user).to eq(admin)
         end
       end
 
       context 'with user having a role' do
-        let!(:role_record) do
-          Infrastructure::Persistence::Records::RoleRecord.create!(
-            name: 'national_referee'
-          )
-        end
-
-        let!(:referee_record) do
-          Infrastructure::Persistence::Records::UserRecord.create!(
-            email_address: 'referee@example.com',
-            name: 'Referee User',
-            password: 'password123',
-            password_confirmation: 'password123',
-            role_id: role_record.id
-          )
-        end
+        let!(:referee) { create(:user, :national_referee, email_address: 'referee@example.com', name: 'Referee User') }
 
         it 'authenticates referee user' do
           post session_path, params: {
@@ -103,21 +73,14 @@ RSpec.describe Web::Controllers::SessionsController, type: :request do
           }
 
           expect(response).to redirect_to(root_path)
-          session_record = Infrastructure::Persistence::Records::SessionRecord.last
-          expect(session_record.user_record.role_record.name).to eq('national_referee')
+          session_record = Session.last
+          expect(session_record.user.role.name).to eq('national_referee')
         end
       end
     end
 
     context 'with invalid credentials' do
-      let!(:user_record) do
-        Infrastructure::Persistence::Records::UserRecord.create!(
-          email_address: 'user@example.com',
-          name: 'Test User',
-          password: 'password123',
-          password_confirmation: 'password123'
-        )
-      end
+      let!(:user) { create(:user, email_address: 'user@example.com', name: 'Test User') }
 
       it 'does not create a session with wrong password' do
         expect {
@@ -125,7 +88,7 @@ RSpec.describe Web::Controllers::SessionsController, type: :request do
             email_address: 'user@example.com',
             password: 'wrongpassword'
           }
-        }.not_to change(Infrastructure::Persistence::Records::SessionRecord, :count)
+        }.not_to change(Session, :count)
       end
 
       it 'redirects to sign in with alert for wrong password' do
@@ -185,14 +148,7 @@ RSpec.describe Web::Controllers::SessionsController, type: :request do
     end
 
     context 'rate limiting', :skip_rate_limit do
-      let!(:user_record) do
-        Infrastructure::Persistence::Records::UserRecord.create!(
-          email_address: 'user@example.com',
-          name: 'Test User',
-          password: 'password123',
-          password_confirmation: 'password123'
-        )
-      end
+      let!(:user) { create(:user, email_address: 'user@example.com', name: 'Test User') }
 
       # Rate limiting is set to 10 attempts per 3 minutes in the controller
       it 'rate limits excessive login attempts' do
@@ -218,14 +174,7 @@ RSpec.describe Web::Controllers::SessionsController, type: :request do
   end
 
   describe 'DELETE /session' do
-    let!(:user_record) do
-      Infrastructure::Persistence::Records::UserRecord.create!(
-        email_address: 'user@example.com',
-        name: 'Test User',
-        password: 'password123',
-        password_confirmation: 'password123'
-      )
-    end
+    let!(:user) { create(:user, email_address: 'user@example.com', name: 'Test User') }
 
     before do
       post session_path, params: {
@@ -237,7 +186,7 @@ RSpec.describe Web::Controllers::SessionsController, type: :request do
     it 'destroys the session' do
       expect {
         delete session_path
-      }.to change(Infrastructure::Persistence::Records::SessionRecord, :count).by(-1)
+      }.to change(Session, :count).by(-1)
     end
 
     it 'redirects to sign in page' do
@@ -268,15 +217,7 @@ RSpec.describe Web::Controllers::SessionsController, type: :request do
     end
 
     context 'when accessing admin area with valid session' do
-      let!(:admin_record) do
-        Infrastructure::Persistence::Records::UserRecord.create!(
-          email_address: 'admin@example.com',
-          name: 'Admin User',
-          password: 'password123',
-          password_confirmation: 'password123',
-          admin: true
-        )
-      end
+      let!(:admin) { create(:user, :admin, email_address: 'admin@example.com', name: 'Admin User') }
 
       before do
         post session_path, params: {
@@ -292,15 +233,7 @@ RSpec.describe Web::Controllers::SessionsController, type: :request do
     end
 
     context 'when regular user tries to access admin area' do
-      let!(:user_record) do
-        Infrastructure::Persistence::Records::UserRecord.create!(
-          email_address: 'user@example.com',
-          name: 'Regular User',
-          password: 'password123',
-          password_confirmation: 'password123',
-          admin: false
-        )
-      end
+      let!(:user) { create(:user, email_address: 'user@example.com', name: 'Regular User', admin: false) }
 
       before do
         post session_path, params: {
@@ -320,32 +253,26 @@ RSpec.describe Web::Controllers::SessionsController, type: :request do
   end
 
   describe 'integration with application layer' do
-    let!(:user_record) do
-      Infrastructure::Persistence::Records::UserRecord.create!(
-        email_address: 'user@example.com',
-        name: 'Test User',
-        password: 'password123',
-        password_confirmation: 'password123'
-      )
-    end
+    let!(:user) { create(:user, email_address: 'user@example.com', name: 'Test User') }
 
-    it 'uses Authenticate command for authentication' do
-      # This test verifies the controller uses the application layer
-      command_double = instance_double(Operations::Commands::Users::Authenticate)
-      allow(Operations::Commands::Users::Authenticate).to receive(:new).and_return(command_double)
+    it 'uses Authenticate operation for authentication' do
+      # This test verifies the controller uses the new operations layer
+      operation_double = instance_double(Operations::Users::Authenticate)
+      allow(Operations::Users::Authenticate).to receive(:new).and_return(operation_double)
 
-      user_entity = Domain::Entities::User.new(
-        id: user_record.id,
+      user_struct = Structs::User.new(
+        id: user.id,
         email_address: 'user@example.com',
         name: 'Test User',
         admin: false,
+        role_name: nil,
         created_at: Time.current,
         updated_at: Time.current
       )
 
-      expect(command_double).to receive(:call)
-        .with(email_address: 'user@example.com', password: 'password123')
-        .and_return(Dry::Monads::Success(user_entity))
+      expect(operation_double).to receive(:call)
+        .with(email: 'user@example.com', password: 'password123')
+        .and_return(Dry::Monads::Success(user_struct))
 
       post session_path, params: {
         email_address: 'user@example.com',
@@ -355,11 +282,11 @@ RSpec.describe Web::Controllers::SessionsController, type: :request do
       expect(response).to redirect_to(root_path)
     end
 
-    it 'handles command failure gracefully' do
-      command_double = instance_double(Operations::Commands::Users::Authenticate)
-      allow(Operations::Commands::Users::Authenticate).to receive(:new).and_return(command_double)
+    it 'handles operation failure gracefully' do
+      operation_double = instance_double(Operations::Users::Authenticate)
+      allow(Operations::Users::Authenticate).to receive(:new).and_return(operation_double)
 
-      expect(command_double).to receive(:call)
+      expect(operation_double).to receive(:call)
         .and_return(Dry::Monads::Failure(:invalid_credentials))
 
       post session_path, params: {

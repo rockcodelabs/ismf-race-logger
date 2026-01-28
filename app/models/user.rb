@@ -25,4 +25,10 @@ class User < ApplicationRecord
   belongs_to :role, optional: true
   has_many :sessions, dependent: :destroy
   has_many :magic_links, dependent: :destroy
+
+  # Presentation helper for views (not business logic)
+  # In pure Hanami, this would be in a presenter or view helper
+  def display_name
+    name.presence || email_address.split("@").first
+  end
 end
