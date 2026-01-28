@@ -203,7 +203,9 @@ All Kamal commands are documented in: `docs/DEV_COMMANDS.md`
 
 This project uses **Kamal** for deployment to production (host: `pi5main.local`).
 
-**Critical Rules:**
+**Deployment Workflow:**
+- Deployment happens automatically via **GitHub Actions** on push to main branch
+- After committing and pushing code changesCritical Rules:**
 1. If you just fixed code (e.g., Zeitwerk), you MUST deploy before accessing production
 2. Container names change on each deploy - Kamal handles this with `--reuse` flag
 3. Use the `@console` agent for running commands across all environments (dev/test/prod)

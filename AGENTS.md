@@ -286,6 +286,72 @@ docker compose exec -T app bin/rails generate migration MigrationName field:type
 
 ---
 
+### 8. @deploy
+
+**Alias:** deployment-manager
+
+**Purpose:** Deploy code changes to production via GitHub Actions.
+
+**When to Use:**
+- After committing code changes that need to go to production
+- Checking deployment status
+- Understanding the deployment workflow
+
+**When NOT to Use:**
+- For local development changes
+- When changes don't need to go to production yet
+- Emergency fixes (use hotfix branch workflow)
+
+**Required Input:**
+- None (automated via CI/CD)
+
+**Expected Output:**
+- Deployment status
+- GitHub Actions workflow URL
+
+**Deployment Workflow:**
+
+This project uses **GitHub Actions for automated deployment**:
+
+1. **Push code to GitHub:**
+   ```bash
+   git add .
+   git commit -m "Your commit message"
+   git push origin main
+   ```
+
+2. **GitHub Actions triggers automatically:**
+   - Runs tests
+   - Builds Docker image
+   - Deploys via Kamal to production
+
+3. **Wait for deployment to complete:**
+   - Check GitHub Actions tab for workflow status
+   - Deployment typically takes 3-5 minutes
+   - Production will be updated automatically
+
+4. **Verify deployment:**
+   ```bash
+   # Check running container version
+   kamal app version --reuse
+   
+   # Check application logs
+   kamal app logs --since 5m
+   ```
+
+**Important Notes:**
+- Manual `kamal deploy` requires secrets and is NOT the normal workflow
+- Always push to GitHub and let Actions handle deployment
+- After code changes, wait for Actions to complete before testing in production
+- Deployment secrets are stored in GitHub repository settings
+
+**Monitoring Deployment:**
+- GitHub Actions: https://github.com/YOUR_ORG/ismf-race-logger/actions
+- Check commit SHA matches deployed version
+- Production URL: https://ismf.taterniczek.pl
+
+---
+
 ## Agent Selection Guide
 
 | Problem | Agent |
@@ -300,6 +366,8 @@ docker compose exec -T app bin/rails generate migration MigrationName field:type
 | "Add a database column" | `@migration` |
 | "Why is this failing?" | `@debug` |
 | "Verify Packwerk boundaries" | `@quality` |
+| "Deploy my changes" | `@deploy` |
+| "Push to production" | `@deploy` |
 
 ---
 
@@ -311,12 +379,14 @@ These agents read project-specific documentation:
 - `@test` — knows Docker command patterns and RAILS_ENV requirements
 - `@console` — knows environment-specific console/runner commands, production SSH patterns
 - `@quality` — knows RuboCop and Packwerk configuration
+- `@deploy` — knows GitHub Actions deployment workflow
 
 ### Globally Reusable
 These agents work across projects:
 - `@debug` — generic Docker troubleshooting
 - `@curl` — HTTP endpoint testing
 - `@migration` — Rails migration generation
+- `@deploy` — CI/CD deployment patterns
 
 ---
 
