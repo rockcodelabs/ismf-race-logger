@@ -1,0 +1,247 @@
+---
+# Ansible Playbook: Setup Raspberry Pi 5 Weston Kiosk
+# 
+# This playbook configures a Raspberry Pi 5 to run as a dedicated kiosk
+# for the ISMF Race Logger application.
+#
+# Usage:
+#   ansible-playbook -i inventory.yml setup-kiosk.yml
+#
+# Requirements:
+#   - Raspberry Pi OS (Bookworm or Trixie)
+#   - SSH access configured
+#   - User with sudo privileges
+
+- name: Setup Raspberry Pi Weston Kiosk
+  hosts: kiosks
+  gather_facts: yes
+  become: yes
+
+  vars:
+    kiosk_user: "{{ ansible_user }}"
+    kiosk_service_name: kiosk.service
+    weston_config_dir: /etc/xdg/weston
+    systemd_service_dir: /etc/systemd/system
+
+  tasks:
+    - name: Display target host information
+      debug:
+        msg: |
+          Setting up kiosk on {{ inventory_hostname }}
+          URL: {{ kiosk_url }}
+          Display rotation: {{ display_rotation }}
+          User: {{ kiosk_user }}
+
+    # ============================================================
+    # Phase 1: System Update and Preparation
+    # ============================================================
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Upgrade all packages
+      apt:
+        upgrade: full
+        autoremove: yes
+        autoclean: yes
+      register: apt_upgrade
+      changed_when: apt_upgrade.changed
+
+    # ============================================================
+    # Phase 2: Set Boot Target to Multi-User (No Desktop)
+    # ============================================================
+    - name: Set default systemd target to multi-user
+      file:
+        src: /usr/lib/systemd/system/multi-user.target
+        dest: /etc/systemd/system/default.target
+        state: link
+        force: yes
+
+    # ============================================================
+    # Phase 3: Install Required Packages
+    # ============================================================
+    - name: Install kiosk packages
+      apt:
+        name:
+          - weston
+          - chromium
+          - unclutter
+          - ca-certificates
+          - seatd
+        state: present
+        install_recommends: no
+
+    # ============================================================
+    # Phase 4: Configure seatd (Seat Management)
+    # ============================================================
+    - name: Enable seatd service
+      systemd:
+        name: seatd
+        enabled: yes
+        state: started
+
+    - name: Add user to video group (for seatd access)
+      user:
+        name: "{{ kiosk_user }}"
+        groups: video,input,render,tty
+        append: yes
+
+    - name: Enable loginctl linger for kiosk user
+      command: loginctl enable-linger {{ kiosk_user }}
+      changed_when: false
+
+    # ============================================================
+    # Phase 5: Disable Desktop Auto-Start
+    # ============================================================
+    - name: Check for getty autologin override
+      stat:
+        path: /etc/systemd/system/getty@tty1.service.d
+      register: getty_override
+
+    - name: Disable getty autologin if exists
+      command: mv /etc/systemd/system/getty@tty1.service.d /etc/systemd/system/getty@tty1.service.d.disabled
+      when: getty_override.stat.exists
+      args:
+        creates: /etc/systemd/system/getty@tty1.service.d.disabled
+
+    - name: Disable bash_profile startx if exists
+      command: mv /home/{{ kiosk_user }}/.bash_profile /home/{{ kiosk_user }}/.bash_profile.disabled
+      become_user: "{{ kiosk_user }}"
+      ignore_errors: yes
+      args:
+        removes: /home/{{ kiosk_user }}/.bash_profile
+
+    - name: Remove old autostart entries
+      file:
+        path: /home/{{ kiosk_user }}/.config/autostart/kiosk.desktop
+        state: absent
+
+    - name: Remove old xinitrc
+      file:
+        path: /home/{{ kiosk_user }}/.xinitrc
+        state: absent
+
+    # ============================================================
+    # Phase 6: Configure Weston
+    # ============================================================
+    - name: Create Weston config directory
+      file:
+        path: "{{ weston_config_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Deploy Weston configuration
+      template:
+        src: templates/weston.ini.j2
+        dest: "{{ weston_config_dir }}/weston.ini"
+        mode: '0644'
+      notify: restart kiosk
+
+    # ============================================================
+    # Phase 7: Configure Kiosk Systemd Service
+    # ============================================================
+    - name: Deploy kiosk systemd service
+      template:
+        src: templates/kiosk.service.j2
+        dest: "{{ systemd_service_dir }}/{{ kiosk_service_name }}"
+        mode: '0644'
+      notify: restart kiosk
+
+    - name: Enable kiosk service
+      systemd:
+        name: "{{ kiosk_service_name }}"
+        enabled: yes
+        daemon_reload: yes
+
+    # ============================================================
+    # Phase 8: Boot Optimization
+    # ============================================================
+    - name: Backup cmdline.txt
+      copy:
+        src: /boot/firmware/cmdline.txt
+        dest: /boot/firmware/cmdline.txt.backup
+        remote_src: yes
+        force: no
+
+    - name: Read current cmdline.txt
+      slurp:
+        src: /boot/firmware/cmdline.txt
+      register: cmdline_content
+
+    - name: Update cmdline.txt with optimizations
+      lineinfile:
+        path: /boot/firmware/cmdline.txt
+        regexp: '^(.*)$'
+        line: '\1 loglevel=3 vt.global_cursor_default=0'
+        backrefs: yes
+      when: "'loglevel=3' not in (cmdline_content.content | b64decode)"
+
+    - name: Set GPU memory in config.txt
+      lineinfile:
+        path: /boot/firmware/config.txt
+        regexp: '^gpu_mem='
+        line: 'gpu_mem=256'
+        state: present
+
+    # ============================================================
+    # Phase 9: Disable Unnecessary Services
+    # ============================================================
+    - name: Disable NetworkManager-wait-online (use NetworkManager instead)
+      systemd:
+        name: systemd-networkd-wait-online
+        enabled: no
+        state: stopped
+      ignore_errors: yes
+
+    - name: Enable NetworkManager-wait-online
+      systemd:
+        name: NetworkManager-wait-online
+        enabled: yes
+
+    # ============================================================
+    # Phase 10: Final Steps
+    # ============================================================
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Display completion message
+      debug:
+        msg: |
+          ============================================================
+          Kiosk setup complete!
+          ============================================================
+          
+          The kiosk will start automatically on next boot.
+          
+          Configuration:
+            - URL: {{ kiosk_url }}
+            - Display rotation: {{ display_rotation }}
+            - Service: {{ kiosk_service_name }}
+          
+          To manually control the kiosk:
+            sudo systemctl start {{ kiosk_service_name }}
+            sudo systemctl stop {{ kiosk_service_name }}
+            sudo systemctl restart {{ kiosk_service_name }}
+            sudo journalctl -u {{ kiosk_service_name }} -f
+          
+          Emergency access:
+            - SSH: ssh {{ kiosk_user }}@{{ ansible_host }}
+            - Console: Press CTRL+ALT+F2
+          
+          Reboot required to apply all changes.
+          ============================================================
+
+  handlers:
+    - name: restart kiosk
+      systemd:
+        name: "{{ kiosk_service_name }}"
+        state: restarted
+        daemon_reload: yes
+      when: not ansible_check_mode
+
+    - name: reboot system
+      reboot:
+        reboot_timeout: 300
+      when: not ansible_check_mode

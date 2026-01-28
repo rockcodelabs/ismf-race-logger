@@ -1,0 +1,50 @@
+# Ansible Inventory for ISMF Race Logger Kiosks
+# Copy this file to inventory.yml and customize for your Pis
+
+all:
+  children:
+    kiosks:
+      hosts:
+        # Example kiosk hosts
+        pi5cam:
+          ansible_host: pi5cam.local
+          kiosk_url: http://192.168.1.233:3005
+          display_rotation: rotate-90  # Options: rotate-90, rotate-180, rotate-270, normal
+          
+        # Add more kiosks as needed
+        # pi5kiosk2:
+        #   ansible_host: 192.168.1.101
+        #   kiosk_url: https://your-production-app.com
+        #   display_rotation: normal
+        
+      vars:
+        # Common variables for all kiosks
+        ansible_user: rege
+        ansible_python_interpreter: /usr/bin/python3
+        ansible_become: yes
+        ansible_become_method: sudo
+        
+        # Default kiosk settings (can be overridden per host)
+        kiosk_url: http://localhost:3005
+        display_rotation: rotate-90
+        
+        # Chromium flags (customize as needed)
+        chromium_flags:
+          - --kiosk
+          - --ozone-platform=wayland
+          - --enable-features=UseOzonePlatform
+          - --noerrdialogs
+          - --disable-infobars
+          - --disable-session-crashed-bubble
+          - --disable-features=TranslateUI
+          - --disable-sync
+          - --disable-translate
+          - --disable-background-timer-throttling
+          - --disable-renderer-backgrounding
+          - --disable-backgrounding-occluded-windows
+          - --enable-gpu-rasterization
+          - --enable-zero-copy
+          - --ignore-gpu-blocklist
+          - --no-first-run
+          - --incognito
+          - --touch-events=enabled

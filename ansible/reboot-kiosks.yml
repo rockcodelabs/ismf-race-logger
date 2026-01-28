@@ -1,0 +1,96 @@
+---
+# Ansible Playbook: Reboot Raspberry Pi Kiosks
+# 
+# This playbook safely reboots kiosk hosts and waits for them to come back online.
+#
+# Usage:
+#   ansible-playbook -i inventory.yml reboot-kiosks.yml
+#   ansible-playbook -i inventory.yml reboot-kiosks.yml --limit pi5cam
+
+- name: Reboot Raspberry Pi Kiosks
+  hosts: kiosks
+  gather_facts: no
+  become: yes
+
+  tasks:
+    - name: Display reboot warning
+      debug:
+        msg: |
+          ============================================================
+          WARNING: Rebooting {{ inventory_hostname }}
+          ============================================================
+          The kiosk will be unavailable for approximately 30-60 seconds.
+
+    - name: Check if kiosk service is running before reboot
+      systemd:
+        name: kiosk.service
+      register: kiosk_status
+      ignore_errors: yes
+
+    - name: Display current kiosk status
+      debug:
+        msg: "Kiosk service status: {{ kiosk_status.status.ActiveState | default('unknown') }}"
+
+    - name: Reboot the system
+      reboot:
+        reboot_timeout: 300
+        connect_timeout: 10
+        pre_reboot_delay: 2
+        post_reboot_delay: 10
+        test_command: uptime
+        msg: "Rebooting kiosk via Ansible"
+
+    - name: Wait for system to become reachable
+      wait_for_connection:
+        delay: 10
+        timeout: 300
+
+    - name: Gather facts after reboot
+      setup:
+
+    - name: Wait for kiosk service to start
+      systemd:
+        name: kiosk.service
+      register: kiosk_post_reboot
+      until: kiosk_post_reboot.status.ActiveState == "active"
+      retries: 12
+      delay: 5
+      ignore_errors: yes
+
+    - name: Verify kiosk is running
+      command: ps aux
+      register: ps_output
+      changed_when: false
+
+    - name: Check for Weston process
+      set_fact:
+        weston_running: "{{ 'weston' in ps_output.stdout }}"
+
+    - name: Check for Chromium process
+      set_fact:
+        chromium_running: "{{ 'chromium' in ps_output.stdout }}"
+
+    - name: Display reboot completion status
+      debug:
+        msg: |
+          ============================================================
+          Reboot complete for {{ inventory_hostname }}
+          ============================================================
+          
+          System uptime: {{ ansible_uptime_seconds }} seconds
+          Kiosk service: {{ kiosk_post_reboot.status.ActiveState | default('unknown') }}
+          Weston running: {{ weston_running }}
+          Chromium running: {{ chromium_running }}
+          
+          {% if weston_running and chromium_running %}
+          ✓ Kiosk is fully operational
+          {% else %}
+          ✗ WARNING: Kiosk may not be running properly
+            Check logs: sudo journalctl -u kiosk.service -n 50
+          {% endif %}
+
+    - name: Fail if kiosk is not running properly
+      fail:
+        msg: "Kiosk failed to start after reboot on {{ inventory_hostname }}"
+      when: not (weston_running and chromium_running)
+      ignore_errors: yes

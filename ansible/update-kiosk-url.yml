@@ -1,0 +1,157 @@
+---
+# Ansible Playbook: Update Kiosk URL
+# 
+# This playbook updates the URL that the kiosk displays without
+# requiring a full reinstall or manual configuration.
+#
+# Usage:
+#   ansible-playbook -i inventory.yml update-kiosk-url.yml -e "new_url=https://production.example.com"
+#   ansible-playbook -i inventory.yml update-kiosk-url.yml --limit pi5cam -e "new_url=http://192.168.1.100:3000"
+#
+# Requirements:
+#   - Existing kiosk installation
+#   - new_url variable provided via -e flag
+
+- name: Update Kiosk URL
+  hosts: kiosks
+  gather_facts: no
+  become: yes
+
+  vars:
+    kiosk_service_name: kiosk.service
+    systemd_service_dir: /etc/systemd/system
+
+  pre_tasks:
+    - name: Validate new_url is provided
+      fail:
+        msg: |
+          ERROR: new_url variable is required.
+          
+          Usage:
+            ansible-playbook -i inventory.yml update-kiosk-url.yml -e "new_url=https://your-url.com"
+      when: new_url is not defined or new_url == ""
+
+    - name: Display update information
+      debug:
+        msg: |
+          ============================================================
+          Updating Kiosk URL on {{ inventory_hostname }}
+          ============================================================
+          Current URL: {{ kiosk_url | default('unknown') }}
+          New URL: {{ new_url }}
+
+  tasks:
+    - name: Check if kiosk service exists
+      stat:
+        path: "{{ systemd_service_dir }}/{{ kiosk_service_name }}"
+      register: service_file
+
+    - name: Fail if kiosk service doesn't exist
+      fail:
+        msg: "Kiosk service not found. Please run setup-kiosk.yml first."
+      when: not service_file.stat.exists
+
+    - name: Read current service file
+      slurp:
+        src: "{{ systemd_service_dir }}/{{ kiosk_service_name }}"
+      register: current_service
+
+    - name: Extract current URL from service file
+      set_fact:
+        current_url: "{{ (current_service.content | b64decode | regex_search('http[s]?://[^\\s]+$', multiline=True)) | trim }}"
+      ignore_errors: yes
+
+    - name: Display current URL
+      debug:
+        msg: "Current URL in service file: {{ current_url | default('not found') }}"
+
+    - name: Backup current service file
+      copy:
+        src: "{{ systemd_service_dir }}/{{ kiosk_service_name }}"
+        dest: "{{ systemd_service_dir }}/{{ kiosk_service_name }}.backup.{{ ansible_date_time.epoch }}"
+        remote_src: yes
+        mode: '0644'
+
+    - name: Update URL in service file
+      replace:
+        path: "{{ systemd_service_dir }}/{{ kiosk_service_name }}"
+        regexp: 'http[s]?://[^\s]+$'
+        replace: '{{ new_url }}'
+      register: url_updated
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+      when: url_updated.changed
+
+    - name: Restart kiosk service
+      systemd:
+        name: "{{ kiosk_service_name }}"
+        state: restarted
+      when: url_updated.changed
+
+    - name: Wait for kiosk to start
+      wait_for:
+        timeout: 10
+      when: url_updated.changed
+
+    - name: Check kiosk service status
+      systemd:
+        name: "{{ kiosk_service_name }}"
+      register: kiosk_status
+
+    - name: Verify Chromium is running with new URL
+      shell: ps aux | grep chromium | grep -v grep
+      register: chromium_process
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Check if new URL is in Chromium process
+      set_fact:
+        url_in_process: "{{ new_url in chromium_process.stdout }}"
+      when: chromium_process.rc == 0
+
+    - name: Display update completion status
+      debug:
+        msg: |
+          ============================================================
+          URL Update Complete for {{ inventory_hostname }}
+          ============================================================
+          
+          Previous URL: {{ current_url | default('unknown') }}
+          New URL: {{ new_url }}
+          
+          Service status: {{ kiosk_status.status.ActiveState }}
+          URL verified in process: {{ url_in_process | default(false) }}
+          
+          {% if url_in_process | default(false) %}
+          ✓ Kiosk is now displaying the new URL
+          {% else %}
+          ⚠ Warning: Could not verify new URL in running process
+            Check manually: sudo journalctl -u kiosk.service -n 20
+          {% endif %}
+          
+          To revert to previous URL, restore backup:
+            sudo cp {{ systemd_service_dir }}/{{ kiosk_service_name }}.backup.{{ ansible_date_time.epoch }} {{ systemd_service_dir }}/{{ kiosk_service_name }}
+            sudo systemctl daemon-reload
+            sudo systemctl restart {{ kiosk_service_name }}
+
+    - name: Update inventory variable (informational only)
+      debug:
+        msg: |
+          NOTE: To persist this change in your inventory, update inventory.yml:
+          
+          {{ inventory_hostname }}:
+            kiosk_url: {{ new_url }}
+
+  post_tasks:
+    - name: Final verification
+      command: systemctl is-active {{ kiosk_service_name }}
+      register: is_active
+      changed_when: false
+      failed_when: false
+
+    - name: Display final status
+      debug:
+        msg: |
+          Final Status: {{ 'SUCCESS - Kiosk is active' if is_active.rc == 0 else 'WARNING - Kiosk may not be running' }}

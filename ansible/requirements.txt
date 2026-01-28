@@ -1,0 +1,20 @@
+# Python requirements for Ansible playbooks
+# Install with: pip install -r requirements.txt
+
+# Ansible core
+ansible>=8.0.0,<9.0.0
+
+# Required for SSH connections
+paramiko>=3.0.0
+
+# Required for YAML inventory
+PyYAML>=6.0
+
+# Jinja2 for templating
+Jinja2>=3.1.0
+
+# For better performance
+mitogen>=0.3.4
+
+# Optional but recommended
+ansible-lint>=6.0.0

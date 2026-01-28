@@ -1,0 +1,32 @@
+# Weston Configuration for ISMF Race Logger Kiosk
+# Managed by Ansible - DO NOT EDIT MANUALLY
+# Template: templates/weston.ini.j2
+
+[core]
+# Disable screen blanking and idle timeout
+idle-time=0
+
+[output]
+# Configure the primary display output
+name=DSI-1
+# Transform options: normal, rotate-90, rotate-180, rotate-270, flipped, flipped-rotate-90, flipped-rotate-180, flipped-rotate-270
+transform={{ display_rotation | default('rotate-90') }}
+
+# Uncomment to set specific mode (resolution)
+# mode=1280x720@60
+
+[shell]
+# Kiosk shell configuration
+background-color=0xff000000
+panel-position=none
+locking=false
+
+[keyboard]
+# Keyboard repeat settings
+repeat-rate=40
+repeat-delay=400
+
+[libinput]
+# Touch and input device configuration
+enable-tap=true
+tap-and-drag=true

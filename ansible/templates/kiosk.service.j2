@@ -1,0 +1,47 @@
+# Systemd Service for ISMF Race Logger Kiosk
+# Managed by Ansible - DO NOT EDIT MANUALLY
+# Template: templates/kiosk.service.j2
+
+[Unit]
+Description=Web Kiosk for ISMF Race Logger
+Documentation=https://github.com/yourusername/ismf-race-logger
+After=network-online.target seatd.service
+Wants=network-online.target
+Requires=seatd.service
+
+[Service]
+Type=simple
+User={{ kiosk_user }}
+Environment=XDG_RUNTIME_DIR=/run/user/{{ ansible_user_uid | default('1000') }}
+Environment=WAYLAND_DISPLAY=wayland-0
+
+# Wait a few seconds for system to stabilize
+ExecStartPre=/bin/sleep 3
+
+# Start Weston with Chromium in kiosk mode
+ExecStart=/usr/bin/weston \
+  --backend=drm-backend.so \
+  --shell=kiosk-shell.so \
+  --idle-time=0 \
+  -- \
+  /usr/bin/chromium \
+{% for flag in chromium_flags %}
+    {{ flag }} \
+{% endfor %}
+    {{ kiosk_url }}
+
+# Restart policy
+Restart=always
+RestartSec=3
+
+# Resource limits (optional, adjust as needed)
+# MemoryLimit=512M
+# CPUQuota=80%
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kiosk
+
+[Install]
+WantedBy=multi-user.target
