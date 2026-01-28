@@ -14,6 +14,8 @@ Use this document to:
 - Know when to use (or not use) each agent
 - Provide correct input format
 
+**Important:** All commands shown in this document assume proper Ruby environment is active (Ruby 3.4.8 via chruby). See `.rules` section 6 for environment setup requirements.
+
 ---
 
 ## Agent Inventory

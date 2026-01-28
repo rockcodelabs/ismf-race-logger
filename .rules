@@ -164,33 +164,40 @@ This project runs in Docker. You MUST follow these rules:
 
 ### Ruby Environment Setup (CRITICAL)
 
-**ALL Docker and Kamal commands MUST be executed with proper Ruby environment:**
+**ALL Docker and Kamal commands require proper Ruby environment setup:**
 
+This project requires Ruby 3.4.8 (see `.ruby-version`). System Ruby cannot parse modern Gemfile syntax.
+
+**When executing Docker or Kamal commands, you MUST:**
+1. Source `~/.zshrc` to load shell environment
+2. Use `chruby ruby-3.4.8` to activate correct Ruby version
+3. Run bundle install if needed (gems missing)
+
+**Wrapper pattern:**
 ```bash
 zsh -c 'source ~/.zshrc && chruby ruby-3.4.8 && YOUR_COMMAND_HERE'
 ```
 
-**Why this is mandatory:**
-- The project requires Ruby 3.4.8 (see `.ruby-version`)
-- System Ruby (2.6) cannot parse modern Gemfile syntax
-- `chruby` loads the correct Ruby version and bundler
-- Without this, commands will fail with Gemfile parsing errors
-
-**Examples:**
-```bash
-# ❌ WRONG - will fail with bundler/platform errors
-docker compose exec app bin/rails console
-./bin/kamal app exec "bin/rails console" --reuse -i
-
-# ✅ CORRECT - proper environment setup
-zsh -c 'source ~/.zshrc && chruby ruby-3.4.8 && docker compose exec app bin/rails console'
-zsh -c 'source ~/.zshrc && chruby ruby-3.4.8 && ./bin/kamal app exec "bin/rails console" --reuse -i'
-```
+Command examples in `AGENTS.md` show logical commands. They assume proper Ruby environment is active.
 
 All procedural commands are documented in: `docs/DEV_COMMANDS.md`
-</text>
-<new_text>
+
+---
+
 ## 7. Production & Kamal Deployment (MANDATORY)
+
+This project uses **Kamal** for deployment to production (host: `pi5main.local`).
+
+**Critical Rules:**
+1. If you just fixed code (e.g., Zeitwerk), you MUST deploy before accessing production
+2. Container names change on each deploy - Kamal handles this with `--reuse` flag
+3. Use the `@console` agent for running commands across all environments (dev/test/prod)
+
+All Kamal commands are documented in: `docs/DEV_COMMANDS.md`
+
+---
+
+## 8. Dependency Injection
 
 ---
 

@@ -2,6 +2,8 @@
 
 > Quick reference for AI assistants. See detailed docs for full information.
 
+**⚠️ Ruby Environment Required:** All Docker/Kamal commands require Ruby 3.4.8 via chruby. See `.rules` section 6.
+
 ## Documentation
 
 | Document | Purpose |
