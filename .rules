@@ -162,18 +162,45 @@ This project runs in Docker. You MUST follow these rules:
 - Add `-T` flag for non-interactive commands (runner, seeds, migrations)
 - Refer to `@console` agent for environment-specific console/runner usage
 
+### Ruby Environment Setup (CRITICAL)
+
+**ALL Docker and Kamal commands MUST be executed with proper Ruby environment:**
+
+```bash
+zsh -c 'source ~/.zshrc && chruby ruby-3.4.8 && YOUR_COMMAND_HERE'
+```
+
+**Why this is mandatory:**
+- The project requires Ruby 3.4.8 (see `.ruby-version`)
+- System Ruby (2.6) cannot parse modern Gemfile syntax
+- `chruby` loads the correct Ruby version and bundler
+- Without this, commands will fail with Gemfile parsing errors
+
+**Examples:**
+```bash
+# ❌ WRONG - will fail with bundler/platform errors
+docker compose exec app bin/rails console
+./bin/kamal app exec "bin/rails console" --reuse -i
+
+# ✅ CORRECT - proper environment setup
+zsh -c 'source ~/.zshrc && chruby ruby-3.4.8 && docker compose exec app bin/rails console'
+zsh -c 'source ~/.zshrc && chruby ruby-3.4.8 && ./bin/kamal app exec "bin/rails console" --reuse -i'
+```
+
 All procedural commands are documented in: `docs/DEV_COMMANDS.md`
+</text>
+<new_text>
+## 7. Production & Kamal Deployment (MANDATORY)
 
 ---
-
-## 7. Production & Kamal Deployment (MANDATORY)
 
 This project uses **Kamal** for deployment to production (host: `pi5main.local`).
 
 **Critical Rules:**
 1. If you just fixed code (e.g., Zeitwerk), you MUST deploy before accessing production
-2. Container names change on each deploy - always check current name first with `docker ps`
+2. Container names change on each deploy - Kamal handles this with `--reuse` flag
 3. Use the `@console` agent for running commands across all environments (dev/test/prod)
+4. ALL Kamal commands MUST use the Ruby environment setup from section 6
 
 All Kamal commands are documented in: `docs/DEV_COMMANDS.md`
 
