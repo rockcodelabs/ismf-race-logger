@@ -68,6 +68,39 @@ You MUST follow it exactly.
 - ActiveRecord models MUST NOT contain business logic
 - Presentation logic MUST only exist in Parts
 
+### Where Things Belong (Hanami Style)
+
+| Concern | Location | NOT in Model |
+|---------|----------|--------------|
+| **Validations** | `app/operations/contracts/` | ❌ No `validates` in models |
+| **Scopes/Queries** | `app/db/repos/` as methods | ❌ No `scope` in models |
+| **Enums** | `lib/types.rb` as `Types::Enum` | ❌ No `enum` in models |
+| **Callbacks** | `app/operations/` | ❌ No `before_*`/`after_*` in models |
+| **Business logic** | `app/operations/` | ❌ No methods in models |
+| **Presentation** | `app/web/parts/` | ❌ No display methods in models |
+
+### Anti-Patterns (NEVER DO THIS)
+
+```ruby
+# ❌ WRONG - Traditional Rails in model
+class Incident < ApplicationRecord
+  enum :status, { unofficial: 0, official: 1 }
+  validates :race, presence: true
+  scope :pending, -> { where(status: :pending) }
+  before_save :normalize_data
+  def officialize!(user); end
+end
+
+# ✅ CORRECT - Hanami-hybrid pattern
+class Incident < ApplicationRecord
+  belongs_to :race
+  has_many :reports
+  # NOTHING ELSE - associations only
+end
+```
+
+Database design with full schema is in: `docs/DATABASE_DESIGN.md`
+
 ---
 
 ## 4. Naming Conventions (STRICT)
@@ -168,6 +201,7 @@ Available templates:
 | Document | Purpose |
 |----------|---------|
 | `docs/ARCHITECTURE.md` | Full architecture details |
+| `docs/DATABASE_DESIGN.md` | Database schema and domain models |
 | `docs/DEV_COMMANDS.md` | All shell commands |
 | `docs/FEATURE_WORKFLOW.md` | @feature workflow phases |
 | `AGENTS.md` | Available agents and when to use them |
