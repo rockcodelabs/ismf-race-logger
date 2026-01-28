@@ -157,8 +157,8 @@ RSpec.describe Operations::Users::List do
     describe "#call with mock" do
       it "uses the injected repo" do
         summaries = [
-          Structs::UserSummary.new(id: 1, email_address: "a@b.com", name: "A", admin: false, role_name: nil),
-          Structs::UserSummary.new(id: 2, email_address: "b@c.com", name: "B", admin: true, role_name: nil)
+          Structs::UserSummary.new(id: 1, email_address: "a@b.com", name: "A", admin: false, role_name: nil, created_at: Time.current),
+          Structs::UserSummary.new(id: 2, email_address: "b@c.com", name: "B", admin: true, role_name: nil, created_at: Time.current)
         ]
 
         allow(mock_repo).to receive(:all).and_return(summaries)
@@ -174,7 +174,7 @@ RSpec.describe Operations::Users::List do
     describe "#admins with mock" do
       it "uses the injected repo" do
         admin_summaries = [
-          Structs::UserSummary.new(id: 1, email_address: "admin@b.com", name: "Admin", admin: true, role_name: nil)
+          Structs::UserSummary.new(id: 1, email_address: "admin@b.com", name: "Admin", admin: true, role_name: nil, created_at: Time.current)
         ]
 
         allow(mock_repo).to receive(:admins).and_return(admin_summaries)
@@ -191,7 +191,7 @@ RSpec.describe Operations::Users::List do
     describe "#search with mock" do
       it "uses the injected repo" do
         search_results = [
-          Structs::UserSummary.new(id: 5, email_address: "found@test.com", name: "Found", admin: false, role_name: nil)
+          Structs::UserSummary.new(id: 5, email_address: "found@test.com", name: "Found", admin: false, role_name: nil, created_at: Time.current)
         ]
 
         allow(mock_repo).to receive(:search).with("test").and_return(search_results)

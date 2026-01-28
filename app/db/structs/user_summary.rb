@@ -15,7 +15,8 @@ module Structs
   #     email_address: "admin@ismf-ski.com",
   #     name: "Admin User",
   #     admin: true,
-  #     role_name: "referee_manager"
+  #     role_name: "referee_manager",
+  #     created_at: Time.current
   #   )
   #
   #   summary.display_name  # => "Admin User"
@@ -27,7 +28,8 @@ module Structs
     :email_address,
     :name,
     :admin,
-    :role_name
+    :role_name,
+    :created_at
   ) do
     # =========================================================================
     # Display methods

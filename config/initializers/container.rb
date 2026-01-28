@@ -5,7 +5,7 @@ require "dry/auto_inject"
 
 # AppContainer - Central dependency injection container for Hanami hybrid architecture
 #
-# This container registers all repositories and services as singletons.
+# This container registers all repositories, parts, broadcasters, and services as singletons.
 # Use Import[] to inject dependencies into operations/use-cases.
 #
 # Example usage in operations:
@@ -44,6 +44,32 @@ class AppContainer
 
     register :magic_link, memoize: true do
       MagicLinkRepo.new
+    end
+  end
+
+  # ============================================================================
+  # PARTS
+  # Parts factory for wrapping structs with presentation logic
+  # ============================================================================
+
+  namespace :parts do
+    register :factory, memoize: true do
+      Web::Parts::Factory.new
+    end
+  end
+
+  # ============================================================================
+  # BROADCASTERS
+  # Turbo Stream broadcasters for real-time updates
+  # ============================================================================
+
+  namespace :broadcasters do
+    register :incident, memoize: true do
+      IncidentBroadcaster.new
+    end
+
+    register :user, memoize: true do
+      UserBroadcaster.new
     end
   end
 

@@ -38,9 +38,17 @@ module IsmfRaceLogger
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
 
-    # Hanami-compatible architecture: Configure Zeitwerk for custom namespaces
-    # We use push_dir with namespace option to map directories to their modules
+    # =========================================================================
+    # VIEW PATHS
+    # =========================================================================
+    # Add app/web/templates as a view path (prepended so it takes priority)
+    # This allows Turbo Native variants and new templates to live in web layer
+    # while keeping app/views as fallback for existing templates
+    config.paths["app/views"].unshift(Rails.root.join("app/web/templates"))
 
+    # =========================================================================
+    # ZEITWERK CONFIGURATION (Hanami-hybrid architecture)
+    # =========================================================================
     # Define the namespace modules first (required before push_dir)
     require_relative "../app/operations"
     require_relative "../app/web"
@@ -54,6 +62,8 @@ module IsmfRaceLogger
     Rails.autoloaders.main.push_dir(Rails.root.join("app/db/structs"), namespace: ::Structs)
     # Repos are top-level classes (UserRepo, not DB::Repos::UserRepo)
     Rails.autoloaders.main.push_dir(Rails.root.join("app/db/repos"), namespace: ::Object)
+    # Broadcasters are top-level classes
+    Rails.autoloaders.main.push_dir(Rails.root.join("app/broadcasters"), namespace: ::Object)
 
     # Don't generate system test files.
     config.generators.system_tests = nil

@@ -46,7 +46,8 @@ RSpec.describe DB::Repo do
           email_address: record.email_address,
           name: record.name,
           admin: record.admin,
-          role_name: record.role&.name
+          role_name: record.role&.name,
+          created_at: record.created_at
         )
       end
     end

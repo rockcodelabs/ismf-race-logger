@@ -9,12 +9,14 @@ RSpec.describe Structs::UserSummary do
       email_address: "test@example.com",
       name: "Test User",
       admin: admin,
-      role_name: role_name
+      role_name: role_name,
+      created_at: created_at
     )
   end
 
   let(:admin) { false }
   let(:role_name) { nil }
+  let(:created_at) { Time.current }
 
   describe "attributes" do
     it "has all expected attributes" do
@@ -23,6 +25,7 @@ RSpec.describe Structs::UserSummary do
       expect(summary.name).to eq("Test User")
       expect(summary.admin).to be false
       expect(summary.role_name).to be_nil
+      expect(summary.created_at).to eq(created_at)
     end
 
     it "is a Ruby Data class" do
@@ -49,7 +52,8 @@ RSpec.describe Structs::UserSummary do
           email_address: "noname@example.com",
           name: "",
           admin: false,
-          role_name: nil
+          role_name: nil,
+          created_at: Time.current
         )
       end
 
@@ -65,7 +69,8 @@ RSpec.describe Structs::UserSummary do
           email_address: "nilname@example.com",
           name: nil,
           admin: false,
-          role_name: nil
+          role_name: nil,
+          created_at: Time.current
         )
       end
 
@@ -197,7 +202,8 @@ RSpec.describe Structs::UserSummary do
           email_address: "user#{i}@example.com",
           name: "User #{i}",
           admin: false,
-          role_name: nil
+          role_name: nil,
+          created_at: Time.current
         )
       end
 
@@ -212,7 +218,8 @@ RSpec.describe Structs::UserSummary do
         email_address: "keyword@example.com",
         name: "Keyword User",
         admin: true,
-        role_name: "jury_president"
+        role_name: "jury_president",
+        created_at: Time.current
       )
 
       expect(summary.id).to eq(42)
