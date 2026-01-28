@@ -10,8 +10,8 @@ module Web
       end
 
       def create
-        result = authenticate_user_command.call(
-          email_address: params[:email_address],
+        result = authenticate_operation.call(
+          email: params[:email_address],
           password: params[:password]
         )
 
@@ -25,21 +25,21 @@ module Web
 
       private
 
-      def authenticate_user_command
-        @authenticate_user_command ||= Operations::Commands::Users::Authenticate.new
+      def authenticate_operation
+        @authenticate_operation ||= Operations::Users::Authenticate.new
       end
 
       def handle_authentication_result(result)
         result.either(
           ->(user) {
-            # Convert domain entity to ActiveRecord for Rails session
-            user_record = Infrastructure::Persistence::Records::UserRecord.find(user.id)
+            # User is a Structs::User - we need the AR record for Rails session
+            user_record = User.find(user.id)
             start_new_session_for(user_record)
             redirect_to after_authentication_url
           },
           ->(error) {
             case error
-            in [ :validation_failed, errors ]
+            in [:validation_failed, errors]
               redirect_to new_session_path, alert: "Invalid email or password format."
             in :invalid_credentials
               redirect_to new_session_path, alert: "Try another email address or password."

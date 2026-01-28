@@ -1,9 +1,12 @@
 # Operations Layer Package
 # Use cases and business workflows
-# Orchestrates domain entities and infrastructure adapters
+# Orchestrates repos and returns structs
 
 enforce_dependencies: true
+enforce_privacy: true
 
 dependencies:
-  - app/domain
-  - app/infrastructure
+  - "."           # Root package (for Import and contracts)
+  - app/db        # Repos and Structs
+  - app/domain    # Legacy domain (during migration)
+  - app/infrastructure  # Legacy infrastructure (during migration)

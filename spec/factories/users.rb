@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 FactoryBot.define do
-  factory :user, class: 'Infrastructure::Persistence::Records::UserRecord' do
+  factory :user do
     sequence(:email_address) { |n| "user#{n}@example.com" }
     sequence(:name) { |n| "User #{n}" }
     password { "password123" }
@@ -14,27 +14,27 @@ FactoryBot.define do
     end
 
     trait :var_operator do
-      role { association :role, name: 'var_operator' }
+      role { association :role, :var_operator }
     end
 
     trait :national_referee do
-      role { association :role, name: 'national_referee' }
+      role { association :role, :national_referee }
     end
 
     trait :international_referee do
-      role { association :role, name: 'international_referee' }
+      role { association :role, :international_referee }
     end
 
     trait :jury_president do
-      role { association :role, name: 'jury_president' }
+      role { association :role, :jury_president }
     end
 
     trait :referee_manager do
-      role { association :role, name: 'referee_manager' }
+      role { association :role, :referee_manager }
     end
 
     trait :broadcast_viewer do
-      role { association :role, name: 'broadcast_viewer' }
+      role { association :role, :broadcast_viewer }
     end
 
     trait :with_role do

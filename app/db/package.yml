@@ -1,0 +1,19 @@
+# Packwerk package configuration for app/db (persistence layer)
+#
+# This package contains:
+# - Repos (data access layer)
+# - Structs (immutable data objects)
+#
+# Repos can only depend on:
+# - Models (app/models) for ActiveRecord access
+# - lib/ismf_race_logger for types
+#
+# Repos should NOT depend on:
+# - Operations (that would be a circular dependency)
+# - Controllers/Views
+
+enforce_dependencies: true
+enforce_privacy: true
+
+dependencies:
+  - "."  # Root package (for models in app/models)
