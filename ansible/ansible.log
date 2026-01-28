@@ -538,3 +538,34 @@ Alternatives: Set the `ansible_managed` variable, or use any custom variable in 
 2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Set GPU memory in config.txt -------------------------------------------- 0.37s
 2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Create squeekboard configuration directory ------------------------------ 0.35s
 2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Remove old autostart entries -------------------------------------------- 0.35s
+2026-01-28 23:35:22,999 p=36651 u=rege n=ansible WARNING| [WARNING]: Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+
+2026-01-28 23:35:22,999 p=36651 u=rege n=ansible INFO| [DEPRECATION WARNING]: DEFAULT_MANAGED_STR option. Reason: The `ansible_managed` variable can be set just like any other variable, or a different variable can be used.
+Alternatives: Set the `ansible_managed` variable, or use any custom variable in templates. This feature will be removed from ansible-core version 2.23.
+
+
+2026-01-28 23:35:23,300 p=36651 u=rege n=ansible INFO| PLAY [Setup Raspberry Pi Weston Kiosk] *****************************************
+2026-01-28 23:35:23,304 p=36651 u=rege n=ansible INFO| PLAY RECAP *********************************************************************
+2026-01-28 23:35:23,304 p=36651 u=rege n=ansible INFO| PLAYBOOK RECAP *****************************************************************
+2026-01-28 23:35:23,304 p=36651 u=rege n=ansible INFO| Playbook run took 0 days, 0 hours, 0 minutes, 0 seconds
+
+2026-01-28 23:35:23,304 p=36651 u=rege n=ansible INFO| TASKS RECAP ********************************************************************
+2026-01-28 23:35:23,304 p=36651 u=rege n=ansible INFO| Wednesday 28 January 2026  23:35:23 +0100 (0:00:00.005)       0:00:00.005 ***** 
+2026-01-28 23:35:23,304 p=36651 u=rege n=ansible INFO| =============================================================================== 
+2026-01-28 23:35:27,965 p=36748 u=rege n=ansible WARNING| [WARNING]: Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+
+2026-01-28 23:35:27,966 p=36748 u=rege n=ansible INFO| [DEPRECATION WARNING]: DEFAULT_MANAGED_STR option. Reason: The `ansible_managed` variable can be set just like any other variable, or a different variable can be used.
+Alternatives: Set the `ansible_managed` variable, or use any custom variable in templates. This feature will be removed from ansible-core version 2.23.
+
+
+2026-01-28 23:35:28,146 p=36748 u=rege n=ansible INFO| PLAY [Setup Raspberry Pi Weston Kiosk] *****************************************
+2026-01-28 23:35:28,150 p=36748 u=rege n=ansible INFO| TASK [Display target host information] *****************************************
+2026-01-28 23:35:28,150 p=36748 u=rege n=ansible INFO| Wednesday 28 January 2026  23:35:28 +0100 (0:00:00.005)       0:00:00.005 ***** 
+2026-01-28 23:35:28,161 p=36748 u=rege n=ansible INFO| ok: [pi5cam] => {
+    "msg": "Setting up kiosk on pi5cam\nURL: http://192.168.1.233:3005/?touch=1\nDisplay rotation: rotate-90\nUser: rege\n"
+}
+2026-01-28 23:35:28,163 p=36748 u=rege n=ansible INFO| TASK [Update apt cache] ********************************************************
+2026-01-28 23:35:28,163 p=36748 u=rege n=ansible INFO| Wednesday 28 January 2026  23:35:28 +0100 (0:00:00.013)       0:00:00.018 ***** 
+2026-01-28 23:35:29,919 p=36748 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:35:29,923 p=36748 u=rege n=ansible INFO| TASK [Upgrade all packages] ****************************************************
+2026-01-28 23:35:29,923 p=36748 u=rege n=ansible INFO| Wednesday 28 January 2026  23:35:29 +0100 (0:00:01.759)       0:00:01.778 ***** 

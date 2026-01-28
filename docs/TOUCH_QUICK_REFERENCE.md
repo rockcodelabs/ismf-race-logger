@@ -191,6 +191,30 @@ ssh rege@pi5cam.local "sudo systemctl restart kiosk.service"
 ssh rege@pi5cam.local "sudo journalctl -u kiosk.service -f"
 ```
 
+### Verify Touch Mode is Active
+```bash
+# Check kiosk URL includes ?touch=1
+ssh rege@pi5cam.local "sudo cat /etc/systemd/system/kiosk.service | grep http"
+
+# Should see: http://YOUR_IP:3005/?touch=1
+```
+
+### If Pi Shows Desktop View Instead of Touch
+```bash
+# 1. Verify URL has ?touch=1
+ssh rege@pi5cam.local "sudo cat /etc/systemd/system/kiosk.service | grep 'http'"
+
+# 2. If missing ?touch=1, run Ansible to update:
+cd ansible
+ansible-playbook -i inventory.yml update-kiosk-url.yml
+
+# 3. Force restart with cache clear:
+ssh rege@pi5cam.local "sudo systemctl restart kiosk.service"
+
+# 4. Cookie might be set to desktop mode - wait for fresh load
+# Chromium runs with --incognito so cookies clear on restart
+```
+
 ---
 
 ## 🚫 Common Mistakes
