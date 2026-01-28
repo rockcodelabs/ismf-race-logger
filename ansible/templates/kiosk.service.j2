@@ -12,28 +12,23 @@ Requires=seatd.service
 [Service]
 Type=simple
 User={{ kiosk_user }}
-Environment=XDG_RUNTIME_DIR=/run/user/{{ ansible_user_uid | default('1000') }}
-Environment=WAYLAND_DISPLAY=wayland-0
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=WAYLAND_DISPLAY=wayland-1
 
 # Wait a few seconds for system to stabilize
 ExecStartPre=/bin/sleep 3
 
-# Start Weston with Squeekboard (on-screen keyboard) and Chromium
-ExecStart=/bin/bash -c '\
-  /usr/bin/weston \
-    --backend=drm-backend.so \
-    --shell=kiosk-shell.so \
-    --idle-time=0 & \
-  sleep 2; \
-  export WAYLAND_DISPLAY=wayland-0; \
-  squeekboard & \
-  sleep 1; \
+# Start Weston with Chromium in kiosk mode
+ExecStart=/usr/bin/weston \
+  --backend=drm-backend.so \
+  --shell=kiosk-shell.so \
+  --idle-time=0 \
+  -- \
   /usr/bin/chromium \
 {% for flag in chromium_flags %}
     {{ flag }} \
 {% endfor %}
-    {{ kiosk_url }} \
-'
+    {{ kiosk_url }}
 
 # Restart policy
 Restart=always

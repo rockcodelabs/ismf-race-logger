@@ -363,7 +363,7 @@ This project uses **GitHub Actions for automated deployment**:
 - Viewing browser console logs remotely
 - Restarting kiosk service
 - Checking display resolution and touch detection
-- Testing touch interface changes
+- Testing touch interface changes (including web-based virtual keyboard)
 - Debugging JavaScript errors on the Pi
 
 **When NOT to Use:**
@@ -387,6 +387,7 @@ This project uses **GitHub Actions for automated deployment**:
 - Compositor: Weston (Wayland, not X11)
 - Browser: Chromium in kiosk mode
 - Service: `kiosk.service` (systemd)
+- Virtual Keyboard: Web-based (embedded in touch sign-in page)
 
 **SSH Connection:**
 ```bash
@@ -514,7 +515,7 @@ ssh -L 9222:localhost:9222 rege@pi5cam.local -N &
 
 ```bash
 # 1. Make changes to touch display UI
-# (edit views, CSS, etc.)
+# (edit views, CSS, JavaScript keyboard, etc.)
 
 # 2. Commit and push (if using production URL)
 git add .
@@ -531,7 +532,13 @@ ssh rege@pi5cam.local "sudo systemctl status kiosk.service"
 # 5. View logs for errors
 ssh rege@pi5cam.local "sudo journalctl -u kiosk.service -n 50"
 
-# 6. Optional: Take screenshot to verify visually
+# 6. Test the virtual keyboard
+# - Navigate to sign-in page on kiosk display
+# - Tap on email or password field
+# - Web-based keyboard should slide up from bottom
+# - Test typing and audio feedback
+
+# 7. Optional: Take screenshot to verify visually
 ssh rege@pi5cam.local "ls -t ~/wayland-screenshot-*.png 2>/dev/null | head -1" || \
   echo "No screenshots found"
 ```
@@ -540,8 +547,13 @@ ssh rege@pi5cam.local "ls -t ~/wayland-screenshot-*.png 2>/dev/null | head -1" |
 
 ```bash
 # If kiosk points to local dev server (http://192.168.1.233:3005)
-# Just restart the service after making changes:
+# Changes are live immediately, just hard refresh browser:
+# Method 1: Wait for auto-refresh (if enabled)
+# Method 2: Restart service for clean reload
 ssh rege@pi5cam.local "sudo systemctl restart kiosk.service"
+
+# Note: Web-based keyboard is part of the page, so any view changes
+# require a page reload to see keyboard updates
 ```
 
 **Prerequisites:**

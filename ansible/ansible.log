@@ -14,3 +14,527 @@ Alternatives: Set the `ansible_managed` variable, or use any custom variable in 
 
 2026-01-28 22:52:28,267 p=92989 u=rege n=ansible ERROR| [ERROR]: The 'community.general.yaml' callback plugin has been removed. The plugin has been superseded by the option `result_format=yaml` in callback plugin ansible.builtin.default from ansible-core 2.13 onwards. This feature was removed from collection 'community.general' version 12.0.0.
 
+2026-01-28 22:55:51,350 p=96018 u=rege n=ansible WARNING| [WARNING]: Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+
+2026-01-28 22:55:51,350 p=96018 u=rege n=ansible INFO| [DEPRECATION WARNING]: DEFAULT_MANAGED_STR option. Reason: The `ansible_managed` variable can be set just like any other variable, or a different variable can be used.
+Alternatives: Set the `ansible_managed` variable, or use any custom variable in templates. This feature will be removed from ansible-core version 2.23.
+
+
+2026-01-28 22:55:55,176 p=96084 u=rege n=ansible WARNING| [WARNING]: Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+
+2026-01-28 22:55:55,176 p=96084 u=rege n=ansible INFO| [DEPRECATION WARNING]: DEFAULT_MANAGED_STR option. Reason: The `ansible_managed` variable can be set just like any other variable, or a different variable can be used.
+Alternatives: Set the `ansible_managed` variable, or use any custom variable in templates. This feature will be removed from ansible-core version 2.23.
+
+
+2026-01-28 22:55:56,124 p=96084 u=rege n=ansible INFO| pi5cam | SUCCESS => {
+    "changed": false,
+    "ping": "pong"
+}
+2026-01-28 22:56:00,011 p=96157 u=rege n=ansible WARNING| [WARNING]: Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+
+2026-01-28 22:56:00,011 p=96157 u=rege n=ansible INFO| [DEPRECATION WARNING]: DEFAULT_MANAGED_STR option. Reason: The `ansible_managed` variable can be set just like any other variable, or a different variable can be used.
+Alternatives: Set the `ansible_managed` variable, or use any custom variable in templates. This feature will be removed from ansible-core version 2.23.
+
+
+2026-01-28 22:56:00,210 p=96157 u=rege n=ansible ERROR| [ERROR]: The 'community.general.yaml' callback plugin has been removed. The plugin has been superseded by the option `result_format=yaml` in callback plugin ansible.builtin.default from ansible-core 2.13 onwards. This feature was removed from collection 'community.general' version 12.0.0.
+
+2026-01-28 22:56:13,917 p=96366 u=rege n=ansible WARNING| [WARNING]: Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+
+2026-01-28 22:56:13,917 p=96366 u=rege n=ansible INFO| [DEPRECATION WARNING]: DEFAULT_MANAGED_STR option. Reason: The `ansible_managed` variable can be set just like any other variable, or a different variable can be used.
+Alternatives: Set the `ansible_managed` variable, or use any custom variable in templates. This feature will be removed from ansible-core version 2.23.
+
+
+2026-01-28 22:56:14,112 p=96366 u=rege n=ansible INFO| PLAY [Setup Raspberry Pi Weston Kiosk] *************************************************************************
+2026-01-28 22:56:14,117 p=96366 u=rege n=ansible INFO| TASK [Display target host information] *************************************************************************
+2026-01-28 22:56:14,117 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:14 +0100 (0:00:00.007)       0:00:00.007 ***** 
+2026-01-28 22:56:14,128 p=96366 u=rege n=ansible INFO| ok: [pi5cam] => {
+    "msg": "Setting up kiosk on pi5cam\nURL: http://192.168.1.233:3005/?touch=1\nDisplay rotation: rotate-90\nUser: rege\n"
+}
+2026-01-28 22:56:14,130 p=96366 u=rege n=ansible INFO| TASK [Update apt cache] ****************************************************************************************
+2026-01-28 22:56:14,130 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:14 +0100 (0:00:00.012)       0:00:00.020 ***** 
+2026-01-28 22:56:18,519 p=96366 u=rege n=ansible INFO| changed: [pi5cam]
+2026-01-28 22:56:18,523 p=96366 u=rege n=ansible INFO| TASK [Upgrade all packages] ************************************************************************************
+2026-01-28 22:56:18,523 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:18 +0100 (0:00:04.392)       0:00:04.412 ***** 
+2026-01-28 22:56:21,330 p=96366 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:56:21,334 p=96366 u=rege n=ansible INFO| TASK [Set default systemd target to multi-user] ****************************************************************
+2026-01-28 22:56:21,334 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:21 +0100 (0:00:02.811)       0:00:07.224 ***** 
+2026-01-28 22:56:21,713 p=96366 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:56:21,717 p=96366 u=rege n=ansible INFO| TASK [Install kiosk packages] **********************************************************************************
+2026-01-28 22:56:21,717 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:21 +0100 (0:00:00.382)       0:00:07.607 ***** 
+2026-01-28 22:56:23,167 p=96366 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:56:23,172 p=96366 u=rege n=ansible INFO| TASK [Enable seatd service] ************************************************************************************
+2026-01-28 22:56:23,172 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:23 +0100 (0:00:01.454)       0:00:09.061 ***** 
+2026-01-28 22:56:23,827 p=96366 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:56:23,831 p=96366 u=rege n=ansible INFO| TASK [Add user to video group (for seatd access)] **************************************************************
+2026-01-28 22:56:23,831 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:23 +0100 (0:00:00.659)       0:00:09.720 ***** 
+2026-01-28 22:56:24,284 p=96366 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:56:24,288 p=96366 u=rege n=ansible INFO| TASK [Enable loginctl linger for kiosk user] *******************************************************************
+2026-01-28 22:56:24,288 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:24 +0100 (0:00:00.457)       0:00:10.178 ***** 
+2026-01-28 22:56:24,669 p=96366 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:56:24,672 p=96366 u=rege n=ansible INFO| TASK [Check for getty autologin override] **********************************************************************
+2026-01-28 22:56:24,672 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:24 +0100 (0:00:00.384)       0:00:10.562 ***** 
+2026-01-28 22:56:25,067 p=96366 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:56:25,071 p=96366 u=rege n=ansible INFO| TASK [Disable getty autologin if exists] ***********************************************************************
+2026-01-28 22:56:25,071 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:25 +0100 (0:00:00.398)       0:00:10.960 ***** 
+2026-01-28 22:56:25,079 p=96366 u=rege n=ansible INFO| skipping: [pi5cam]
+2026-01-28 22:56:25,082 p=96366 u=rege n=ansible INFO| TASK [Disable bash_profile startx if exists] *******************************************************************
+2026-01-28 22:56:25,082 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:25 +0100 (0:00:00.011)       0:00:10.971 ***** 
+2026-01-28 22:56:25,385 p=96366 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:56:25,389 p=96366 u=rege n=ansible INFO| TASK [Remove old autostart entries] ****************************************************************************
+2026-01-28 22:56:25,389 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:25 +0100 (0:00:00.307)       0:00:11.278 ***** 
+2026-01-28 22:56:25,726 p=96366 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:56:25,731 p=96366 u=rege n=ansible INFO| TASK [Remove old xinitrc] **************************************************************************************
+2026-01-28 22:56:25,731 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:25 +0100 (0:00:00.341)       0:00:11.620 ***** 
+2026-01-28 22:56:26,099 p=96366 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:56:26,103 p=96366 u=rege n=ansible INFO| TASK [Create Weston config directory] **************************************************************************
+2026-01-28 22:56:26,103 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:26 +0100 (0:00:00.371)       0:00:11.992 ***** 
+2026-01-28 22:56:26,425 p=96366 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:56:26,430 p=96366 u=rege n=ansible INFO| TASK [Deploy Weston configuration] *****************************************************************************
+2026-01-28 22:56:26,430 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:26 +0100 (0:00:00.327)       0:00:12.320 ***** 
+2026-01-28 22:56:27,307 p=96366 u=rege n=ansible INFO| changed: [pi5cam]
+2026-01-28 22:56:27,310 p=96366 u=rege n=ansible INFO| TASK [Create squeekboard configuration directory] **************************************************************
+2026-01-28 22:56:27,310 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:27 +0100 (0:00:00.879)       0:00:13.199 ***** 
+2026-01-28 22:56:27,635 p=96366 u=rege n=ansible INFO| changed: [pi5cam]
+2026-01-28 22:56:27,639 p=96366 u=rege n=ansible INFO| TASK [Deploy kiosk systemd service] ****************************************************************************
+2026-01-28 22:56:27,639 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:27 +0100 (0:00:00.329)       0:00:13.528 ***** 
+2026-01-28 22:56:28,404 p=96366 u=rege n=ansible INFO| [DEPRECATION WARNING]: INJECT_FACTS_AS_VARS default to `True` is deprecated, top-level facts will not be auto injected after the change. This feature will be removed from ansible-core version 2.24.
+Origin: /Users/rege/code/ismf-race-logger/ansible/templates/kiosk.service.j2
+
+Use `ansible_facts["fact_name"]` (no `ansible_` prefix) instead.
+
+
+2026-01-28 22:56:28,404 p=96366 u=rege n=ansible INFO| changed: [pi5cam]
+2026-01-28 22:56:28,407 p=96366 u=rege n=ansible INFO| TASK [Enable kiosk service] ************************************************************************************
+2026-01-28 22:56:28,407 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:28 +0100 (0:00:00.767)       0:00:14.296 ***** 
+2026-01-28 22:56:29,221 p=96366 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:56:29,226 p=96366 u=rege n=ansible INFO| TASK [Backup cmdline.txt] **************************************************************************************
+2026-01-28 22:56:29,226 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:29 +0100 (0:00:00.818)       0:00:15.115 ***** 
+2026-01-28 22:56:29,601 p=96366 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:56:29,605 p=96366 u=rege n=ansible INFO| TASK [Read current cmdline.txt] ********************************************************************************
+2026-01-28 22:56:29,605 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:29 +0100 (0:00:00.379)       0:00:15.494 ***** 
+2026-01-28 22:56:29,975 p=96366 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:56:29,979 p=96366 u=rege n=ansible INFO| TASK [Update cmdline.txt with optimizations] *******************************************************************
+2026-01-28 22:56:29,979 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:29 +0100 (0:00:00.374)       0:00:15.869 ***** 
+2026-01-28 22:56:30,005 p=96366 u=rege n=ansible INFO| skipping: [pi5cam]
+2026-01-28 22:56:30,008 p=96366 u=rege n=ansible INFO| TASK [Set GPU memory in config.txt] ****************************************************************************
+2026-01-28 22:56:30,008 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:30 +0100 (0:00:00.028)       0:00:15.897 ***** 
+2026-01-28 22:56:30,429 p=96366 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:56:30,433 p=96366 u=rege n=ansible INFO| TASK [Disable NetworkManager-wait-online (use NetworkManager instead)] *****************************************
+2026-01-28 22:56:30,434 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:30 +0100 (0:00:00.425)       0:00:16.323 ***** 
+2026-01-28 22:56:30,969 p=96366 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:56:30,973 p=96366 u=rege n=ansible INFO| TASK [Enable NetworkManager-wait-online] ***********************************************************************
+2026-01-28 22:56:30,973 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:30 +0100 (0:00:00.539)       0:00:16.862 ***** 
+2026-01-28 22:56:31,559 p=96366 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:56:31,563 p=96366 u=rege n=ansible INFO| TASK [Reload systemd daemon] ***********************************************************************************
+2026-01-28 22:56:31,563 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:31 +0100 (0:00:00.589)       0:00:17.452 ***** 
+2026-01-28 22:56:32,375 p=96366 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:56:32,379 p=96366 u=rege n=ansible INFO| TASK [Display completion message] ******************************************************************************
+2026-01-28 22:56:32,379 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:32 +0100 (0:00:00.816)       0:00:18.268 ***** 
+2026-01-28 22:56:32,393 p=96366 u=rege n=ansible INFO| ok: [pi5cam] => {
+    "msg": "============================================================\nKiosk setup complete!\n============================================================\n\nThe kiosk will start automatically on next boot.\n\nConfiguration:\n  - URL: http://192.168.1.233:3005/?touch=1\n  - Display rotation: rotate-90\n  - Service: kiosk.service\n\nTo manually control the kiosk:\n  sudo systemctl start kiosk.service\n  sudo systemctl stop kiosk.service\n  sudo systemctl restart kiosk.service\n  sudo journalctl -u kiosk.service -f\n\nEmergency access:\n  - SSH: ssh rege@pi5cam.local\n  - Console: Press CTRL+ALT+F2\n\nReboot required to apply all changes.\n============================================================\n"
+}
+2026-01-28 22:56:32,397 p=96366 u=rege n=ansible INFO| RUNNING HANDLER [restart kiosk] ********************************************************************************
+2026-01-28 22:56:32,397 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:32 +0100 (0:00:00.018)       0:00:18.287 ***** 
+2026-01-28 22:56:36,678 p=96366 u=rege n=ansible INFO| changed: [pi5cam]
+2026-01-28 22:56:36,678 p=96366 u=rege n=ansible INFO| PLAY RECAP *****************************************************************************************************
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| pi5cam                     : ok=25   changed=5    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| PLAYBOOK RECAP *************************************************************************************************
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Playbook run took 0 days, 0 hours, 0 minutes, 22 seconds
+
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| TASKS RECAP ****************************************************************************************************
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Wednesday 28 January 2026  22:56:36 +0100 (0:00:04.281)       0:00:22.568 ***** 
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| =============================================================================== 
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Update apt cache ---------------------------------------------------------------------------------------- 4.39s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| restart kiosk ------------------------------------------------------------------------------------------- 4.28s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Upgrade all packages ------------------------------------------------------------------------------------ 2.81s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Install kiosk packages ---------------------------------------------------------------------------------- 1.45s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Deploy Weston configuration ----------------------------------------------------------------------------- 0.88s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Enable kiosk service ------------------------------------------------------------------------------------ 0.82s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Reload systemd daemon ----------------------------------------------------------------------------------- 0.82s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Deploy kiosk systemd service ---------------------------------------------------------------------------- 0.77s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Enable seatd service ------------------------------------------------------------------------------------ 0.66s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Enable NetworkManager-wait-online ----------------------------------------------------------------------- 0.59s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Disable NetworkManager-wait-online (use NetworkManager instead) ----------------------------------------- 0.54s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Add user to video group (for seatd access) -------------------------------------------------------------- 0.46s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Set GPU memory in config.txt ---------------------------------------------------------------------------- 0.43s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Check for getty autologin override ---------------------------------------------------------------------- 0.40s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Enable loginctl linger for kiosk user ------------------------------------------------------------------- 0.38s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Set default systemd target to multi-user ---------------------------------------------------------------- 0.38s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Backup cmdline.txt -------------------------------------------------------------------------------------- 0.38s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Read current cmdline.txt -------------------------------------------------------------------------------- 0.37s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Remove old xinitrc -------------------------------------------------------------------------------------- 0.37s
+2026-01-28 22:56:36,679 p=96366 u=rege n=ansible INFO| Remove old autostart entries ---------------------------------------------------------------------------- 0.34s
+2026-01-28 22:57:04,028 p=97356 u=rege n=ansible WARNING| [WARNING]: Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+
+2026-01-28 22:57:04,028 p=97356 u=rege n=ansible INFO| [DEPRECATION WARNING]: DEFAULT_MANAGED_STR option. Reason: The `ansible_managed` variable can be set just like any other variable, or a different variable can be used.
+Alternatives: Set the `ansible_managed` variable, or use any custom variable in templates. This feature will be removed from ansible-core version 2.23.
+
+
+2026-01-28 22:57:04,323 p=97356 u=rege n=ansible INFO| PLAY [Setup Raspberry Pi Weston Kiosk] *************************************************************************
+2026-01-28 22:57:04,327 p=97356 u=rege n=ansible INFO| PLAY RECAP *****************************************************************************************************
+2026-01-28 22:57:04,327 p=97356 u=rege n=ansible INFO| PLAYBOOK RECAP *************************************************************************************************
+2026-01-28 22:57:04,327 p=97356 u=rege n=ansible INFO| Playbook run took 0 days, 0 hours, 0 minutes, 0 seconds
+
+2026-01-28 22:57:04,327 p=97356 u=rege n=ansible INFO| TASKS RECAP ****************************************************************************************************
+2026-01-28 22:57:04,327 p=97356 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:04 +0100 (0:00:00.005)       0:00:00.005 ***** 
+2026-01-28 22:57:04,327 p=97356 u=rege n=ansible INFO| =============================================================================== 
+2026-01-28 22:57:09,015 p=97513 u=rege n=ansible WARNING| [WARNING]: Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+
+2026-01-28 22:57:09,015 p=97513 u=rege n=ansible INFO| [DEPRECATION WARNING]: DEFAULT_MANAGED_STR option. Reason: The `ansible_managed` variable can be set just like any other variable, or a different variable can be used.
+Alternatives: Set the `ansible_managed` variable, or use any custom variable in templates. This feature will be removed from ansible-core version 2.23.
+
+
+2026-01-28 22:57:09,192 p=97513 u=rege n=ansible INFO| PLAY [Setup Raspberry Pi Weston Kiosk] *****************************************
+2026-01-28 22:57:09,197 p=97513 u=rege n=ansible INFO| TASK [Display target host information] *****************************************
+2026-01-28 22:57:09,197 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:09 +0100 (0:00:00.005)       0:00:00.005 ***** 
+2026-01-28 22:57:09,208 p=97513 u=rege n=ansible INFO| ok: [pi5cam] => {
+    "msg": "Setting up kiosk on pi5cam\nURL: http://192.168.1.233:3005/?touch=1\nDisplay rotation: rotate-90\nUser: rege\n"
+}
+2026-01-28 22:57:09,210 p=97513 u=rege n=ansible INFO| TASK [Update apt cache] ********************************************************
+2026-01-28 22:57:09,210 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:09 +0100 (0:00:00.013)       0:00:00.019 ***** 
+2026-01-28 22:57:10,401 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:10,404 p=97513 u=rege n=ansible INFO| TASK [Upgrade all packages] ****************************************************
+2026-01-28 22:57:10,404 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:10 +0100 (0:00:01.194)       0:00:01.213 ***** 
+2026-01-28 22:57:13,233 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:13,238 p=97513 u=rege n=ansible INFO| TASK [Set default systemd target to multi-user] ********************************
+2026-01-28 22:57:13,238 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:13 +0100 (0:00:02.833)       0:00:04.047 ***** 
+2026-01-28 22:57:13,609 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:13,613 p=97513 u=rege n=ansible INFO| TASK [Install kiosk packages] **************************************************
+2026-01-28 22:57:13,613 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:13 +0100 (0:00:00.375)       0:00:04.422 ***** 
+2026-01-28 22:57:15,021 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:15,024 p=97513 u=rege n=ansible INFO| TASK [Enable seatd service] ****************************************************
+2026-01-28 22:57:15,024 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:15 +0100 (0:00:01.411)       0:00:05.833 ***** 
+2026-01-28 22:57:15,643 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:15,647 p=97513 u=rege n=ansible INFO| TASK [Add user to video group (for seatd access)] ******************************
+2026-01-28 22:57:15,647 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:15 +0100 (0:00:00.622)       0:00:06.456 ***** 
+2026-01-28 22:57:16,087 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:16,092 p=97513 u=rege n=ansible INFO| TASK [Enable loginctl linger for kiosk user] ***********************************
+2026-01-28 22:57:16,092 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:16 +0100 (0:00:00.444)       0:00:06.901 ***** 
+2026-01-28 22:57:16,469 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:16,473 p=97513 u=rege n=ansible INFO| TASK [Check for getty autologin override] **************************************
+2026-01-28 22:57:16,473 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:16 +0100 (0:00:00.380)       0:00:07.282 ***** 
+2026-01-28 22:57:16,842 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:16,846 p=97513 u=rege n=ansible INFO| TASK [Disable getty autologin if exists] ***************************************
+2026-01-28 22:57:16,846 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:16 +0100 (0:00:00.373)       0:00:07.655 ***** 
+2026-01-28 22:57:16,855 p=97513 u=rege n=ansible INFO| skipping: [pi5cam]
+2026-01-28 22:57:16,858 p=97513 u=rege n=ansible INFO| TASK [Disable bash_profile startx if exists] ***********************************
+2026-01-28 22:57:16,858 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:16 +0100 (0:00:00.011)       0:00:07.667 ***** 
+2026-01-28 22:57:17,185 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:17,188 p=97513 u=rege n=ansible INFO| TASK [Remove old autostart entries] ********************************************
+2026-01-28 22:57:17,188 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:17 +0100 (0:00:00.330)       0:00:07.997 ***** 
+2026-01-28 22:57:17,516 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:17,520 p=97513 u=rege n=ansible INFO| TASK [Remove old xinitrc] ******************************************************
+2026-01-28 22:57:17,520 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:17 +0100 (0:00:00.331)       0:00:08.329 ***** 
+2026-01-28 22:57:17,943 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:17,947 p=97513 u=rege n=ansible INFO| TASK [Create Weston config directory] ******************************************
+2026-01-28 22:57:17,947 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:17 +0100 (0:00:00.427)       0:00:08.756 ***** 
+2026-01-28 22:57:18,353 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:18,358 p=97513 u=rege n=ansible INFO| TASK [Deploy Weston configuration] *********************************************
+2026-01-28 22:57:18,359 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:18 +0100 (0:00:00.411)       0:00:09.167 ***** 
+2026-01-28 22:57:19,112 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:19,116 p=97513 u=rege n=ansible INFO| TASK [Create squeekboard configuration directory] ******************************
+2026-01-28 22:57:19,116 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:19 +0100 (0:00:00.757)       0:00:09.925 ***** 
+2026-01-28 22:57:19,481 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:19,485 p=97513 u=rege n=ansible INFO| TASK [Deploy kiosk systemd service] ********************************************
+2026-01-28 22:57:19,485 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:19 +0100 (0:00:00.368)       0:00:10.294 ***** 
+2026-01-28 22:57:20,420 p=97513 u=rege n=ansible INFO| changed: [pi5cam]
+2026-01-28 22:57:20,423 p=97513 u=rege n=ansible INFO| TASK [Enable kiosk service] ****************************************************
+2026-01-28 22:57:20,423 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:20 +0100 (0:00:00.938)       0:00:11.232 ***** 
+2026-01-28 22:57:21,334 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:21,338 p=97513 u=rege n=ansible INFO| TASK [Backup cmdline.txt] ******************************************************
+2026-01-28 22:57:21,338 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:21 +0100 (0:00:00.914)       0:00:12.147 ***** 
+2026-01-28 22:57:21,719 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:21,722 p=97513 u=rege n=ansible INFO| TASK [Read current cmdline.txt] ************************************************
+2026-01-28 22:57:21,722 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:21 +0100 (0:00:00.383)       0:00:12.531 ***** 
+2026-01-28 22:57:22,095 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:22,098 p=97513 u=rege n=ansible INFO| TASK [Update cmdline.txt with optimizations] ***********************************
+2026-01-28 22:57:22,098 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:22 +0100 (0:00:00.375)       0:00:12.907 ***** 
+2026-01-28 22:57:22,123 p=97513 u=rege n=ansible INFO| skipping: [pi5cam]
+2026-01-28 22:57:22,125 p=97513 u=rege n=ansible INFO| TASK [Set GPU memory in config.txt] ********************************************
+2026-01-28 22:57:22,125 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:22 +0100 (0:00:00.027)       0:00:12.934 ***** 
+2026-01-28 22:57:22,504 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:22,507 p=97513 u=rege n=ansible INFO| TASK [Disable NetworkManager-wait-online (use NetworkManager instead)] *********
+2026-01-28 22:57:22,507 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:22 +0100 (0:00:00.382)       0:00:13.316 ***** 
+2026-01-28 22:57:23,034 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:23,038 p=97513 u=rege n=ansible INFO| TASK [Enable NetworkManager-wait-online] ***************************************
+2026-01-28 22:57:23,038 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:23 +0100 (0:00:00.530)       0:00:13.847 ***** 
+2026-01-28 22:57:23,589 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:23,593 p=97513 u=rege n=ansible INFO| TASK [Reload systemd daemon] ***************************************************
+2026-01-28 22:57:23,593 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:23 +0100 (0:00:00.554)       0:00:14.402 ***** 
+2026-01-28 22:57:24,441 p=97513 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:57:24,445 p=97513 u=rege n=ansible INFO| TASK [Display completion message] **********************************************
+2026-01-28 22:57:24,445 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:24 +0100 (0:00:00.852)       0:00:15.254 ***** 
+2026-01-28 22:57:24,461 p=97513 u=rege n=ansible INFO| ok: [pi5cam] => {
+    "msg": "============================================================\nKiosk setup complete!\n============================================================\n\nThe kiosk will start automatically on next boot.\n\nConfiguration:\n  - URL: http://192.168.1.233:3005/?touch=1\n  - Display rotation: rotate-90\n  - Service: kiosk.service\n\nTo manually control the kiosk:\n  sudo systemctl start kiosk.service\n  sudo systemctl stop kiosk.service\n  sudo systemctl restart kiosk.service\n  sudo journalctl -u kiosk.service -f\n\nEmergency access:\n  - SSH: ssh rege@pi5cam.local\n  - Console: Press CTRL+ALT+F2\n\nReboot required to apply all changes.\n============================================================\n"
+}
+2026-01-28 22:57:24,466 p=97513 u=rege n=ansible INFO| RUNNING HANDLER [restart kiosk] ************************************************
+2026-01-28 22:57:24,466 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:24 +0100 (0:00:00.020)       0:00:15.275 ***** 
+2026-01-28 22:57:28,731 p=97513 u=rege n=ansible INFO| changed: [pi5cam]
+2026-01-28 22:57:28,732 p=97513 u=rege n=ansible INFO| PLAY RECAP *********************************************************************
+2026-01-28 22:57:28,732 p=97513 u=rege n=ansible INFO| pi5cam                     : ok=25   changed=2    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+2026-01-28 22:57:28,732 p=97513 u=rege n=ansible INFO| PLAYBOOK RECAP *****************************************************************
+2026-01-28 22:57:28,732 p=97513 u=rege n=ansible INFO| Playbook run took 0 days, 0 hours, 0 minutes, 19 seconds
+
+2026-01-28 22:57:28,732 p=97513 u=rege n=ansible INFO| TASKS RECAP ********************************************************************
+2026-01-28 22:57:28,732 p=97513 u=rege n=ansible INFO| Wednesday 28 January 2026  22:57:28 +0100 (0:00:04.266)       0:00:19.541 ***** 
+2026-01-28 22:57:28,732 p=97513 u=rege n=ansible INFO| =============================================================================== 
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| restart kiosk ----------------------------------------------------------- 4.27s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Upgrade all packages ---------------------------------------------------- 2.83s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Install kiosk packages -------------------------------------------------- 1.41s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Update apt cache -------------------------------------------------------- 1.19s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Deploy kiosk systemd service -------------------------------------------- 0.94s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Enable kiosk service ---------------------------------------------------- 0.91s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Reload systemd daemon --------------------------------------------------- 0.85s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Deploy Weston configuration --------------------------------------------- 0.76s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Enable seatd service ---------------------------------------------------- 0.62s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Enable NetworkManager-wait-online --------------------------------------- 0.55s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Disable NetworkManager-wait-online (use NetworkManager instead) --------- 0.53s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Add user to video group (for seatd access) ------------------------------ 0.44s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Remove old xinitrc ------------------------------------------------------ 0.43s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Create Weston config directory ------------------------------------------ 0.41s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Backup cmdline.txt ------------------------------------------------------ 0.38s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Set GPU memory in config.txt -------------------------------------------- 0.38s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Enable loginctl linger for kiosk user ----------------------------------- 0.38s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Read current cmdline.txt ------------------------------------------------ 0.38s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Set default systemd target to multi-user -------------------------------- 0.38s
+2026-01-28 22:57:28,733 p=97513 u=rege n=ansible INFO| Check for getty autologin override -------------------------------------- 0.37s
+2026-01-28 22:58:12,888 p=99437 u=rege n=ansible WARNING| [WARNING]: Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+
+2026-01-28 22:58:12,888 p=99437 u=rege n=ansible INFO| [DEPRECATION WARNING]: DEFAULT_MANAGED_STR option. Reason: The `ansible_managed` variable can be set just like any other variable, or a different variable can be used.
+Alternatives: Set the `ansible_managed` variable, or use any custom variable in templates. This feature will be removed from ansible-core version 2.23.
+
+
+2026-01-28 22:58:13,165 p=99437 u=rege n=ansible INFO| PLAY [Setup Raspberry Pi Weston Kiosk] *****************************************
+2026-01-28 22:58:13,170 p=99437 u=rege n=ansible INFO| TASK [Display target host information] *****************************************
+2026-01-28 22:58:13,170 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:13 +0100 (0:00:00.006)       0:00:00.006 ***** 
+2026-01-28 22:58:13,181 p=99437 u=rege n=ansible INFO| ok: [pi5cam] => {
+    "msg": "Setting up kiosk on pi5cam\nURL: http://192.168.1.233:3005/?touch=1\nDisplay rotation: rotate-90\nUser: rege\n"
+}
+2026-01-28 22:58:13,183 p=99437 u=rege n=ansible INFO| TASK [Update apt cache] ********************************************************
+2026-01-28 22:58:13,183 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:13 +0100 (0:00:00.012)       0:00:00.018 ***** 
+2026-01-28 22:58:14,368 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:14,371 p=99437 u=rege n=ansible INFO| TASK [Upgrade all packages] ****************************************************
+2026-01-28 22:58:14,371 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:14 +0100 (0:00:01.188)       0:00:01.207 ***** 
+2026-01-28 22:58:17,214 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:17,218 p=99437 u=rege n=ansible INFO| TASK [Set default systemd target to multi-user] ********************************
+2026-01-28 22:58:17,218 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:17 +0100 (0:00:02.847)       0:00:04.054 ***** 
+2026-01-28 22:58:17,599 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:17,603 p=99437 u=rege n=ansible INFO| TASK [Install kiosk packages] **************************************************
+2026-01-28 22:58:17,603 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:17 +0100 (0:00:00.385)       0:00:04.439 ***** 
+2026-01-28 22:58:19,008 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:19,012 p=99437 u=rege n=ansible INFO| TASK [Enable seatd service] ****************************************************
+2026-01-28 22:58:19,012 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:19 +0100 (0:00:01.408)       0:00:05.848 ***** 
+2026-01-28 22:58:19,615 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:19,619 p=99437 u=rege n=ansible INFO| TASK [Add user to video group (for seatd access)] ******************************
+2026-01-28 22:58:19,619 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:19 +0100 (0:00:00.606)       0:00:06.454 ***** 
+2026-01-28 22:58:20,100 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:20,104 p=99437 u=rege n=ansible INFO| TASK [Enable loginctl linger for kiosk user] ***********************************
+2026-01-28 22:58:20,105 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:20 +0100 (0:00:00.485)       0:00:06.940 ***** 
+2026-01-28 22:58:20,539 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:20,543 p=99437 u=rege n=ansible INFO| TASK [Check for getty autologin override] **************************************
+2026-01-28 22:58:20,543 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:20 +0100 (0:00:00.438)       0:00:07.378 ***** 
+2026-01-28 22:58:20,924 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:20,928 p=99437 u=rege n=ansible INFO| TASK [Disable getty autologin if exists] ***************************************
+2026-01-28 22:58:20,928 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:20 +0100 (0:00:00.385)       0:00:07.764 ***** 
+2026-01-28 22:58:20,939 p=99437 u=rege n=ansible INFO| skipping: [pi5cam]
+2026-01-28 22:58:20,942 p=99437 u=rege n=ansible INFO| TASK [Disable bash_profile startx if exists] ***********************************
+2026-01-28 22:58:20,942 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:20 +0100 (0:00:00.014)       0:00:07.778 ***** 
+2026-01-28 22:58:21,262 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:21,266 p=99437 u=rege n=ansible INFO| TASK [Remove old autostart entries] ********************************************
+2026-01-28 22:58:21,267 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:21 +0100 (0:00:00.324)       0:00:08.102 ***** 
+2026-01-28 22:58:21,598 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:21,602 p=99437 u=rege n=ansible INFO| TASK [Remove old xinitrc] ******************************************************
+2026-01-28 22:58:21,602 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:21 +0100 (0:00:00.335)       0:00:08.438 ***** 
+2026-01-28 22:58:21,947 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:21,951 p=99437 u=rege n=ansible INFO| TASK [Create Weston config directory] ******************************************
+2026-01-28 22:58:21,951 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:21 +0100 (0:00:00.348)       0:00:08.787 ***** 
+2026-01-28 22:58:22,295 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:22,300 p=99437 u=rege n=ansible INFO| TASK [Deploy Weston configuration] *********************************************
+2026-01-28 22:58:22,300 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:22 +0100 (0:00:00.349)       0:00:09.136 ***** 
+2026-01-28 22:58:23,015 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:23,019 p=99437 u=rege n=ansible INFO| TASK [Create squeekboard configuration directory] ******************************
+2026-01-28 22:58:23,019 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:23 +0100 (0:00:00.718)       0:00:09.855 ***** 
+2026-01-28 22:58:23,340 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:23,344 p=99437 u=rege n=ansible INFO| TASK [Deploy kiosk systemd service] ********************************************
+2026-01-28 22:58:23,344 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:23 +0100 (0:00:00.325)       0:00:10.180 ***** 
+2026-01-28 22:58:24,216 p=99437 u=rege n=ansible INFO| changed: [pi5cam]
+2026-01-28 22:58:24,220 p=99437 u=rege n=ansible INFO| TASK [Enable kiosk service] ****************************************************
+2026-01-28 22:58:24,220 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:24 +0100 (0:00:00.875)       0:00:11.055 ***** 
+2026-01-28 22:58:25,126 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:25,131 p=99437 u=rege n=ansible INFO| TASK [Backup cmdline.txt] ******************************************************
+2026-01-28 22:58:25,131 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:25 +0100 (0:00:00.911)       0:00:11.967 ***** 
+2026-01-28 22:58:25,501 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:25,505 p=99437 u=rege n=ansible INFO| TASK [Read current cmdline.txt] ************************************************
+2026-01-28 22:58:25,505 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:25 +0100 (0:00:00.373)       0:00:12.341 ***** 
+2026-01-28 22:58:25,862 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:25,866 p=99437 u=rege n=ansible INFO| TASK [Update cmdline.txt with optimizations] ***********************************
+2026-01-28 22:58:25,866 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:25 +0100 (0:00:00.361)       0:00:12.702 ***** 
+2026-01-28 22:58:25,894 p=99437 u=rege n=ansible INFO| skipping: [pi5cam]
+2026-01-28 22:58:25,896 p=99437 u=rege n=ansible INFO| TASK [Set GPU memory in config.txt] ********************************************
+2026-01-28 22:58:25,896 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:25 +0100 (0:00:00.029)       0:00:12.732 ***** 
+2026-01-28 22:58:26,257 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:26,261 p=99437 u=rege n=ansible INFO| TASK [Disable NetworkManager-wait-online (use NetworkManager instead)] *********
+2026-01-28 22:58:26,262 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:26 +0100 (0:00:00.365)       0:00:13.097 ***** 
+2026-01-28 22:58:26,779 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:26,783 p=99437 u=rege n=ansible INFO| TASK [Enable NetworkManager-wait-online] ***************************************
+2026-01-28 22:58:26,783 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:26 +0100 (0:00:00.521)       0:00:13.619 ***** 
+2026-01-28 22:58:27,379 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:27,383 p=99437 u=rege n=ansible INFO| TASK [Reload systemd daemon] ***************************************************
+2026-01-28 22:58:27,383 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:27 +0100 (0:00:00.600)       0:00:14.219 ***** 
+2026-01-28 22:58:28,313 p=99437 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 22:58:28,317 p=99437 u=rege n=ansible INFO| TASK [Display completion message] **********************************************
+2026-01-28 22:58:28,317 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:28 +0100 (0:00:00.933)       0:00:15.153 ***** 
+2026-01-28 22:58:28,329 p=99437 u=rege n=ansible INFO| ok: [pi5cam] => {
+    "msg": "============================================================\nKiosk setup complete!\n============================================================\n\nThe kiosk will start automatically on next boot.\n\nConfiguration:\n  - URL: http://192.168.1.233:3005/?touch=1\n  - Display rotation: rotate-90\n  - Service: kiosk.service\n\nTo manually control the kiosk:\n  sudo systemctl start kiosk.service\n  sudo systemctl stop kiosk.service\n  sudo systemctl restart kiosk.service\n  sudo journalctl -u kiosk.service -f\n\nEmergency access:\n  - SSH: ssh rege@pi5cam.local\n  - Console: Press CTRL+ALT+F2\n\nReboot required to apply all changes.\n============================================================\n"
+}
+2026-01-28 22:58:28,333 p=99437 u=rege n=ansible INFO| RUNNING HANDLER [restart kiosk] ************************************************
+2026-01-28 22:58:28,334 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:28 +0100 (0:00:00.016)       0:00:15.169 ***** 
+2026-01-28 22:58:32,690 p=99437 u=rege n=ansible INFO| changed: [pi5cam]
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| PLAY RECAP *********************************************************************
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| pi5cam                     : ok=25   changed=2    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| PLAYBOOK RECAP *****************************************************************
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| Playbook run took 0 days, 0 hours, 0 minutes, 19 seconds
+
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| TASKS RECAP ********************************************************************
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| Wednesday 28 January 2026  22:58:32 +0100 (0:00:04.357)       0:00:19.527 ***** 
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| =============================================================================== 
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| restart kiosk ----------------------------------------------------------- 4.36s
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| Upgrade all packages ---------------------------------------------------- 2.85s
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| Install kiosk packages -------------------------------------------------- 1.41s
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| Update apt cache -------------------------------------------------------- 1.19s
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| Reload systemd daemon --------------------------------------------------- 0.93s
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| Enable kiosk service ---------------------------------------------------- 0.91s
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| Deploy kiosk systemd service -------------------------------------------- 0.88s
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| Deploy Weston configuration --------------------------------------------- 0.72s
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| Enable seatd service ---------------------------------------------------- 0.61s
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| Enable NetworkManager-wait-online --------------------------------------- 0.60s
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| Disable NetworkManager-wait-online (use NetworkManager instead) --------- 0.52s
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| Add user to video group (for seatd access) ------------------------------ 0.49s
+2026-01-28 22:58:32,691 p=99437 u=rege n=ansible INFO| Enable loginctl linger for kiosk user ----------------------------------- 0.44s
+2026-01-28 22:58:32,692 p=99437 u=rege n=ansible INFO| Set default systemd target to multi-user -------------------------------- 0.39s
+2026-01-28 22:58:32,692 p=99437 u=rege n=ansible INFO| Check for getty autologin override -------------------------------------- 0.39s
+2026-01-28 22:58:32,692 p=99437 u=rege n=ansible INFO| Backup cmdline.txt ------------------------------------------------------ 0.37s
+2026-01-28 22:58:32,692 p=99437 u=rege n=ansible INFO| Set GPU memory in config.txt -------------------------------------------- 0.37s
+2026-01-28 22:58:32,692 p=99437 u=rege n=ansible INFO| Read current cmdline.txt ------------------------------------------------ 0.36s
+2026-01-28 22:58:32,692 p=99437 u=rege n=ansible INFO| Create Weston config directory ------------------------------------------ 0.35s
+2026-01-28 22:58:32,692 p=99437 u=rege n=ansible INFO| Remove old xinitrc ------------------------------------------------------ 0.35s
+2026-01-28 23:00:29,545 p=3114 u=rege n=ansible WARNING| [WARNING]: Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+
+2026-01-28 23:00:29,545 p=3114 u=rege n=ansible INFO| [DEPRECATION WARNING]: DEFAULT_MANAGED_STR option. Reason: The `ansible_managed` variable can be set just like any other variable, or a different variable can be used.
+Alternatives: Set the `ansible_managed` variable, or use any custom variable in templates. This feature will be removed from ansible-core version 2.23.
+
+
+2026-01-28 23:00:29,840 p=3114 u=rege n=ansible INFO| PLAY [Setup Raspberry Pi Weston Kiosk] *****************************************
+2026-01-28 23:00:29,846 p=3114 u=rege n=ansible INFO| TASK [Display target host information] *****************************************
+2026-01-28 23:00:29,846 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:29 +0100 (0:00:00.007)       0:00:00.007 ***** 
+2026-01-28 23:00:29,857 p=3114 u=rege n=ansible INFO| ok: [pi5cam] => {
+    "msg": "Setting up kiosk on pi5cam\nURL: http://192.168.1.233:3005/?touch=1\nDisplay rotation: rotate-90\nUser: rege\n"
+}
+2026-01-28 23:00:29,859 p=3114 u=rege n=ansible INFO| TASK [Update apt cache] ********************************************************
+2026-01-28 23:00:29,859 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:29 +0100 (0:00:00.013)       0:00:00.020 ***** 
+2026-01-28 23:00:31,726 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:31,730 p=3114 u=rege n=ansible INFO| TASK [Upgrade all packages] ****************************************************
+2026-01-28 23:00:31,730 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:31 +0100 (0:00:01.871)       0:00:01.891 ***** 
+2026-01-28 23:00:34,557 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:34,561 p=3114 u=rege n=ansible INFO| TASK [Set default systemd target to multi-user] ********************************
+2026-01-28 23:00:34,561 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:34 +0100 (0:00:02.830)       0:00:04.722 ***** 
+2026-01-28 23:00:34,969 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:34,973 p=3114 u=rege n=ansible INFO| TASK [Install kiosk packages] **************************************************
+2026-01-28 23:00:34,974 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:34 +0100 (0:00:00.412)       0:00:05.135 ***** 
+2026-01-28 23:00:36,400 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:36,404 p=3114 u=rege n=ansible INFO| TASK [Enable seatd service] ****************************************************
+2026-01-28 23:00:36,404 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:36 +0100 (0:00:01.430)       0:00:06.565 ***** 
+2026-01-28 23:00:37,061 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:37,065 p=3114 u=rege n=ansible INFO| TASK [Add user to video group (for seatd access)] ******************************
+2026-01-28 23:00:37,066 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:37 +0100 (0:00:00.661)       0:00:07.226 ***** 
+2026-01-28 23:00:37,528 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:37,534 p=3114 u=rege n=ansible INFO| TASK [Enable loginctl linger for kiosk user] ***********************************
+2026-01-28 23:00:37,534 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:37 +0100 (0:00:00.468)       0:00:07.695 ***** 
+2026-01-28 23:00:37,957 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:37,961 p=3114 u=rege n=ansible INFO| TASK [Check for getty autologin override] **************************************
+2026-01-28 23:00:37,961 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:37 +0100 (0:00:00.427)       0:00:08.122 ***** 
+2026-01-28 23:00:38,333 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:38,337 p=3114 u=rege n=ansible INFO| TASK [Disable getty autologin if exists] ***************************************
+2026-01-28 23:00:38,337 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:38 +0100 (0:00:00.376)       0:00:08.498 ***** 
+2026-01-28 23:00:38,346 p=3114 u=rege n=ansible INFO| skipping: [pi5cam]
+2026-01-28 23:00:38,349 p=3114 u=rege n=ansible INFO| TASK [Disable bash_profile startx if exists] ***********************************
+2026-01-28 23:00:38,349 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:38 +0100 (0:00:00.011)       0:00:08.510 ***** 
+2026-01-28 23:00:38,660 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:38,664 p=3114 u=rege n=ansible INFO| TASK [Remove old autostart entries] ********************************************
+2026-01-28 23:00:38,664 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:38 +0100 (0:00:00.315)       0:00:08.825 ***** 
+2026-01-28 23:00:39,008 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:39,012 p=3114 u=rege n=ansible INFO| TASK [Remove old xinitrc] ******************************************************
+2026-01-28 23:00:39,012 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:39 +0100 (0:00:00.347)       0:00:09.173 ***** 
+2026-01-28 23:00:39,337 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:39,341 p=3114 u=rege n=ansible INFO| TASK [Create Weston config directory] ******************************************
+2026-01-28 23:00:39,341 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:39 +0100 (0:00:00.329)       0:00:09.502 ***** 
+2026-01-28 23:00:39,674 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:39,680 p=3114 u=rege n=ansible INFO| TASK [Deploy Weston configuration] *********************************************
+2026-01-28 23:00:39,680 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:39 +0100 (0:00:00.339)       0:00:09.841 ***** 
+2026-01-28 23:00:40,436 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:40,439 p=3114 u=rege n=ansible INFO| TASK [Create squeekboard configuration directory] ******************************
+2026-01-28 23:00:40,439 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:40 +0100 (0:00:00.758)       0:00:10.600 ***** 
+2026-01-28 23:00:40,784 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:40,788 p=3114 u=rege n=ansible INFO| TASK [Deploy kiosk systemd service] ********************************************
+2026-01-28 23:00:40,788 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:40 +0100 (0:00:00.348)       0:00:10.949 ***** 
+2026-01-28 23:00:41,667 p=3114 u=rege n=ansible INFO| changed: [pi5cam]
+2026-01-28 23:00:41,670 p=3114 u=rege n=ansible INFO| TASK [Enable kiosk service] ****************************************************
+2026-01-28 23:00:41,670 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:41 +0100 (0:00:00.882)       0:00:11.831 ***** 
+2026-01-28 23:00:42,509 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:42,514 p=3114 u=rege n=ansible INFO| TASK [Backup cmdline.txt] ******************************************************
+2026-01-28 23:00:42,514 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:42 +0100 (0:00:00.843)       0:00:12.675 ***** 
+2026-01-28 23:00:42,887 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:42,890 p=3114 u=rege n=ansible INFO| TASK [Read current cmdline.txt] ************************************************
+2026-01-28 23:00:42,890 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:42 +0100 (0:00:00.376)       0:00:13.051 ***** 
+2026-01-28 23:00:43,262 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:43,266 p=3114 u=rege n=ansible INFO| TASK [Update cmdline.txt with optimizations] ***********************************
+2026-01-28 23:00:43,267 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:43 +0100 (0:00:00.376)       0:00:13.428 ***** 
+2026-01-28 23:00:43,293 p=3114 u=rege n=ansible INFO| skipping: [pi5cam]
+2026-01-28 23:00:43,295 p=3114 u=rege n=ansible INFO| TASK [Set GPU memory in config.txt] ********************************************
+2026-01-28 23:00:43,295 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:43 +0100 (0:00:00.028)       0:00:13.456 ***** 
+2026-01-28 23:00:43,658 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:43,661 p=3114 u=rege n=ansible INFO| TASK [Disable NetworkManager-wait-online (use NetworkManager instead)] *********
+2026-01-28 23:00:43,661 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:43 +0100 (0:00:00.365)       0:00:13.822 ***** 
+2026-01-28 23:00:44,189 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:44,193 p=3114 u=rege n=ansible INFO| TASK [Enable NetworkManager-wait-online] ***************************************
+2026-01-28 23:00:44,193 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:44 +0100 (0:00:00.531)       0:00:14.354 ***** 
+2026-01-28 23:00:44,712 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:44,716 p=3114 u=rege n=ansible INFO| TASK [Reload systemd daemon] ***************************************************
+2026-01-28 23:00:44,716 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:44 +0100 (0:00:00.523)       0:00:14.877 ***** 
+2026-01-28 23:00:45,551 p=3114 u=rege n=ansible INFO| ok: [pi5cam]
+2026-01-28 23:00:45,555 p=3114 u=rege n=ansible INFO| TASK [Display completion message] **********************************************
+2026-01-28 23:00:45,555 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:45 +0100 (0:00:00.838)       0:00:15.716 ***** 
+2026-01-28 23:00:45,569 p=3114 u=rege n=ansible INFO| ok: [pi5cam] => {
+    "msg": "============================================================\nKiosk setup complete!\n============================================================\n\nThe kiosk will start automatically on next boot.\n\nConfiguration:\n  - URL: http://192.168.1.233:3005/?touch=1\n  - Display rotation: rotate-90\n  - Service: kiosk.service\n\nTo manually control the kiosk:\n  sudo systemctl start kiosk.service\n  sudo systemctl stop kiosk.service\n  sudo systemctl restart kiosk.service\n  sudo journalctl -u kiosk.service -f\n\nEmergency access:\n  - SSH: ssh rege@pi5cam.local\n  - Console: Press CTRL+ALT+F2\n\nReboot required to apply all changes.\n============================================================\n"
+}
+2026-01-28 23:00:45,573 p=3114 u=rege n=ansible INFO| RUNNING HANDLER [restart kiosk] ************************************************
+2026-01-28 23:00:45,573 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:45 +0100 (0:00:00.018)       0:00:15.734 ***** 
+2026-01-28 23:00:49,835 p=3114 u=rege n=ansible INFO| changed: [pi5cam]
+2026-01-28 23:00:49,835 p=3114 u=rege n=ansible INFO| PLAY RECAP *********************************************************************
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| pi5cam                     : ok=25   changed=2    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| PLAYBOOK RECAP *****************************************************************
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Playbook run took 0 days, 0 hours, 0 minutes, 19 seconds
+
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| TASKS RECAP ********************************************************************
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Wednesday 28 January 2026  23:00:49 +0100 (0:00:04.262)       0:00:19.997 ***** 
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| =============================================================================== 
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| restart kiosk ----------------------------------------------------------- 4.26s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Upgrade all packages ---------------------------------------------------- 2.83s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Update apt cache -------------------------------------------------------- 1.87s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Install kiosk packages -------------------------------------------------- 1.43s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Deploy kiosk systemd service -------------------------------------------- 0.88s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Enable kiosk service ---------------------------------------------------- 0.84s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Reload systemd daemon --------------------------------------------------- 0.84s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Deploy Weston configuration --------------------------------------------- 0.76s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Enable seatd service ---------------------------------------------------- 0.66s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Disable NetworkManager-wait-online (use NetworkManager instead) --------- 0.53s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Enable NetworkManager-wait-online --------------------------------------- 0.52s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Add user to video group (for seatd access) ------------------------------ 0.47s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Enable loginctl linger for kiosk user ----------------------------------- 0.43s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Set default systemd target to multi-user -------------------------------- 0.41s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Backup cmdline.txt ------------------------------------------------------ 0.38s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Check for getty autologin override -------------------------------------- 0.38s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Read current cmdline.txt ------------------------------------------------ 0.38s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Set GPU memory in config.txt -------------------------------------------- 0.37s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Create squeekboard configuration directory ------------------------------ 0.35s
+2026-01-28 23:00:49,836 p=3114 u=rege n=ansible INFO| Remove old autostart entries -------------------------------------------- 0.35s

@@ -8,7 +8,7 @@ all:
         # Example kiosk hosts
         pi5cam:
           ansible_host: pi5cam.local
-          kiosk_url: http://192.168.1.233:3005
+          kiosk_url: http://192.168.1.233:3005/?touch=1
           display_rotation: rotate-90  # Options: rotate-90, rotate-180, rotate-270, normal
           
         # Add more kiosks as needed
@@ -32,7 +32,7 @@ all:
         chromium_flags:
           - --kiosk
           - --ozone-platform=wayland
-          - --enable-features=UseOzonePlatform
+          - --enable-features=UseOzonePlatform,VirtualKeyboard
           - --noerrdialogs
           - --disable-infobars
           - --disable-session-crashed-bubble
@@ -48,3 +48,4 @@ all:
           - --no-first-run
           - --incognito
           - --touch-events=enabled
+          - --enable-virtual-keyboard

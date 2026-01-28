@@ -283,6 +283,52 @@
           setTimeout(() => debugInfo.remove(), 1000);
         }, 5000);
       });
+      
+      // Virtual keyboard styles
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes blink {
+          0%, 50% { opacity: 1; }
+          51%, 100% { opacity: 0; }
+        }
+        
+        .kbd-key {
+          background: #34495e;
+          color: white;
+          border: 2px solid #4a5f7f;
+          border-radius: 0.5rem;
+          padding: 1rem;
+          font-size: 1.5rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.1s;
+          min-height: 56px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          user-select: none;
+          -webkit-user-select: none;
+          -webkit-tap-highlight-color: rgba(233, 69, 96, 0.3);
+        }
+        .kbd-key:active {
+          transform: scale(0.95);
+          background: #e94560;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.3) inset;
+        }
+        .kbd-shift.active {
+          background: #e94560;
+        }
+        
+        /* Enhanced visibility for focused inputs */
+        input:focus,
+        textarea:focus {
+          font-size: 1.5rem !important;
+          background: #fff !important;
+          border: 3px solid #e94560 !important;
+          box-shadow: 0 0 0 4px rgba(233, 69, 96, 0.3) !important;
+        }
+      `;
+      document.head.appendChild(style);
     </script>
   </head>
 
@@ -306,5 +352,235 @@
     <% end %>
 
     <%= yield %>
+    
+    <!-- Universal Virtual Keyboard for Touch Displays -->
+    <div id="virtual-keyboard" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #2c3e50; padding: 0.75rem; z-index: 9999; border-top: 3px solid #e94560; box-shadow: 0 -4px 20px rgba(0,0,0,0.5);">
+      <div style="display: grid; grid-template-columns: repeat(10, 1fr); gap: 0.4rem; margin-bottom: 0.4rem;">
+        <button class="kbd-key" data-key="1">1</button>
+        <button class="kbd-key" data-key="2">2</button>
+        <button class="kbd-key" data-key="3">3</button>
+        <button class="kbd-key" data-key="4">4</button>
+        <button class="kbd-key" data-key="5">5</button>
+        <button class="kbd-key" data-key="6">6</button>
+        <button class="kbd-key" data-key="7">7</button>
+        <button class="kbd-key" data-key="8">8</button>
+        <button class="kbd-key" data-key="9">9</button>
+        <button class="kbd-key" data-key="0">0</button>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(10, 1fr); gap: 0.4rem; margin-bottom: 0.4rem;">
+        <button class="kbd-key" data-key="q">q</button>
+        <button class="kbd-key" data-key="w">w</button>
+        <button class="kbd-key" data-key="e">e</button>
+        <button class="kbd-key" data-key="r">r</button>
+        <button class="kbd-key" data-key="t">t</button>
+        <button class="kbd-key" data-key="y">y</button>
+        <button class="kbd-key" data-key="u">u</button>
+        <button class="kbd-key" data-key="i">i</button>
+        <button class="kbd-key" data-key="o">o</button>
+        <button class="kbd-key" data-key="p">p</button>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(9, 1fr); gap: 0.4rem; margin-bottom: 0.4rem; padding-left: 1.5rem;">
+        <button class="kbd-key" data-key="a">a</button>
+        <button class="kbd-key" data-key="s">s</button>
+        <button class="kbd-key" data-key="d">d</button>
+        <button class="kbd-key" data-key="f">f</button>
+        <button class="kbd-key" data-key="g">g</button>
+        <button class="kbd-key" data-key="h">h</button>
+        <button class="kbd-key" data-key="j">j</button>
+        <button class="kbd-key" data-key="k">k</button>
+        <button class="kbd-key" data-key="l">l</button>
+      </div>
+      <div style="display: grid; grid-template-columns: 1.5fr repeat(7, 1fr) 1fr; gap: 0.4rem; margin-bottom: 0.4rem;">
+        <button class="kbd-key kbd-shift" data-key="shift">⇧</button>
+        <button class="kbd-key" data-key="z">z</button>
+        <button class="kbd-key" data-key="x">x</button>
+        <button class="kbd-key" data-key="c">c</button>
+        <button class="kbd-key" data-key="v">v</button>
+        <button class="kbd-key" data-key="b">b</button>
+        <button class="kbd-key" data-key="n">n</button>
+        <button class="kbd-key" data-key="m">m</button>
+        <button class="kbd-key" data-key="_">_</button>
+      </div>
+      <div style="display: grid; grid-template-columns: 3fr 1fr 2fr 1fr 1fr 1fr 1.5fr; gap: 0.4rem;">
+        <div id="input-preview" style="background: #1a1a1a; color: #fff; border: 2px solid #4a5f7f; border-radius: 0.5rem; padding: 0.5rem 1rem; display: flex; align-items: center; overflow-x: auto; white-space: nowrap;">
+          <span id="preview-text" style="font-family: monospace; font-size: 1.25rem; font-weight: 700; letter-spacing: 0.1em;"></span>
+          <span id="cursor" style="animation: blink 1s infinite; margin-left: 0.25rem; font-weight: 300;">|</span>
+        </div>
+        <button class="kbd-key kbd-special" data-key="@">@</button>
+        <button class="kbd-key kbd-space" data-key="space">space</button>
+        <button class="kbd-key" data-key=",">,</button>
+        <button class="kbd-key kbd-backspace" data-key="backspace">⌫</button>
+        <button class="kbd-key kbd-enter" data-key="enter" style="background: #16a34a; font-weight: 700;">↵</button>
+        <button class="kbd-key kbd-hide" style="background: #e94560; font-weight: 700;">Hide</button>
+      </div>
+    </div>
+    
+    <script>
+      (function() {
+        let activeInput = null;
+        let isShiftActive = false;
+        let specialChars = ['@', '.', '-'];
+        let specialCharIndex = 0;
+        const keyboard = document.getElementById('virtual-keyboard');
+        const previewText = document.getElementById('preview-text');
+        let keyboardHeight = 0;
+        
+        // Update preview text display
+        const updatePreview = () => {
+          if (!activeInput) {
+            previewText.textContent = '';
+            return;
+          }
+          
+          const value = activeInput.value;
+          
+          if (activeInput.type === 'password') {
+            // Show bullets for password fields
+            previewText.textContent = value ? '•'.repeat(value.length) : '';
+          } else {
+            // Show actual text for other inputs
+            previewText.textContent = value || '';
+          }
+        };
+        
+        // Position keyboard properly for viewport
+        const updateKeyboardPosition = () => {
+          if (keyboard.style.display !== 'none') {
+            const visualViewport = window.visualViewport;
+            if (visualViewport) {
+              keyboard.style.bottom = '0px';
+              keyboard.style.left = visualViewport.offsetLeft + 'px';
+              keyboard.style.width = visualViewport.width + 'px';
+            }
+          }
+        };
+        
+        // Show keyboard on ANY input/textarea focus
+        document.addEventListener('focus', function(e) {
+          if (e.target.matches('input[type="text"], input[type="email"], input[type="password"], textarea')) {
+            activeInput = e.target;
+            keyboard.style.display = 'block';
+            updatePreview(); // This will show preview only if there's text
+            
+            // Listen for input changes to update preview
+            const inputHandler = () => updatePreview();
+            activeInput.addEventListener('input', inputHandler);
+            activeInput.addEventListener('blur', function cleanup() {
+              activeInput.removeEventListener('input', inputHandler);
+              activeInput.removeEventListener('blur', cleanup);
+            });
+            
+            // Get keyboard height after it's displayed
+            setTimeout(() => {
+              keyboardHeight = keyboard.offsetHeight;
+              updateKeyboardPosition();
+              
+              // Scroll input into view - keep it visible above keyboard
+              const inputRect = e.target.getBoundingClientRect();
+              const availableSpace = window.visualViewport ? 
+                window.visualViewport.height - keyboardHeight : 
+                window.innerHeight - keyboardHeight;
+              
+              if (inputRect.bottom > availableSpace - 20) {
+                // Scroll so input is visible above keyboard
+                const scrollAmount = inputRect.bottom - (availableSpace - 20);
+                window.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+              }
+            }, 100);
+          }
+        }, true);
+        
+        // Handle viewport changes (orientation, browser chrome)
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', updateKeyboardPosition);
+          window.visualViewport.addEventListener('scroll', updateKeyboardPosition);
+        }
+        
+        // Handle keyboard clicks
+        keyboard.addEventListener('click', function(e) {
+          if (!e.target.classList.contains('kbd-key')) return;
+          if (!activeInput) return;
+          
+          const key = e.target.dataset.key;
+          
+          // Hide keyboard
+          if (e.target.classList.contains('kbd-hide')) {
+            keyboard.style.display = 'none';
+            if (activeInput) {
+              activeInput.blur();
+              activeInput = null;
+            }
+            previewText.textContent = '';
+            return;
+          }
+          
+          // Special character toggle button
+          if (e.target.classList.contains('kbd-special')) {
+            specialCharIndex = (specialCharIndex + 1) % specialChars.length;
+            const newChar = specialChars[specialCharIndex];
+            e.target.textContent = newChar;
+            e.target.dataset.key = newChar;
+            return;
+          }
+          
+          // Enter key - submit form or insert newline
+          if (key === 'enter') {
+            if (activeInput.tagName === 'TEXTAREA') {
+              // Insert newline in textarea
+              const val = activeInput.value;
+              activeInput.value = val + '\n';
+            } else {
+              // Submit form for input fields
+              const form = activeInput.closest('form');
+              if (form) {
+                form.requestSubmit();
+              }
+            }
+            activeInput.dispatchEvent(new Event('input', { bubbles: true }));
+            updatePreview();
+            return;
+          }
+          
+          const val = activeInput.value;
+          
+          // Handle special keys
+          if (key === 'backspace') {
+            activeInput.value = val.slice(0, -1);
+          } else if (key === 'shift') {
+            isShiftActive = !isShiftActive;
+            e.target.classList.toggle('active', isShiftActive);
+            return; // Don't trigger input event yet
+          } else {
+            // Regular character
+            let char = key;
+            if (key === 'space') {
+              char = ' ';
+            } else if (isShiftActive && key.length === 1) {
+              char = key.toUpperCase();
+              isShiftActive = false;
+              document.querySelector('.kbd-shift').classList.remove('active');
+            }
+            activeInput.value = val + char;
+          }
+          
+          // Trigger input event for form validation
+          activeInput.dispatchEvent(new Event('input', { bubbles: true }));
+          updatePreview();
+          
+          // Audio feedback
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          oscillator.frequency.value = 800;
+          oscillator.type = 'sine';
+          gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.05);
+        });
+      })();
+    </script>
   </body>
 </html>
