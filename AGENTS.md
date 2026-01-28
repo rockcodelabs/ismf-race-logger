@@ -18,7 +18,9 @@ Use this document to:
 
 ## Agent Inventory
 
-### 1. feature-bootstrapper
+### 1. @feature
+
+**Alias:** feature-bootstrapper
 
 **Purpose:** Generate complete feature implementation following project architecture.
 
@@ -47,7 +49,9 @@ Use this document to:
 
 ---
 
-### 2. rails-test-runner
+### 2. @test
+
+**Alias:** rails-test-runner
 
 **Purpose:** Execute RSpec tests in Docker with correct environment.
 
@@ -74,37 +78,80 @@ docker compose exec -T -e RAILS_ENV=test app bundle exec rspec [path]
 
 ---
 
-### 3. rails-console-runner
+### 3. @console
 
-**Purpose:** Execute Ruby code in Rails console context.
+**Purpose:** Execute Ruby code in Rails console/runner across all environments (dev/test/prod).
 
 **When to Use:**
 - Exploring data via repos
 - Testing operations manually
+- Updating records in any environment
 - Debugging domain logic
 - Checking DI container registrations
 
 **When NOT to Use:**
-- Modifying production data
-- Running migrations
+- Running migrations (use db:migrate)
 - Long-running processes
+- Bulk data operations (write a rake task)
 
 **Required Input:**
-- Ruby code to execute
+- Target environment: `dev` (default), `test`, or `prod`
+- Execution mode: `interactive` (console) or `runner` (one-liner)
+- Ruby code to execute (for runner mode)
 
 **Expected Output:**
 - Console output / return values
 
-**Command Pattern:**
+**Environment-Specific Behavior:**
+
+**Development:**
 ```bash
+# Interactive console
 docker compose exec app bin/rails console
-# OR for one-liners:
-docker compose exec -T app bin/rails runner "code"
+
+# Runner (one-liner)
+docker compose exec -T app bin/rails runner "puts User.count"
+
+# Runner (multi-line)
+docker compose exec -T app bin/rails runner "
+  user = User.find_by(email_address: 'test@example.com')
+  puts user.name
+"
 ```
+
+**Test:**
+```bash
+# Interactive console
+docker compose exec -e RAILS_ENV=test app bin/rails console
+
+# Runner
+docker compose exec -T -e RAILS_ENV=test app bin/rails runner "puts User.count"
+```
+
+**Production:**
+```bash
+# Step 1: Get container ID
+ssh rege@pi5main.local "docker ps | grep ismf-race-logger-web"
+
+# Step 2: Execute (replace container-id)
+ssh rege@pi5main.local "docker exec -it <container-id> bin/rails console"
+
+# For complex operations, use script file:
+scp tmp/script.rb rege@pi5main.local:/tmp/script.rb
+ssh rege@pi5main.local 'docker cp /tmp/script.rb <container-id>:/tmp/script.rb && docker exec <container-id> bin/rails runner /tmp/script.rb'
+```
+
+**Rules:**
+- Always use `-T` flag for non-interactive runner commands
+- Use single quotes inside double-quoted runner strings
+- For production, check container name first (changes on each deploy)
+- If Zeitwerk or code is broken in prod, deploy fix before running commands
 
 ---
 
-### 4. code-quality-checker
+### 4. @quality
+
+**Alias:** code-quality-checker
 
 **Purpose:** Run RuboCop and Packwerk to verify code quality.
 
@@ -132,7 +179,9 @@ docker compose exec app bundle exec packwerk check
 
 ---
 
-### 5. api-tester
+### 5. @curl
+
+**Alias:** api-tester
 
 **Purpose:** Test HTTP endpoints using curl.
 
@@ -159,9 +208,11 @@ docker compose exec app bundle exec packwerk check
 
 ---
 
-### 6. docker-diagnose
+### 6. @debug
 
-**Purpose:** Diagnose Docker container issues.
+**Alias:** docker-diagnose
+
+**Purpose:** Diagnose Docker container issues and troubleshoot application problems.
 
 **When to Use:**
 - Container won't start
@@ -194,7 +245,9 @@ docker compose ps
 
 ---
 
-### 7. migration-generator
+### 7. @migration
+
+**Alias:** migration-generator
 
 **Purpose:** Generate database migrations following Rails conventions.
 
@@ -227,13 +280,16 @@ docker compose exec -T app bin/rails generate migration MigrationName field:type
 
 | Problem | Agent |
 |---------|-------|
-| "Build a new feature" | `feature-bootstrapper` |
-| "Run my tests" | `rails-test-runner` |
-| "Check this in console" | `rails-console-runner` |
-| "Verify code quality" | `code-quality-checker` |
-| "Test this endpoint" | `api-tester` |
-| "Container won't start" | `docker-diagnose` |
-| "Add a database column" | `migration-generator` |
+| "Build a new feature" | `@feature` |
+| "Run my tests" | `@test` |
+| "Check this in console" | `@console` |
+| "Update user in production" | `@console` (prod mode) |
+| "Fix RuboCop violations" | `@quality` |
+| "Test this endpoint" | `@curl` |
+| "Container won't start" | `@debug` |
+| "Add a database column" | `@migration` |
+| "Why is this failing?" | `@debug` |
+| "Verify Packwerk boundaries" | `@quality` |
 
 ---
 
@@ -241,14 +297,16 @@ docker compose exec -T app bin/rails generate migration MigrationName field:type
 
 ### Project-Scoped (this repo)
 These agents read project-specific documentation:
-- `feature-bootstrapper` — reads `docs/ARCHITECTURE.md`, `docs/FEATURE_WORKFLOW.md`
-- `rails-test-runner` — knows Docker command patterns
-- `rails-console-runner` — knows DI container keys
+- `@feature` — reads `docs/ARCHITECTURE.md`, `docs/FEATURE_WORKFLOW.md`
+- `@test` — knows Docker command patterns and RAILS_ENV requirements
+- `@console` — knows environment-specific console/runner commands, production SSH patterns
+- `@quality` — knows RuboCop and Packwerk configuration
 
 ### Globally Reusable
 These agents work across projects:
-- `docker-diagnose` — generic Docker troubleshooting
-- `code-quality-checker` — runs standard linters
+- `@debug` — generic Docker troubleshooting
+- `@curl` — HTTP endpoint testing
+- `@migration` — Rails migration generation
 
 ---
 

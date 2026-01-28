@@ -123,55 +123,63 @@ File paths MUST mirror namespaces.
 
 ---
 
-## 5. Docker Command Conventions (MANDATORY)
+## 5. Mandatory Agents (NON-NEGOTIABLE)
 
-This project runs in Docker. You MUST use the correct commands:
+You MUST use the designated agent for each task type. Do NOT execute commands directly.
 
-### Docker Service Name
-- The main service is named `app` (NOT `web`)
-- Always use `docker compose run --rm app` for one-off commands
+| Task Type | Agent | Mandatory When |
+|-----------|-------|----------------|
+| **Feature development** | `@feature` | User mentions "@feature" or requests new CRUD |
+| **Running tests** | `@test` | Running RSpec tests in any environment |
+| **Console/Runner** | `@console` | Executing Ruby code in Rails context (dev/test/prod) |
+| **API testing** | `@curl` | Testing HTTP endpoints with curl |
+| **Quality checks** | `@quality` | Running RuboCop or Packwerk |
+| **Troubleshooting** | `@debug` | Container issues, server won't start, connection errors |
+| **Migrations** | `@migration` | Generating database migrations |
 
-### Rails Console
-To open an interactive Rails console:
-```bash
-docker compose run --rm app ./bin/rails console
-```
+### Agent Usage Rules
 
-### Rails Runner (for non-interactive scripts)
-For executing Ruby code without TTY (in CI or scripts), use `-T` flag:
-```bash
-docker compose run --rm -T app ./bin/rails runner "
-  # Ruby code here
-  user = User.find_by(email_address: 'example@test.com')
-  puts user.name
-"
-```
+1. **ALWAYS** check `AGENTS.md` for agent-specific instructions before executing
+2. **NEVER** bypass agents by running commands directly for these task types
+3. **If an agent doesn't exist** for your task, execute commands per `docs/DEV_COMMANDS.md`
+4. **Agent definitions are authoritative** - they know environment-specific patterns
 
-### Common Patterns
-- **Always use `./bin/rails`** (NOT just `rails`)
-- **Add `-T` flag** when running non-interactive commands (runner, db:seed, etc.)
-- **Use single quotes** inside double-quoted runner strings
-- **Avoid heredocs** - they don't work well with docker compose run
+Example violations:
+- ❌ Running `docker compose exec -T app bundle exec rspec` directly (use `@test`)
+- ❌ Running `docker compose exec app bin/rails console` directly (use `@console`)
+- ❌ Running `curl` commands directly (use `@curl`)
 
-### Examples
-```bash
-# Update user in database
-docker compose run --rm -T app ./bin/rails runner "
-  user = User.find_or_create_by(email_address: 'test@example.com')
-  user.update(password: 'newpass', password_confirmation: 'newpass')
-  puts 'Updated: ' + user.email_address
-"
-
-# Run seeds
-docker compose run --rm -T app ./bin/rails db:seed
-
-# Run migrations
-docker compose run --rm -T app ./bin/rails db:migrate
-```
+All agent definitions are in: `AGENTS.md`
 
 ---
 
-## 6. Dependency Injection
+## 6. Docker & Environment Conventions (MANDATORY)
+
+This project runs in Docker. You MUST follow these rules:
+
+- The main service is named `app` (NOT `web`)
+- Always use `./bin/rails` (NOT just `rails`)
+- Add `-T` flag for non-interactive commands (runner, seeds, migrations)
+- Refer to `@console` agent for environment-specific console/runner usage
+
+All procedural commands are documented in: `docs/DEV_COMMANDS.md`
+
+---
+
+## 7. Production & Kamal Deployment (MANDATORY)
+
+This project uses **Kamal** for deployment to production (host: `pi5main.local`).
+
+**Critical Rules:**
+1. If you just fixed code (e.g., Zeitwerk), you MUST deploy before accessing production
+2. Container names change on each deploy - always check current name first with `docker ps`
+3. Use the `@console` agent for running commands across all environments (dev/test/prod)
+
+All Kamal commands are documented in: `docs/DEV_COMMANDS.md`
+
+---
+
+## 8. Dependency Injection
 
 - Repos, parts factories, and broadcasters MUST be resolved via `AppContainer`
 - No hard-coded class instantiation for repos or parts in controllers
@@ -179,7 +187,7 @@ docker compose run --rm -T app ./bin/rails db:migrate
 
 ---
 
-## 7. Feature Development Workflow
+## 9. Feature Development Workflow
 
 When the user mentions `@feature` or requests a new feature:
 
@@ -195,22 +203,22 @@ You MUST NOT skip phases.
 
 ---
 
-## 8. Testing Discipline (NON-NEGOTIABLE)
+## 10. Testing Discipline (NON-NEGOTIABLE)
 
 - All features MUST include tests
 - Tests MUST be written before declaring completion
-- Tests MUST be executed in Docker with explicit `RAILS_ENV=test`
+- Tests MUST be executed using `@test` agent (handles RAILS_ENV=test automatically)
 - All test failures MUST be fixed before completion
 
 Exact commands are defined in: `docs/DEV_COMMANDS.md`
 
 ---
 
-## 9. Code Quality Gates
+## 11. Code Quality Gates
 
 Before completing any task, you MUST ensure:
-- RuboCop passes (auto-fix with `-A` flag)
-- Packwerk boundaries are respected
+- RuboCop passes (use `@quality` agent)
+- Packwerk boundaries are respected (use `@quality` agent)
 - Frozen string literals are present
 - Documentation exists for repos, operations, lib code
 
@@ -218,7 +226,7 @@ Quality procedures are defined in: `docs/DEV_COMMANDS.md`
 
 ---
 
-## 10. Code Templates
+## 12. Code Templates
 
 When generating new components, use templates from: `templates/`
 
@@ -234,7 +242,7 @@ Available templates:
 
 ---
 
-## 11. Output Expectations
+## 13. Output Expectations
 
 - Prefer small, focused diffs
 - Explain architectural decisions briefly
@@ -244,7 +252,7 @@ Available templates:
 
 ---
 
-## 12. Documentation References
+## 14. Documentation References
 
 | Document | Purpose |
 |----------|---------|
@@ -252,7 +260,7 @@ Available templates:
 | `docs/DATABASE_DESIGN.md` | Database schema and domain models |
 | `docs/DEV_COMMANDS.md` | All shell commands |
 | `docs/FEATURE_WORKFLOW.md` | @feature workflow phases |
-| `AGENTS.md` | Available agents and when to use them |
+| `AGENTS.md` | **MANDATORY agents and usage rules** |
 | `templates/` | Code templates |
 
 ---

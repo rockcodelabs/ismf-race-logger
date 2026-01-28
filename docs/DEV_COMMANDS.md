@@ -33,20 +33,73 @@ docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/requests/
 
 ---
 
-## Rails Console
+## Rails Console & Runner
+
+### Development Environment
 
 ```bash
-# Development console
+# Interactive console
 docker compose exec app bin/rails console
 
-# Run one-off commands
+# Run one-liner Ruby code
 docker compose exec -T app bin/rails runner "puts User.count"
+
+# Run multi-line Ruby code
+docker compose exec -T app bin/rails runner "
+  user = User.find_by(email_address: 'test@example.com')
+  user.update(password: 'newpass', password_confirmation: 'newpass')
+  puts 'Updated: ' + user.email_address
+"
 
 # Console with DI container examples
 # > user_repo = AppContainer["repos.user"]
 # > user = user_repo.find(1)
 # > auth = Operations::Users::Authenticate.new
 # > result = auth.call(email: "test@example.com", password: "password")
+```
+
+### Test Environment
+
+```bash
+# Interactive console in test environment
+docker compose exec -e RAILS_ENV=test app bin/rails console
+
+# Run code in test environment
+docker compose exec -T -e RAILS_ENV=test app bin/rails runner "puts User.count"
+```
+
+### Production Environment
+
+**Important:** Always check container name first, as it changes with each deploy.
+
+```bash
+# Step 1: Get current production container ID
+ssh rege@pi5main.local "docker ps | grep ismf-race-logger-web"
+
+# Step 2: Use the container ID from above (example: ismf-race-logger-web-abc123)
+
+# Interactive console
+ssh rege@pi5main.local "docker exec -it ismf-race-logger-web-abc123 bin/rails console"
+
+# Run one-liner (escape quotes carefully)
+ssh rege@pi5main.local 'docker exec ismf-race-logger-web-abc123 bin/rails runner "puts User.count"'
+
+# Run script file (for complex operations)
+# 1. Create script locally in tmp/
+# 2. Copy to server
+scp tmp/script.rb rege@pi5main.local:/tmp/script.rb
+# 3. Copy into container and execute
+ssh rege@pi5main.local 'docker cp /tmp/script.rb ismf-race-logger-web-abc123:/tmp/script.rb && docker exec ismf-race-logger-web-abc123 bin/rails runner /tmp/script.rb'
+```
+
+**Alternative: Using Kamal (if installed)**
+
+```bash
+# Interactive console
+kamal app exec --interactive "bin/rails console"
+
+# Run one-liner
+kamal app exec "bin/rails runner 'puts User.count'"
 ```
 
 ---
@@ -200,7 +253,7 @@ docker compose exec -T app bin/rails generate migration AddStatusToIncidents sta
 | Role | Email | Password |
 |------|-------|----------|
 | Admin | admin@ismf-ski.com | password123 |
-| Admin | dariusz.finster@gmail.com | test123 |
+| Admin | dariusz.finster@gmail.com | test |
 | Referee | referee@ismf-ski.com | password123 |
 | VAR Operator | var@ismf-ski.com | password123 |
 | User | user@example.com | password123 |
@@ -249,3 +302,57 @@ docker compose restart postgres
 # Check database exists
 docker compose exec -T app bin/rails db:version
 ```
+
+---
+
+## Kamal Deployment
+
+### Deploy to Production
+
+```bash
+# Full deployment (build, push, deploy)
+kamal deploy
+
+# Deploy without building (use existing image)
+kamal deploy --skip-push
+
+# View deployment logs
+kamal app logs -f
+
+# Check app status
+kamal app details
+```
+
+### Production Commands via Kamal
+
+```bash
+# Run migrations
+kamal app exec "bin/rails db:migrate"
+
+# Seed database
+kamal app exec "bin/rails db:seed"
+
+# Open console
+kamal app exec --interactive "bin/rails console"
+
+# View logs
+kamal app logs -f
+
+# Restart app
+kamal app restart
+
+# SSH into server
+ssh rege@pi5main.local
+```
+
+### Production Server Info
+
+- **Host:** pi5main.local
+- **User:** rege
+- **Service:** ismf-race-logger
+- **Registry:** regedarek/ismf-race-logger
+- **Container naming:** ismf-race-logger-web-{hash}
+
+**Important:** After fixing code issues (like Zeitwerk), always deploy before running production commands.
+```
+
