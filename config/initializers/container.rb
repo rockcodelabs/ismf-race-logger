@@ -45,19 +45,6 @@ class AppContainer
     register :magic_link, memoize: true do
       MagicLinkRepo.new
     end
-
-    # Placeholder repos (TODO: implement when models are migrated)
-    register :report, memoize: true do
-      ReportRepo.new
-    end
-
-    register :incident, memoize: true do
-      IncidentRepo.new
-    end
-
-    register :race, memoize: true do
-      RaceRepo.new
-    end
   end
 
   # ============================================================================

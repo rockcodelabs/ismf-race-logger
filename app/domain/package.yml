@@ -1,7 +1,0 @@
-# Domain Layer Package
-# Pure business logic with NO external dependencies
-# This layer should only depend on dry-rb gems
-
-enforce_dependencies: true
-
-dependencies: []

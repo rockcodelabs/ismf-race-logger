@@ -38,21 +38,15 @@ module IsmfRaceLogger
 
     # Hanami-compatible architecture: Configure Zeitwerk for custom namespaces
     # We use push_dir with namespace option to map directories to their modules
-    # This allows app/domain/entities/user.rb to define Domain::Entities::User
 
     # Define the namespace modules first (required before push_dir)
-    # Note: We DON'T require application.rb because it conflicts with Rails' IsmfRaceLogger::Application
-    require_relative "../app/domain"
     require_relative "../app/operations"
-    require_relative "../app/infrastructure"
     require_relative "../app/web"
     require_relative "../app/db"
     require_relative "../app/db/structs"
 
     # Configure Zeitwerk to use custom root namespaces
-    Rails.autoloaders.main.push_dir(Rails.root.join("app/domain"), namespace: ::Domain)
     Rails.autoloaders.main.push_dir(Rails.root.join("app/operations"), namespace: ::Operations)
-    Rails.autoloaders.main.push_dir(Rails.root.join("app/infrastructure"), namespace: ::Infrastructure)
     Rails.autoloaders.main.push_dir(Rails.root.join("app/web"), namespace: ::Web)
     Rails.autoloaders.main.push_dir(Rails.root.join("app/db"), namespace: ::DB)
     Rails.autoloaders.main.push_dir(Rails.root.join("app/db/structs"), namespace: ::Structs)

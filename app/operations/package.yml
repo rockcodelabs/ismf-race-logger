@@ -8,5 +8,3 @@ enforce_privacy: true
 dependencies:
   - "."           # Root package (for Import and contracts)
   - app/db        # Repos and Structs
-  - app/domain    # Legacy domain (during migration)
-  - app/infrastructure  # Legacy infrastructure (during migration)

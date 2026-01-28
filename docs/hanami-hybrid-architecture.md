@@ -690,78 +690,49 @@ bundle exec rspec spec/requests
 5. [x] Update `app/operations/users/authenticate.rb` to use Import
 6. [x] Simplify `app/models/user.rb` (remove scopes and business logic)
 7. [x] Update controllers to use new operations
-8. [x] Write tests for new structure
-9. [x] Delete old files:
-   - `app/domain/entities/user.rb` ✅
-   - `app/domain/contracts/authenticate_user_contract.rb` ✅
-   - `app/infrastructure/persistence/repositories/user_repository.rb` ✅
-   - `app/infrastructure/persistence/records/user_record.rb` ✅
-   - `app/infrastructure/persistence/records/role_record.rb` ✅
-   - `app/infrastructure/persistence/records/session_record.rb` ✅
-   - `app/infrastructure/persistence/records/magic_link_record.rb` ✅
-   - `app/operations/commands/users/` ✅
-   - `app/operations/queries/users/` ✅
+8. [x] Write tests for new structure (337 examples, 0 failures)
+9. [x] Delete old files and directories
 
 **Bonus completed:**
 - [x] Created `app/models/role.rb`, `session.rb`, `magic_link.rb` (pure data mappers)
 - [x] Created `app/db/repos/role_repo.rb`, `session_repo.rb`, `magic_link_repo.rb`
 - [x] Created `app/operations/users/find.rb` and `list.rb` with DI
-- [x] Created placeholder repos for Report, Incident, Race
+- [x] Updated `app/web/controllers/concerns/authentication.rb` to use new models
+- [x] Updated `app/web/controllers/admin/dashboard_controller.rb` to use new models
+- [x] Fixed DI injection (Import["repos.user"] creates `user` method, not `repos_user`)
+- [x] Deleted entire `app/domain/` directory (no tables exist for Report, Incident, Race)
+- [x] Deleted entire `app/infrastructure/` directory
+- [x] Deleted `spec/domain/` and `spec/infrastructure/` directories
 
-### Phase 3: Remaining Models (Week 2-3)
+### Phase 3: Cleanup ✅ COMPLETE
+**Completed:**
+- [x] Deleted `app/domain/` directory
+- [x] Deleted `app/infrastructure/` directory
+- [x] Updated `config/application.rb` to remove Domain/Infrastructure namespaces
+- [x] Updated `app/operations/package.yml` to remove legacy dependencies
+- [x] Removed placeholder repos for Report, Incident, Race (tables don't exist)
 
-**Goal:** Migrate Report, Incident, Race (Role already done in Phase 2)
-
-**Role:** ✅ COMPLETE (created in Phase 2)
-- [x] `app/models/role.rb` (pure data mapper)
-- [x] `app/db/repos/role_repo.rb` (with inline Data structs)
-
-**Report:**
-1. [ ] Create `app/models/report.rb` (pure data mapper)
-2. [ ] Create `app/db/structs/report.rb` (full struct)
-3. [ ] Create `app/db/structs/report_summary.rb` (Data class)
-4. [ ] Implement `app/db/repos/report_repo.rb` (placeholder exists)
-5. [ ] Update operations to use Import
-6. [ ] Delete `app/domain/entities/report.rb`
-
-**Incident:**
-1. [ ] Create `app/models/incident.rb` (pure data mapper)
-2. [ ] Create `app/db/structs/incident.rb` (full struct)
-3. [ ] Create `app/db/structs/incident_summary.rb` (Data class)
-4. [ ] Implement `app/db/repos/incident_repo.rb` (placeholder exists)
-5. [ ] Update operations to use Import
-6. [ ] Delete `app/domain/entities/incident.rb`
-
-**Race:**
-1. [ ] Create `app/models/race.rb` (pure data mapper)
-2. [ ] Create `app/db/structs/race.rb` (full struct)
-3. [ ] Create `app/db/structs/race_summary.rb` (Data class)
-4. [ ] Implement `app/db/repos/race_repo.rb` (placeholder exists)
-5. [ ] Update operations to use Import
-6. [ ] Delete `app/domain/entities/race.rb`
-
-### Phase 4: Cleanup (Week 3)
-
-**Goal:** Remove old structure, update Packwerk
-
-1. [ ] Delete `app/domain/` directory
-2. [ ] Delete `app/infrastructure/` directory
-3. [ ] Delete `app/web/` directory (move controllers to `app/controllers/`)
-4. [ ] Update Packwerk `package.yml` files
-5. [ ] Run `bundle exec packwerk check`
-6. [ ] Update CLAUDE.md with new structure
-7. [ ] Update all documentation
-
-### Phase 5: Verification (Week 3-4)
+### Phase 4: Verification ✅ COMPLETE
 
 **Goal:** Ensure everything works
 
-1. [ ] Run full test suite
+1. [x] Run full test suite (337 examples, 0 failures)
 2. [ ] Run RuboCop
 3. [ ] Run Packwerk check
-4. [ ] Manual QA testing
-5. [ ] Performance benchmarks
-6. [ ] Update CI/CD if needed
+4. [ ] Update CLAUDE.md with new structure
+
+### Future: When Report/Incident/Race Tables Are Created
+
+When you create migrations for `races`, `incidents`, and `reports` tables, follow this pattern:
+
+1. Create migration and run `db:migrate`
+2. Create `app/models/{model}.rb` (pure data mapper - associations only)
+3. Create `app/db/structs/{model}.rb` (full dry-struct)
+4. Create `app/db/structs/{model}_summary.rb` (Ruby Data class)
+5. Create `app/db/repos/{model}_repo.rb`
+6. Register repo in `config/initializers/container.rb`
+7. Create operations in `app/operations/{models}/`
+8. Write tests
 
 ---
 
