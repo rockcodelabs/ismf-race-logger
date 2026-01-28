@@ -2,15 +2,24 @@
 
 > Rails 8 + Hanami-compatible architecture for ISMF Race Logger
 
+**Related Documentation:**
+- [Web Layer Architecture](./web-layer.md) - Controllers, Parts, Templates, Broadcasters, Turbo Native
+
 ## Overview
 
-This document describes the **Hanami Hybrid Architecture** - a Rails 8 application structured to follow Hanami 2.3 conventions using dry-rb gems. This approach provides:
+This document describes the **Hanami Hybrid Architecture** - a Rails 8 application structured to follow Hanami 2.3 conventions using dry-rb gems. It focuses on the **persistence layer** (Models, Repos, Structs) and **business logic layer** (Operations, Contracts).
+
+For the **web layer** (Controllers, Parts, Templates, Broadcasters, Turbo/Hotwire), see [Web Layer Architecture](./web-layer.md).
+
+This approach provides:
 
 - **Performance**: Ruby `Data` class for collections (7x faster than dry-struct)
 - **Type Safety**: dry-struct for single records with full validation
 - **Testability**: dry-auto_inject for dependency injection
 - **Future Migration**: Easy path to pure Hanami 2.x when ready
 - **Boundary Enforcement**: Packwerk ensures layer separation
+- **Real-Time Ready**: Turbo Streams with dedicated Broadcasters
+- **Turbo Native**: Shared views with platform-specific variants
 
 ## Architecture Decisions
 
@@ -31,7 +40,7 @@ This document describes the **Hanami Hybrid Architecture** - a Rails 8 applicati
 
 ```
 app/
-├── db/                              # Persistence layer
+├── db/                              # Layer 1: Persistence
 │   ├── repo.rb                      # DB::Repo base class
 │   ├── struct.rb                    # DB::Struct base class
 │   ├── repos/                       # Repository implementations
@@ -44,7 +53,7 @@ app/
 │       ├── report.rb
 │       └── report_summary.rb
 │
-├── operations/                      # Use cases (commands & queries)
+├── operations/                      # Layer 2: Use cases (commands & queries)
 │   ├── contracts/                   # Input validation (dry-validation)
 │   │   ├── authenticate_user.rb
 │   │   └── create_report.rb
@@ -63,8 +72,29 @@ app/
 │   ├── incident.rb                  # → Incident
 │   └── role.rb                      # → Role
 │
-├── controllers/                     # Rails controllers (thin)
-├── views/                           # Rails views
+├── web/                             # Layer 3: HTTP interface (see web-layer.md)
+│   ├── controllers/                 # Thin HTTP adapters
+│   │   ├── application_controller.rb
+│   │   ├── concerns/
+│   │   │   └── authentication.rb
+│   │   └── admin/
+│   ├── parts/                       # Presentation decorators (Hanami-style)
+│   │   ├── base.rb
+│   │   ├── factory.rb
+│   │   └── user.rb
+│   └── templates/                   # ERB templates
+│       ├── layouts/
+│       │   ├── application.html.erb
+│       │   └── application.turbo_native.html.erb
+│       └── ...
+│
+├── broadcasters/                    # Real-time Turbo Stream broadcasts
+│   ├── base_broadcaster.rb
+│   └── incident_broadcaster.rb
+│
+├── javascript/
+│   └── controllers/                 # Stimulus controllers
+│
 └── jobs/                            # Background jobs
 
 lib/
@@ -74,6 +104,11 @@ lib/
 config/
 └── initializers/
     └── container.rb                 # dry-container + dry-auto_inject setup
+
+docs/
+└── architecture/
+    ├── hanami-hybrid-architecture.md  # This file (DB + Operations)
+    └── web-layer.md                   # Web layer details
 ```
 
 ## Layer Responsibilities
@@ -281,7 +316,7 @@ end
 
 ### 6. Controllers
 
-Thin adapters that delegate to operations:
+Thin adapters that delegate to operations. For complete web layer documentation including Parts, Templates, Broadcasters, and Turbo Native support, see [Web Layer Architecture](./web-layer.md).
 
 ```ruby
 # app/controllers/sessions_controller.rb
@@ -760,10 +795,19 @@ When you create migrations for `races`, `incidents`, and `reports` tables, follo
 | Operation | `app/operations/users/authenticate.rb` | `Operations::Users::Authenticate` |
 | Contract | `app/operations/contracts/authenticate_user.rb` | `Operations::Contracts::AuthenticateUser` |
 | Model | `app/models/user.rb` | `User` |
+| Controller | `app/web/controllers/sessions_controller.rb` | `Web::Controllers::SessionsController` |
+| Part | `app/web/parts/user.rb` | `Web::Parts::User` |
+| Broadcaster | `app/broadcasters/incident_broadcaster.rb` | `IncidentBroadcaster` |
+
+---
+
+## Related Documentation
+
+- **[Web Layer Architecture](./web-layer.md)** - Controllers, Parts, Templates, Broadcasters, Turbo Native support
 
 ---
 
 **Architecture Version**: 2.0  
 **Last Updated**: 2025  
-**Status**: Proposed  
-**Tech Stack**: Rails 8.1 + dry-rb + Ruby Data (3.2+)
+**Status**: Approved  
+**Tech Stack**: Rails 8.1 + dry-rb + Ruby Data (3.2+) + Turbo/Hotwire + Turbo Native

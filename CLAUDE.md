@@ -148,13 +148,34 @@ ismf-race-logger/
 │   │       ├── find.rb                  # Query
 │   │       └── list.rb                  # Query
 │   │
-│   └── web/                             # Layer 3: HTTP interface
-│       ├── controllers/                 # Thin controllers
-│       │   ├── concerns/
-│       │   │   └── authentication.rb    # Rails 8.1 native auth
-│       │   ├── admin/                   # Admin namespace
-│       │   └── sessions_controller.rb
-│       └── views/                       # HTML templates
+│   ├── web/                             # Layer 3: HTTP interface
+│   │   ├── controllers/                 # Thin controllers
+│   │   │   ├── concerns/
+│   │   │   │   └── authentication.rb    # Rails 8.1 native auth
+│   │   │   ├── admin/                   # Admin namespace
+│   │   │   └── sessions_controller.rb
+│   │   ├── parts/                       # Presentation decorators (Hanami-style)
+│   │   │   ├── base.rb                  # Base part class
+│   │   │   ├── factory.rb               # Auto-wraps structs → parts
+│   │   │   └── user.rb                  # User presentation logic
+│   │   └── templates/                   # HTML templates (ERB)
+│   │       ├── layouts/
+│   │       │   ├── application.html.erb
+│   │       │   ├── application.turbo_native.html.erb
+│   │       │   └── admin.html.erb
+│   │       ├── sessions/
+│   │       ├── home/
+│   │       ├── admin/
+│   │       └── shared/
+│   │
+│   ├── broadcasters/                    # Real-time Turbo Stream broadcasts
+│   │   ├── base_broadcaster.rb
+│   │   └── incident_broadcaster.rb
+│   │
+│   └── javascript/
+│       └── controllers/                 # Stimulus controllers
+│           ├── flash_controller.js
+│           └── presence_controller.js
 │
 ├── config/
 │   ├── routes.rb
@@ -170,7 +191,9 @@ ismf-race-logger/
 │   ├── operations/                      # Operation tests
 │   └── web/                             # Request specs
 ├── docs/
-│   └── hanami-hybrid-architecture.md    # Architecture guide
+│   └── architecture/
+│       ├── hanami-hybrid-architecture.md  # DB + Operations layers
+│       └── web-layer.md                   # Web layer architecture
 ├── package.yml                          # Packwerk root config
 ├── app/db/package.yml                   # DB layer boundaries
 ├── app/operations/package.yml           # Operations boundaries
@@ -300,9 +323,26 @@ app/web
    - Input validation with dry-validation contracts
 
 5. **app/web/controllers/** - Thin HTTP adapters
-   - Call operations
+   - Call operations for business logic
+   - Use Parts Factory to wrap structs for templates
    - Handle HTTP responses (redirects, flash messages)
    - Pattern matching on operation results
+
+6. **app/web/parts/** - Presentation decorators (Hanami-style)
+   - Wrap structs with view-specific logic
+   - Keep structs pure (domain only), templates simple
+   - Factory auto-resolves: `Structs::User` → `Web::Parts::User`
+   - Testable in isolation
+
+7. **app/web/templates/** - ERB templates
+   - Use Parts for all presentation logic (no inline conditionals)
+   - Rails variants for Turbo Native (`.turbo_native.html.erb`)
+   - Co-located with web layer
+
+8. **app/broadcasters/** - Real-time Turbo Stream broadcasts
+   - Wrap structs in Parts before rendering partials
+   - Registered in DI container
+   - Separate from business logic (Operations)
 
 ### Dependencies Flow (Enforced)
 ```
@@ -320,6 +360,46 @@ app/web → app/operations → app/db → app/models
 - Operations: `Operations::Users::Authenticate`, `Operations::Users::List`
 - Contracts: `Operations::Contracts::AuthenticateUser`
 - Controllers: `Web::Controllers::SessionsController`
+- Parts: `Web::Parts::User`, `Web::Parts::Incident` (in app/web/parts/)
+- Broadcasters: `IncidentBroadcaster`, `UserBroadcaster` (in app/broadcasters/)
+
+### Web Layer Patterns
+
+#### Parts (Presentation Decorators)
+```ruby
+# Parts wrap structs for view-specific logic
+part = Web::Parts::User.new(user_struct)
+part.avatar_initials  # => "J" (presentation logic)
+part.email_address    # => delegates to struct
+
+# Use factory for auto-resolution
+factory = AppContainer["parts.factory"]
+part = factory.wrap(user_struct)  # => Web::Parts::User
+parts = factory.wrap_many(users)  # => [Web::Parts::User, ...]
+```
+
+#### Broadcasters (Real-Time)
+```ruby
+# Broadcasters handle Turbo Stream delivery
+broadcaster = AppContainer["broadcasters.incident"]
+broadcaster.created(incident_struct)   # Broadcasts to all subscribers
+broadcaster.updated(incident_struct)
+broadcaster.deleted(incident_struct)
+```
+
+#### Turbo Native Support
+```ruby
+# Automatic variant detection in ApplicationController
+before_action :set_variant
+
+def set_variant
+  request.variant = :turbo_native if turbo_native_app?
+end
+
+# Rails auto-resolves templates:
+# - Web: index.html.erb
+# - Native: index.turbo_native.html.erb (falls back to index.html.erb)
+```
 
 ### Performance Pattern
 - **Single record**: Use dry-struct (e.g., `Structs::User`)
@@ -343,8 +423,30 @@ app/web → app/operations → app/db → app/models
 - **dry-auto_inject** - Dependency injection
 - **packwerk** - Boundary enforcement
 - **rubocop-rails-omakase** - Code style + custom architectural rules
+- **Turbo + Hotwire** - Real-time updates, SPA-like navigation
+- **Turbo Native** - iOS/Android native app support
+- **Stimulus** - Lightweight JavaScript controllers
+- **Solid Cable** - Database-backed WebSockets (Action Cable)
+
+### Container Keys (DI)
+```ruby
+# Repos
+AppContainer["repos.user"]           # => UserRepo
+AppContainer["repos.incident"]       # => IncidentRepo
+
+# Parts
+AppContainer["parts.factory"]        # => Web::Parts::Factory
+
+# Broadcasters
+AppContainer["broadcasters.incident"] # => IncidentBroadcaster
+AppContainer["broadcasters.user"]     # => UserBroadcaster
+```
 
 ## Documentation
+
+### Architecture Guides
+- `docs/architecture/hanami-hybrid-architecture.md` - DB layer, Operations, Structs, Repos
+- `docs/architecture/web-layer.md` - Controllers, Parts, Templates, Broadcasters, Turbo Native
 
 # Rails console (with dependency injection)
 docker compose exec app bin/rails console
