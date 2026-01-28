@@ -1,0 +1,16 @@
+2026-01-28 22:52:27,971 p=92989 u=rege n=ansible WARNING| [WARNING]: Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+
+2026-01-28 22:52:27,971 p=92989 u=rege n=ansible INFO| [DEPRECATION WARNING]: DEFAULT_MANAGED_STR option. Reason: The `ansible_managed` variable can be set just like any other variable, or a different variable can be used.
+Alternatives: Set the `ansible_managed` variable, or use any custom variable in templates. This feature will be removed from ansible-core version 2.23.
+
+
+2026-01-28 22:52:28,110 p=92989 u=rege n=ansible WARNING| [WARNING]: Unable to parse /Users/rege/code/ismf-race-logger/ansible/inventory.yml as an inventory source
+
+2026-01-28 22:52:28,110 p=92989 u=rege n=ansible WARNING| [WARNING]: No inventory was parsed, only implicit localhost is available
+
+2026-01-28 22:52:28,114 p=92989 u=rege n=ansible WARNING| [WARNING]: provided hosts list is empty, only localhost is available. Note that the implicit localhost does not match 'all'
+
+2026-01-28 22:52:28,114 p=92989 u=rege n=ansible WARNING| [WARNING]: Could not match supplied host pattern, ignoring: pi5cam
+
+2026-01-28 22:52:28,267 p=92989 u=rege n=ansible ERROR| [ERROR]: The 'community.general.yaml' callback plugin has been removed. The plugin has been superseded by the option `result_format=yaml` in callback plugin ansible.builtin.default from ansible-core 2.13 onwards. This feature was removed from collection 'community.general' version 12.0.0.
+

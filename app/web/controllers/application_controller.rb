@@ -19,6 +19,7 @@ module Web
 
       # Set Turbo Native variant for template selection
       before_action :set_variant
+      before_action :set_touch_layout
 
       # Override controller_path to remove Web::Controllers namespace from view lookup
       # This allows controllers in Web::Controllers namespace to use standard view paths
@@ -37,18 +38,61 @@ module Web
 
       private
 
-      # Set request variant for Turbo Native apps
+      # Set request variant for Turbo Native apps and touch displays
       # This enables automatic template variant selection:
       # - Web: index.html.erb
       # - Native: index.turbo_native.html.erb (falls back to index.html.erb)
+      # - Touch: index.touch.html.erb (falls back to index.html.erb)
       def set_variant
         request.variant = :turbo_native if turbo_native_app?
+        request.variant = :touch if touch_display?
       end
 
       # Detect Turbo Native app requests
       # Turbo Native sends a specific User-Agent header
       def turbo_native_app?
         request.user_agent.to_s.include?("Turbo Native")
+      end
+
+      # Detect touch displays
+      # Priority order:
+      # 1. Explicit query parameter (?touch=1 or ?touch=0)
+      # 2. Cookie preference (persisted from previous visit)
+      # 3. User-Agent detection (Raspberry Pi, mobile browsers)
+      # 4. Small screen dimensions (width < 900px, likely touch device)
+      #
+      # Note: CSS uses @media (any-pointer: coarse) for automatic touch detection
+      # This server-side detection handles initial page load and variant selection
+      def touch_display?
+        # Allow explicit override via query parameter
+        if params[:touch].present?
+          touch_enabled = params[:touch] == "1"
+          cookies[:touch_display] = { value: touch_enabled ? "1" : "0", expires: 1.year.from_now }
+          return touch_enabled
+        end
+        
+        # Check persisted cookie preference
+        return true if cookies[:touch_display] == "1"
+        return false if cookies[:touch_display] == "0"
+        
+        # Detect Raspberry Pi or mobile devices from User-Agent
+        ua = request.user_agent.to_s.downcase
+        if ua.include?("raspberry") || ua.include?("rpi") || 
+           ua.include?("mobile") || ua.include?("android") ||
+           ua.include?("iphone") || ua.include?("ipad")
+          cookies[:touch_display] = { value: "1", expires: 1.year.from_now }
+          return true
+        end
+        
+        false
+      end
+
+      # Switch to touch layout for touch displays
+      # The touch layout provides larger UI elements optimized for touchscreens
+      def set_touch_layout
+        if touch_display?
+          self.class.layout "touch"
+        end
       end
 
       # Access the parts factory for wrapping structs with presentation logic

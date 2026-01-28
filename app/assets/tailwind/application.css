@@ -286,3 +286,257 @@ h1, h2, h3, h4, h5, h6 {
 .text-balance {
   text-wrap: balance;
 }
+
+/* ========================================
+   TOUCH-FRIENDLY STYLES
+   Best Practices:
+   - Minimum 48x48px tap targets (9mm finger pad)
+   - 8px spacing between interactive elements
+   - Detect with @media (any-pointer: coarse)
+   - Visual feedback on touch
+   ======================================== */
+
+/* Detect ANY touchscreen input (primary or secondary) */
+@media (any-pointer: coarse) {
+  /* Touch-friendly tap targets - MINIMUM 48x48px */
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-outline,
+  .btn-danger {
+    min-height: 3rem; /* 48px */
+    min-width: 3rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    border-radius: 0.75rem;
+    gap: 0.5rem; /* 8px spacing between icon and text */
+  }
+  
+  /* Larger buttons for primary actions */
+  .btn-primary {
+    min-height: 3.5rem; /* 56px */
+    font-size: 1.25rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Touch feedback - active state with scale */
+  .btn:active,
+  .btn-primary:active,
+  .btn-secondary:active,
+  .btn-outline:active,
+  .btn-danger:active,
+  button:active,
+  input[type="submit"]:active {
+    transform: scale(0.96);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) inset;
+    transition: transform 0.1s ease;
+  }
+  
+  /* Form inputs - larger for touch */
+  .form-input {
+    min-height: 3rem; /* 48px */
+    padding: 0.875rem 1rem;
+    font-size: 1.125rem;
+    border-width: 2px;
+    border-radius: 0.5rem;
+  }
+  
+  .form-label {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+  
+  /* Flash messages - larger and more visible */
+  .flash,
+  .flash-notice,
+  .flash-alert {
+    padding: 1rem 1.25rem;
+    font-size: 1.125rem;
+    border-radius: 0.75rem;
+  }
+  
+  .flash svg {
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+  }
+  
+  /* Touch-friendly spacing between interactive elements */
+  .gap-4 {
+    gap: 0.5rem !important; /* 8px minimum */
+  }
+  
+  /* Links need adequate touch targets */
+  a:not(.btn):not(.btn-primary):not(.btn-secondary) {
+    min-height: 2.75rem; /* 44px */
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 0.25rem;
+  }
+  
+  /* Better touch feedback with tap highlight */
+  button,
+  a,
+  input[type="submit"],
+  input[type="button"] {
+    cursor: pointer;
+    -webkit-tap-highlight-color: rgba(233, 69, 96, 0.2);
+  }
+  
+  /* Prevent text selection on UI elements (not form inputs) */
+  button,
+  a,
+  nav,
+  .card {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  /* Allow text selection in inputs */
+  input,
+  textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  
+  /* Larger icons in buttons for better visibility */
+  .btn svg,
+  .btn-primary svg,
+  .btn-secondary svg {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+  
+  /* Navigation links larger */
+  .nav-link {
+    min-height: 3rem; /* 48px */
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+  }
+  
+  /* Table rows touch-friendly */
+  .table td {
+    padding: 1rem 1.25rem;
+  }
+  
+  /* Badges slightly larger */
+  .badge {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Additional styles for SMALL touch displays (Raspberry Pi 7" - 800x480) */
+@media (any-pointer: coarse) and (max-width: 900px) {
+  /* Even larger elements for small screens */
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-outline,
+  .btn-danger {
+    min-height: 4rem; /* 64px */
+    padding: 1rem 2rem;
+    font-size: 1.375rem;
+    font-weight: 700;
+  }
+  
+  .btn-primary {
+    min-height: 4.5rem; /* 72px */
+    font-size: 1.5rem;
+  }
+  
+  /* Larger form inputs */
+  .form-input {
+    min-height: 4rem; /* 64px */
+    padding: 1rem 1.25rem;
+    font-size: 1.25rem;
+    border-width: 3px;
+    border-radius: 0.75rem;
+  }
+  
+  .form-label {
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+  
+  /* Larger icons in buttons */
+  .btn svg,
+  .btn-primary svg,
+  .btn-secondary svg {
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+  }
+  
+  /* Increase all spacing */
+  .gap-4 {
+    gap: 1rem !important;
+  }
+  
+  .gap-6 {
+    gap: 1.5rem !important;
+  }
+  
+  /* Larger padding */
+  .p-6 {
+    padding: 1.5rem !important;
+  }
+  
+  .p-8 {
+    padding: 2rem !important;
+  }
+  
+  /* Larger flash messages */
+  .flash,
+  .flash-notice,
+  .flash-alert {
+    padding: 1.25rem 1.5rem;
+    font-size: 1.25rem;
+  }
+  
+  .flash svg {
+    width: 2rem !important;
+    height: 2rem !important;
+  }
+  
+  /* Larger navigation */
+  nav .h-20 {
+    height: 5rem !important;
+  }
+}
+
+/* Visual feedback animations for touch */
+@keyframes touch-ripple {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@media (any-pointer: coarse) {
+  /* Ripple effect on touch */
+  .btn:active::after,
+  .btn-primary:active::after,
+  .btn-secondary:active::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
+    animation: touch-ripple 0.4s ease-out;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+  
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-outline,
+  .btn-danger {
+    position: relative;
+    overflow: hidden;
+  }
+}

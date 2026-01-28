@@ -1,0 +1,80 @@
+<div class="min-h-screen flex flex-col items-center justify-center touch-spacing">
+  <!-- Large Logo -->
+  <div class="touch-logo mb-6">
+    <svg class="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+    </svg>
+  </div>
+  
+  <!-- Title -->
+  <div class="text-center mb-8">
+    <h1 class="text-4xl font-extrabold text-white mb-2">ISMF Race Logger</h1>
+    <p class="text-xl text-white/70 font-semibold">Touch to Sign In</p>
+  </div>
+
+  <!-- Login Form Card -->
+  <div class="w-full max-w-2xl bg-white rounded-3xl shadow-2xl touch-spacing-lg">
+    <!-- Flash messages -->
+    <% if alert = flash[:alert] %>
+      <div class="touch-flash touch-flash-alert mb-6">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span><%= alert %></span>
+      </div>
+    <% end %>
+
+    <% if notice = flash[:notice] %>
+      <div class="touch-flash touch-flash-notice mb-6">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span><%= notice %></span>
+      </div>
+    <% end %>
+
+    <!-- Form -->
+    <%= form_with url: session_url, class: "space-y-8" do |form| %>
+      <div>
+        <label for="email_address" class="touch-label">Email</label>
+        <%= form.email_field :email_address, 
+            required: true, 
+            autofocus: true, 
+            autocomplete: "username", 
+            inputmode: "email",
+            placeholder: "your@email.com", 
+            value: params[:email_address], 
+            class: "touch-input" %>
+      </div>
+
+      <div>
+        <label for="password" class="touch-label">Password</label>
+        <%= form.password_field :password, 
+            required: true, 
+            autocomplete: "current-password",
+            inputmode: "text",
+            placeholder: "Enter password", 
+            maxlength: 72, 
+            class: "touch-input" %>
+      </div>
+
+      <div class="flex flex-col gap-4">
+        <%= form.submit "Sign In", class: "touch-btn touch-btn-primary cursor-pointer" %>
+        
+        <%= link_to root_path, class: "touch-btn touch-btn-secondary" do %>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2rem; height: 2rem;">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>Back</span>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+  
+  <!-- Footer -->
+  <div class="mt-6">
+    <p class="text-center text-white/40 text-lg font-medium">
+      ISMF © <%= Date.current.year %>
+    </p>
+  </div>
+</div>

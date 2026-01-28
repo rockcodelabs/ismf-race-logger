@@ -1,0 +1,52 @@
+[Unit]
+Description=Web Kiosk with On-Screen Keyboard
+After=network-online.target seatd.service
+Wants=network-online.target
+Requires=seatd.service
+
+[Service]
+Type=simple
+User=rege
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+
+ExecStartPre=/bin/sleep 3
+ExecStart=/bin/bash -c '\
+  /usr/bin/weston --backend=drm-backend.so --shell=kiosk-shell.so --idle-time=0 & \
+  WESTON_PID=$!; \
+  for i in {1..30}; do \
+    if [ -S "$XDG_RUNTIME_DIR/wayland-0" ]; then \
+      break; \
+    fi; \
+    sleep 0.5; \
+  done; \
+  export WAYLAND_DISPLAY=wayland-0; \
+  squeekboard & \
+  sleep 2; \
+  /usr/bin/chromium \
+    --ozone-platform=wayland \
+    --enable-features=UseOzonePlatform \
+    --kiosk \
+    --noerrdialogs \
+    --disable-infobars \
+    --disable-session-crashed-bubble \
+    --disable-features=TranslateUI \
+    --disable-sync \
+    --disable-translate \
+    --disable-background-timer-throttling \
+    --disable-renderer-backgrounding \
+    --disable-backgrounding-occluded-windows \
+    --enable-gpu-rasterization \
+    --enable-zero-copy \
+    --ignore-gpu-blocklist \
+    --no-first-run \
+    --incognito \
+    --touch-events=enabled \
+    http://192.168.1.233:3005/?touch=1; \
+  wait $WESTON_PID \
+'
+
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
