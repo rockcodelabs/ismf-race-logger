@@ -96,9 +96,12 @@ jobs:
           echo "127.0.0.1 pi5main.local" | sudo tee -a /etc/hosts
           echo "✅ Added pi5main.local to /etc/hosts"
       
-      - name: Set up Ruby 3.3.0 with ruby-build
+      - name: Set up Ruby with ruby-build
         run: |
-          RUBY_VERSION="3.3.0"
+          # Read Ruby version from .ruby-version file (strip 'ruby-' prefix if present)
+          RUBY_VERSION=$(cat .ruby-version | sed 's/^ruby-//')
+          echo "Using Ruby version: ${RUBY_VERSION}"
+          
           RUBY_INSTALL_DIR="/opt/hostedtoolcache/Ruby/${RUBY_VERSION}/arm64"
           
           # Check if Ruby is already installed in tool cache
@@ -115,9 +118,9 @@ jobs:
               rm -rf /tmp/ruby-build
             fi
             
-            # Install build dependencies
+            # Install build dependencies (including libffi-dev and libyaml-dev for ARM64)
             sudo apt-get update -qq
-            sudo apt-get install -y build-essential libssl-dev libreadline-dev zlib1g-dev
+            sudo apt-get install -y build-essential libssl-dev libreadline-dev zlib1g-dev libffi-dev libyaml-dev
             
             # Create tool cache directory
             sudo mkdir -p /opt/hostedtoolcache/Ruby
