@@ -51,7 +51,7 @@ docker compose run --rm app bin/rails db:create db:migrate db:seed
 docker compose up
 ```
 
-The application will be available at: **http://localhost:3003**
+The application will be available at: **http://localhost:3005**
 
 ### Default Credentials
 
@@ -104,34 +104,6 @@ docker compose build --no-cache
 | Rails App  | 3003 |
 | PostgreSQL | 5433 |
 
-## Project Structure
-
-```
-ismf-race-logger/
-├── app/
-│   ├── controllers/
-│   │   ├── admin/           # Admin namespace controllers
-│   │   ├── home_controller.rb
-│   │   └── sessions_controller.rb
-│   ├── models/
-│   │   └── user.rb
-│   ├── views/
-│   │   ├── admin/           # Admin views
-│   │   ├── home/
-│   │   ├── layouts/
-│   │   └── sessions/
-│   └── assets/
-│       └── tailwind/
-│           └── application.css  # ISMF branded styles
-├── config/
-├── db/
-│   ├── migrate/
-│   └── seeds.rb
-├── docker-compose.yml
-├── Dockerfile.dev
-└── docs/                    # Documentation
-```
-
 ## ISMF Brand Colors
 
 | Color      | Hex       | Usage                    |
@@ -154,32 +126,6 @@ POSTGRES_USER=ismf_user
 POSTGRES_PASSWORD=secure_password
 POSTGRES_DB=ismf_race_logger_production
 ```
-
-## Testing
-
-```bash
-# Run full test suite
-docker compose exec app bundle exec rspec
-
-# Run specific tests
-docker compose exec app bundle exec rspec spec/models/
-```
-
-## Documentation
-
-Additional documentation is available in the `docs/` directory:
-
-- [Implementation Plan](docs/implementation-plan-rails-8.1.md)
-- [Report & Incident Model Architecture](docs/architecture/report-incident-model.md)
-- [FOP Real-Time Performance](docs/features/fop-realtime-performance.md)
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## License
 
