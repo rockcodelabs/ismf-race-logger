@@ -31,7 +31,7 @@ module Operations
       end
 
       rule(:password) do
-        key.failure("must be at least 8 characters") if value.length < 8
+        key.failure("must be at least 4 characters") if value.length < 4
       end
     end
   end
