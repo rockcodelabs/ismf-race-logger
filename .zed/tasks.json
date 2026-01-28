@@ -1,0 +1,86 @@
+[
+  {
+    "label": "Run All Tests",
+    "command": "docker compose exec -T -e RAILS_ENV=test app bundle exec rspec --format documentation",
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always"
+  },
+  {
+    "label": "Run Current Test File",
+    "command": "docker compose exec -T -e RAILS_ENV=test app bundle exec rspec \"$ZED_RELATIVE_FILE\" --format documentation",
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always"
+  },
+  {
+    "label": "Run Test at Line",
+    "command": "docker compose exec -T -e RAILS_ENV=test app bundle exec rspec \"$ZED_RELATIVE_FILE:$ZED_ROW\"",
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always"
+  },
+  {
+    "label": "Rails Console",
+    "command": "docker compose exec app bin/rails console",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": false,
+    "reveal": "always"
+  },
+  {
+    "label": "RuboCop Auto-fix All",
+    "command": "docker compose exec -T app bundle exec rubocop -A",
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always"
+  },
+  {
+    "label": "RuboCop Current File",
+    "command": "docker compose exec -T app bundle exec rubocop -A \"$ZED_RELATIVE_FILE\"",
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always"
+  },
+  {
+    "label": "Packwerk Check",
+    "command": "docker compose exec app bundle exec packwerk check",
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always"
+  },
+  {
+    "label": "Database Migrate",
+    "command": "docker compose exec -T app bin/rails db:migrate",
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always"
+  },
+  {
+    "label": "Database Reset",
+    "command": "docker compose exec -T app bin/rails db:drop db:create db:migrate db:seed",
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always"
+  },
+  {
+    "label": "Docker Logs",
+    "command": "docker compose logs -f app",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": false,
+    "reveal": "always"
+  },
+  {
+    "label": "Docker Restart App",
+    "command": "docker compose restart app",
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always"
+  },
+  {
+    "label": "Docker Remove Stale PID",
+    "command": "docker compose exec app rm -f tmp/pids/server.pid && docker compose restart app",
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always"
+  }
+]
