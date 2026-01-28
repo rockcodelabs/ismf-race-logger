@@ -50,7 +50,7 @@ The web layer handles all HTTP concerns and real-time broadcasting. Key principl
 | **Presentation logic** | Structs + Parts | Clean separation of domain and view |
 | **Parts registration** | Part Factory in container | Auto-resolves struct → part |
 | **Helpers** | None (Parts handle all) | Single responsibility |
-| **Template location** | `app/web/templates/` | Co-located with web layer |
+| **Template location** | `app/views/` (Rails default) | Tooling compatibility, Parts handle logic |
 | **Turbo Native variants** | Rails variants (`.turbo_native.html.erb`) | Built-in Rails support |
 | **Stimulus controllers** | Rails default (`app/javascript/controllers/`) | Simple, flat structure |
 | **View classes** | None | Small app, controllers stay simple |
@@ -79,27 +79,27 @@ app/
 │   │   ├── user.rb
 │   │   └── incident.rb
 │   │
-│   ├── templates/                    # ERB templates
-│   │   ├── layouts/
-│   │   │   ├── application.html.erb
-│   │   │   ├── application.turbo_native.html.erb
-│   │   │   └── admin.html.erb
-│   │   ├── sessions/
-│   │   │   └── new.html.erb
-│   │   ├── home/
-│   │   │   └── index.html.erb
-│   │   ├── admin/
-│   │   │   ├── dashboard/
-│   │   │   │   └── index.html.erb
-│   │   │   └── users/
-│   │   │       ├── index.html.erb
-│   │   │       ├── show.html.erb
-│   │   │       └── _user.html.erb
-│   │   └── shared/
-│   │       ├── _flash.html.erb
-│   │       └── _native_header.html.erb
-│   │
 │   └── package.yml                   # Packwerk boundaries
+│
+├── views/                            # ERB templates (Rails convention)
+│   ├── layouts/
+│   │   ├── application.html.erb
+│   │   ├── application.turbo_native.html.erb  # Turbo Native variant
+│   │   ├── admin.html.erb
+│   │   └── admin.turbo_native.html.erb        # Turbo Native variant
+│   ├── sessions/
+│   │   └── new.html.erb
+│   ├── home/
+│   │   └── index.html.erb
+│   ├── admin/
+│   │   ├── dashboard/
+│   │   │   └── index.html.erb
+│   │   └── users/
+│   │       ├── index.html.erb
+│   │       ├── show.html.erb
+│   │       └── _user.html.erb
+│   └── shared/
+│       └── _flash.html.erb
 │
 ├── broadcasters/                     # Real-time Turbo Stream broadcasts
 │   ├── base_broadcaster.rb
@@ -116,6 +116,10 @@ app/
 │
 └── helpers/                          # EMPTY (Parts handle presentation)
     └── application_helper.rb
+```
+
+> **Note:** Templates remain in `app/views/` (Rails convention) for tooling compatibility.
+> The architectural benefit comes from Parts handling presentation logic, not template location.
 ```
 
 ---
@@ -406,7 +410,13 @@ end
 
 ### Templates
 
-Templates live in `app/web/templates/` and use Parts for all presentation logic.
+Templates live in `app/views/` (Rails convention) and use Parts for all presentation logic.
+
+> **Why `app/views/` instead of `app/web/templates/`?**
+> - Rails tooling, generators, and gems expect `app/views/`
+> - Mailer views naturally live in `app/views/`
+> - The architectural benefit comes from Parts handling presentation logic, not template location
+> - Parts + Structs already provide clean separation
 
 #### Template Rules
 
@@ -418,7 +428,7 @@ Templates live in `app/web/templates/` and use Parts for all presentation logic.
 #### Example Template
 
 ```erb
-<%# app/web/templates/incidents/_incident.html.erb %>
+<%# app/views/incidents/_incident.html.erb %>
 <turbo-frame id="<%= incident.dom_id %>">
   <div class="incident-card" data-controller="incident">
     <div class="flex items-center justify-between">

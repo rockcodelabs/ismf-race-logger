@@ -158,15 +158,18 @@ ismf-race-logger/
 │   │   │   ├── base.rb                  # Base part class
 │   │   │   ├── factory.rb               # Auto-wraps structs → parts
 │   │   │   └── user.rb                  # User presentation logic
-│   │   └── templates/                   # HTML templates (ERB)
-│   │       ├── layouts/
-│   │       │   ├── application.html.erb
-│   │       │   ├── application.turbo_native.html.erb
-│   │       │   └── admin.html.erb
-│   │       ├── sessions/
-│   │       ├── home/
-│   │       ├── admin/
-│   │       └── shared/
+│   │   └── package.yml                  # Packwerk boundaries
+│   │
+│   ├── views/                           # HTML templates (ERB) - Rails convention
+│   │   ├── layouts/
+│   │   │   ├── application.html.erb
+│   │   │   ├── application.turbo_native.html.erb  # Turbo Native variant
+│   │   │   ├── admin.html.erb
+│   │   │   └── admin.turbo_native.html.erb        # Turbo Native variant
+│   │   ├── sessions/
+│   │   ├── home/
+│   │   ├── admin/
+│   │   └── shared/
 │   │
 │   ├── broadcasters/                    # Real-time Turbo Stream broadcasts
 │   │   ├── base_broadcaster.rb

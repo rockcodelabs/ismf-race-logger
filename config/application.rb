@@ -39,14 +39,6 @@ module IsmfRaceLogger
     # config.eager_load_paths << Rails.root.join("extras")
 
     # =========================================================================
-    # VIEW PATHS
-    # =========================================================================
-    # Add app/web/templates as a view path (prepended so it takes priority)
-    # This allows Turbo Native variants and new templates to live in web layer
-    # while keeping app/views as fallback for existing templates
-    config.paths["app/views"].unshift(Rails.root.join("app/web/templates"))
-
-    # =========================================================================
     # ZEITWERK CONFIGURATION (Hanami-hybrid architecture)
     # =========================================================================
     # Define the namespace modules first (required before push_dir)
