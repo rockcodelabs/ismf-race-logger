@@ -6,12 +6,6 @@ ISMF Race Logger - Professional race incident tracking and management system for
 
 **Architecture**: Hanami-compatible layered architecture using Rails 8.1 + dry-rb (NO Hanami gem installed)
 
-**🎉 ARCHITECTURE COMPLETE**: Hanami-hybrid architecture fully implemented and tested!
-- **Architecture**: app/db (repos + structs), app/operations (use cases), app/web (controllers)
-- **Status**: 337 examples, 0 failures ✅
-- **Enforcement**: Packwerk boundaries + RuboCop rules ensure architectural consistency
-- **Phase 1 & 2 Complete**: User/Session/Role/MagicLink migrated to new architecture
-
 ## Tech Stack
 
 - **Framework**: Ruby on Rails 8.1.2
@@ -66,12 +60,6 @@ docker compose down
 docker compose up --build
 ```
 
-### "watchman: not found" warning
-
-The Tailwind container may show `sh: 1: watchman: not found`. This is **harmless and expected**. Watchman is an optional Facebook file-watching tool that Tailwind can use for optimization, but it's not available in default Debian repositories and is not required.
-
-**TL;DR**: Ignore this warning. Tailwind CSS works perfectly fine without watchman - it has its own built-in file watching.
-
 ## ⚠️ CRITICAL: Running Tests
 
 **ALWAYS run tests with explicit `RAILS_ENV=test`:**
@@ -91,12 +79,6 @@ docker compose exec -T -e RAILS_ENV=test app bundle exec rspec --format document
 ```
 
 **Why?** The Docker container defaults to development environment. Without `-e RAILS_ENV=test`, tests will fail with 403 Forbidden due to host authorization.
-
-### Test Database Setup
-
-```bash
-docker compose exec -T -e RAILS_ENV=test app bin/rails db:test:prepare
-```
 
 ## Rails Console
 
@@ -204,27 +186,9 @@ Rails 8.1 native authentication with:
 - `Current.user` for accessing logged-in user
 - `require_authentication` before_action
 
-### Key Files
-
-- `app/controllers/concerns/authentication.rb` - Auth logic
-- `app/controllers/sessions_controller.rb` - Login/logout
-- `app/models/user.rb` - User with admin flag
-- `app/models/session.rb` - Session storage
-
 ## Authorization
 
-Admin access controlled by `user.admin?` flag.
-
-```ruby
-# In controllers
-before_action :require_admin
-
-def require_admin
-  unless Current.user&.admin?
-    redirect_to root_path, alert: "Not authorized"
-  end
-end
-```
+We use Pundit for authorization.
 
 ## Default Users (Development)
 
@@ -258,13 +222,6 @@ docker compose exec -T app bundle exec rubocop
 # Auto-fix simple issues (trailing whitespace, newlines, spacing, frozen string literals)
 docker compose exec -T app bundle exec rubocop -A
 
-# Check specific file/directory
-docker compose exec -T app bundle exec rubocop app/db/
-
-# GitHub Actions format (CI/CD)
-docker compose exec -T app bin/rubocop -f github
-```
-
 #### Architectural Rules Enforced
 
 - ✅ **Frozen string literals** - All files must have `# frozen_string_literal: true`
@@ -286,23 +243,6 @@ docker compose exec -T app bin/rubocop -f github
 1. **Before committing** - `docker compose exec -T app bundle exec rubocop -A`
 2. **In CI/CD** - Automated via GitHub Actions
 3. **After refactoring** - Ensure consistency
-
-### Test Coverage
-
-All layers must have comprehensive tests:
-
-```bash
-# Run all tests by layer
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/db/           # Repos & structs
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/models/       # AR models
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/operations/   # Use cases
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/web/          # Controllers
-
-# Run all tests
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec
-
-# Current status: 337 examples, 0 failures ✅
-```
 
 ### Packwerk - Architecture Boundaries
 
@@ -406,42 +346,6 @@ app/web → app/operations → app/db → app/models
 
 ## Documentation
 
-### Architecture (READ FIRST)
-- `docs/architecture/README.md` - **Start here for architecture overview**
-- `docs/architecture/getting-started-hanami-architecture.md` - How to work with layers
-- `docs/architecture/hanami-architecture-implementation-plan.md` - Complete implementation guide
-- `docs/architecture/packwerk-boundaries.md` - Boundary enforcement
-- `docs/architecture/architecture-comparison.md` - Rails vs Hanami-compatible
-- `docs/architecture/hanami-migration-guide.md` - Future: Creating Hanami 2 version
-
-### Features & Implementation
-- `docs/implementation-plan-rails-8.1.md` - Original Rails 8.1 setup
-- `docs/architecture/report-incident-model.md` - Data model design
-- `docs/features/fop-realtime-performance.md` - Real-time features
-
-### AI Agents
-- `.agents/` - AI agent instructions (rspec, console, etc.)
-
-### Refactor Status
-- `REFACTOR-COMPLETE.md` - User & Authentication refactor summary
-- `.deprecated/` - Old Rails code (to be deleted after verification)
-
-## Key Commands
-
-```bash
-# Architecture & Code Quality (run before committing)
-docker compose exec -T app bundle exec packwerk check   # Check boundaries
-docker compose exec -T app bundle exec rubocop -A       # Fix style & check architecture
-
-# Run tests by layer
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/db/           # Repos & structs
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/models/       # AR models
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/operations/   # Operations
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/web/          # Controllers
-
-# Run all tests
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec
-
 # Rails console (with dependency injection)
 docker compose exec app bin/rails console
 # Example usage:
@@ -449,8 +353,3 @@ docker compose exec app bin/rails console
 #   user = user_repo.find(1)
 #   auth = Operations::Users::Authenticate.new
 #   result = auth.call(email: "test@example.com", password: "password")
-
-# Verify architecture
-grep -r "app/domain" .          # Should find nothing (old architecture removed)
-grep -r "app/infrastructure" .  # Should find nothing (old architecture removed)
-```
