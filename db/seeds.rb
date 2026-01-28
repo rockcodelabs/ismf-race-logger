@@ -90,8 +90,8 @@ if Rails.env.development?
   dev_user = User.find_or_initialize_by(email_address: "dariusz.finster@gmail.com")
   dev_user.assign_attributes(
     name: "Dariusz Finster",
-    password: "test123",
-    password_confirmation: "test123",
+    password: "test",
+    password_confirmation: "test",
     admin: true,
     role: referee_manager_role
   )

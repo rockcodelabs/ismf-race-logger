@@ -123,7 +123,55 @@ File paths MUST mirror namespaces.
 
 ---
 
-## 5. Dependency Injection
+## 5. Docker Command Conventions (MANDATORY)
+
+This project runs in Docker. You MUST use the correct commands:
+
+### Docker Service Name
+- The main service is named `app` (NOT `web`)
+- Always use `docker compose run --rm app` for one-off commands
+
+### Rails Console
+To open an interactive Rails console:
+```bash
+docker compose run --rm app ./bin/rails console
+```
+
+### Rails Runner (for non-interactive scripts)
+For executing Ruby code without TTY (in CI or scripts), use `-T` flag:
+```bash
+docker compose run --rm -T app ./bin/rails runner "
+  # Ruby code here
+  user = User.find_by(email_address: 'example@test.com')
+  puts user.name
+"
+```
+
+### Common Patterns
+- **Always use `./bin/rails`** (NOT just `rails`)
+- **Add `-T` flag** when running non-interactive commands (runner, db:seed, etc.)
+- **Use single quotes** inside double-quoted runner strings
+- **Avoid heredocs** - they don't work well with docker compose run
+
+### Examples
+```bash
+# Update user in database
+docker compose run --rm -T app ./bin/rails runner "
+  user = User.find_or_create_by(email_address: 'test@example.com')
+  user.update(password: 'newpass', password_confirmation: 'newpass')
+  puts 'Updated: ' + user.email_address
+"
+
+# Run seeds
+docker compose run --rm -T app ./bin/rails db:seed
+
+# Run migrations
+docker compose run --rm -T app ./bin/rails db:migrate
+```
+
+---
+
+## 6. Dependency Injection
 
 - Repos, parts factories, and broadcasters MUST be resolved via `AppContainer`
 - No hard-coded class instantiation for repos or parts in controllers
@@ -131,7 +179,7 @@ File paths MUST mirror namespaces.
 
 ---
 
-## 6. Feature Development Workflow
+## 7. Feature Development Workflow
 
 When the user mentions `@feature` or requests a new feature:
 
@@ -147,7 +195,7 @@ You MUST NOT skip phases.
 
 ---
 
-## 7. Testing Discipline (NON-NEGOTIABLE)
+## 8. Testing Discipline (NON-NEGOTIABLE)
 
 - All features MUST include tests
 - Tests MUST be written before declaring completion
@@ -158,7 +206,7 @@ Exact commands are defined in: `docs/DEV_COMMANDS.md`
 
 ---
 
-## 8. Code Quality Gates
+## 9. Code Quality Gates
 
 Before completing any task, you MUST ensure:
 - RuboCop passes (auto-fix with `-A` flag)
@@ -170,7 +218,7 @@ Quality procedures are defined in: `docs/DEV_COMMANDS.md`
 
 ---
 
-## 9. Code Templates
+## 10. Code Templates
 
 When generating new components, use templates from: `templates/`
 
@@ -186,7 +234,7 @@ Available templates:
 
 ---
 
-## 10. Output Expectations
+## 11. Output Expectations
 
 - Prefer small, focused diffs
 - Explain architectural decisions briefly
@@ -196,7 +244,7 @@ Available templates:
 
 ---
 
-## 11. Documentation References
+## 12. Documentation References
 
 | Document | Purpose |
 |----------|---------|
