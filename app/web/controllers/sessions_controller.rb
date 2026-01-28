@@ -39,7 +39,7 @@ module Web
           },
           ->(error) {
             case error
-            in [:validation_failed, errors]
+            in [ :validation_failed, errors ]
               redirect_to new_session_path, alert: "Invalid email or password format."
             in :invalid_credentials
               redirect_to new_session_path, alert: "Try another email address or password."

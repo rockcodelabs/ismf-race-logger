@@ -22,7 +22,7 @@ RSpec.describe Operations::Users::List do
     it "returns users ordered by created_at desc" do
       result = operation.call
 
-      expect(result.value!.map(&:id)).to eq([user3.id, user2.id, user1.id])
+      expect(result.value!.map(&:id)).to eq([ user3.id, user2.id, user1.id ])
     end
   end
 

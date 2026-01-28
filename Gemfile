@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 source "https://rubygems.org"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
@@ -29,6 +31,9 @@ gem "tzinfo-data", platforms: %i[ windows jruby ]
 gem "solid_cache"
 gem "solid_queue"
 gem "solid_cable"
+
+# Benchmark (will be removed from Ruby 4.0 default gems)
+gem "benchmark"
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false

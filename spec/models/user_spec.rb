@@ -40,7 +40,7 @@ RSpec.describe User do
       # User model should have no scopes - all query logic belongs in UserRepo
       # This test documents that expectation
       scope_methods = described_class.methods.grep(/^scope_/)
-      
+
       # ActiveRecord defines some internal scope methods, but we shouldn't have custom ones
       # Our custom scopes would show up differently, so we check the class doesn't respond to common scope names
       expect(described_class).not_to respond_to(:ordered)

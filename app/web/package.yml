@@ -1,10 +1,10 @@
 # Web Layer Package
 # HTTP interface and presentation logic
-# Thin controllers that delegate to application layer commands and queries
+# Thin controllers that delegate to operations layer
 
 enforce_dependencies: true
 
 dependencies:
-  - app/operations
-  - app/domain
-  - app/infrastructure
+  - "."           # Root package (for models like Current, Session, User)
+  - app/db        # For direct model access in controllers (sessions)
+  - app/operations # For use cases

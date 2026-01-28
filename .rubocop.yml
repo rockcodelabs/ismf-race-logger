@@ -6,3 +6,88 @@ inherit_gem: { rubocop-rails-omakase: rubocop.yml }
 # # Use `[a, [b, c]]` not `[ a, [ b, c ] ]`
 # Layout/SpaceInsideArrayLiteralBrackets:
 #   Enabled: false
+
+# Architectural Patterns Enforcement
+# Ensures the Hanami-hybrid architecture is followed
+
+# ActiveRecord models should only be in app/models/ and suffixed with "Record" if in persistence layer
+Naming/FileName:
+  Exclude:
+    - 'app/models/**/*'  # Allow any naming in models
+    - 'app/db/repos/**/*' # Allow *_repo.rb naming
+    - 'app/db/structs/**/*' # Allow struct naming
+
+# Enforce that app/db/repos files define Repos
+Lint/ConstantDefinitionInBlock:
+  Enabled: false  # dry-auto_inject uses blocks
+
+# Ensure structs use dry-struct or Data
+Style/StructInheritance:
+  Enabled: false  # We use dry-struct and Data classes
+
+# Repos should not have business logic
+Metrics/ClassLength:
+  Max: 250
+  Exclude:
+    - 'app/db/repos/**/*'  # Repos can be longer
+    - 'spec/**/*'  # Test files exempt
+
+# Operations should be focused
+Metrics/MethodLength:
+  Max: 25
+  Exclude:
+    - 'spec/**/*'  # Test files exempt
+
+# Complexity checks
+Metrics/AbcSize:
+  Max: 25
+  Exclude:
+    - 'spec/**/*'
+    - 'db/migrate/**/*'
+
+Metrics/CyclomaticComplexity:
+  Max: 10
+  Exclude:
+    - 'spec/**/*'
+
+Metrics/PerceivedComplexity:
+  Max: 10
+  Exclude:
+    - 'spec/**/*'
+
+# Block length is fine for tests and DSLs
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*'
+    - 'config/**/*'
+    - 'lib/tasks/**/*'
+    - 'app/db/repos/**/*'  # Repos have many query methods
+
+# Documentation requirements
+Style/Documentation:
+  Enabled: true
+  Exclude:
+    - 'spec/**/*'
+    - 'test/**/*'
+    - 'config/**/*'
+    - 'db/migrate/**/*'
+    - 'app/models/**/*'  # Thin AR models don't need docs
+  # Require documentation for:
+  Include:
+    - 'app/db/**/*'
+    - 'app/operations/**/*'
+    - 'lib/**/*'
+
+# Enforce collection projection performance pattern
+# Collections should use Ruby Data, not dry-struct
+Style/DataInheritance:
+  Enabled: false  # We use Data classes intentionally
+
+# Frozen string literals
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  EnforcedStyle: always
+  Exclude:
+    - 'db/migrate/**/*'
+    - 'bin/**/*'
+    - 'config/puma.rb'

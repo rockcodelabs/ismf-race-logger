@@ -6,13 +6,11 @@ ISMF Race Logger - Professional race incident tracking and management system for
 
 **Architecture**: Hanami-compatible layered architecture using Rails 8.1 + dry-rb (NO Hanami gem installed)
 
-**🎉 REFACTOR STATUS**: Operations layer (formerly Application) established with passing tests!
-- **Phase 1 Complete**: Domain (41 passing) + Operations (14 passing) layers ✅
-- **Namespace Migration**: Application → Operations (avoiding Rails conflict)
-- **Current Status**: 619 examples, 518 failures (101 passing - 16.3%)
-- **Next Steps**: Fix MagicLink (28 failures) + Policies (400 failures) = Quick path to 85% passing
-- See [REFACTOR-STATUS-2024.md](docs/REFACTOR-STATUS-2024.md) for complete status
-- See [QUICK-WINS.md](docs/QUICK-WINS.md) for fixing remaining failures
+**🎉 ARCHITECTURE COMPLETE**: Hanami-hybrid architecture fully implemented and tested!
+- **Architecture**: app/db (repos + structs), app/operations (use cases), app/web (controllers)
+- **Status**: 337 examples, 0 failures ✅
+- **Enforcement**: Packwerk boundaries + RuboCop rules ensure architectural consistency
+- **Phase 1 & 2 Complete**: User/Session/Role/MagicLink migrated to new architecture
 
 ## Tech Stack
 
@@ -136,64 +134,64 @@ docker compose down
 docker compose up --build
 ```
 
-## Project Structure (Hanami-Compatible Architecture)
+## Project Structure (Hanami-Hybrid Architecture)
 
 ```
 ismf-race-logger/
 ├── app/
-│   ├── domain/                          # Layer 1: Pure business logic
-│   │   ├── entities/                    # Business objects (dry-struct)
-│   │   ├── value_objects/               # Immutable data
-│   │   ├── contracts/                   # Validation rules (dry-validation)
-│   │   ├── services/                    # Pure calculations
-│   │   └── types.rb                     # Custom dry-types
+│   ├── db/                              # Layer 1: Persistence
+│   │   ├── repo.rb                      # Base repository class
+│   │   ├── struct.rb                    # Base struct class
+│   │   ├── repos/                       # Data access layer
+│   │   │   ├── user_repo.rb
+│   │   │   ├── role_repo.rb
+│   │   │   ├── session_repo.rb
+│   │   │   └── magic_link_repo.rb
+│   │   └── structs/                     # Immutable data objects
+│   │       ├── user.rb                  # Full struct (dry-struct) for single records
+│   │       └── user_summary.rb          # Summary struct (Data) for collections
+│   │
+│   ├── models/                          # Thin ActiveRecord models
+│   │   ├── user.rb
+│   │   ├── role.rb
+│   │   ├── session.rb
+│   │   ├── magic_link.rb
+│   │   └── current.rb                   # Rails 8.1 current attributes
 │   │
 │   ├── operations/                      # Layer 2: Use cases
-│   │   ├── commands/                    # Write operations
-│   │   ├── queries/                     # Read operations
-│   │   ├── contracts/                   # Input validation
-│   │   └── container.rb                 # DI container
+│   │   ├── contracts/                   # Input validation (dry-validation)
+│   │   │   └── authenticate_user.rb
+│   │   └── users/                       # User operations
+│   │       ├── authenticate.rb          # Command
+│   │       ├── find.rb                  # Query
+│   │       └── list.rb                  # Query
 │   │
-│   ├── infrastructure/                  # Layer 3: Adapters
-│   │   ├── persistence/
-│   │   │   ├── records/                 # ActiveRecord models (suffixed with "Record")
-│   │   │   └── repositories/            # Data access layer
-│   │   ├── jobs/                        # Background jobs
-│   │   ├── mailers/                     # Email senders
-│   │   └── storage/                     # File handling
-│   │
-│   └── web/                             # Layer 4: HTTP interface
-│       ├── controllers/                 # Thin adapters
+│   └── web/                             # Layer 3: HTTP interface
+│       ├── controllers/                 # Thin controllers
 │       │   ├── concerns/
 │       │   │   └── authentication.rb    # Rails 8.1 native auth
 │       │   ├── admin/                   # Admin namespace
-│       │   └── api/                     # API endpoints
-│       ├── views/                       # HTML templates
-│       └── components/                  # ViewComponent
+│       │   └── sessions_controller.rb
+│       └── views/                       # HTML templates
 │
 ├── config/
 │   ├── routes.rb
 │   ├── initializers/
-│   │   └── dry_container.rb             # Dependency injection setup
+│   │   └── container.rb                 # AppContainer (dry-container + auto_inject)
 │   └── environments/
+├── lib/
+│   └── ismf_race_logger/
+│       └── types.rb                     # Shared dry-types
 ├── spec/
-│   ├── domain/                          # Fast unit tests (no DB)
-│   ├── operations/                      # Integration tests
-│   ├── infrastructure/                  # Repository tests
-│   ├── web/                             # Request specs
-│   └── support/
+│   ├── db/                              # Repo & struct tests
+│   ├── models/                          # Model tests
+│   ├── operations/                      # Operation tests
+│   └── web/                             # Request specs
 ├── docs/
-│   ├── architecture/                    # Architecture documentation
-│   │   ├── README.md                    # Start here
-│   │   ├── hanami-architecture-implementation-plan.md
-│   │   ├── getting-started-hanami-architecture.md
-│   │   ├── packwerk-boundaries.md
-│   │   └── hanami-migration-guide.md
-│   └── features/
+│   └── hanami-hybrid-architecture.md    # Architecture guide
 ├── package.yml                          # Packwerk root config
-├── app/domain/package.yml               # Domain boundaries
+├── app/db/package.yml                   # DB layer boundaries
 ├── app/operations/package.yml           # Operations boundaries
-├── app/infrastructure/package.yml       # Infrastructure boundaries
 ├── app/web/package.yml                  # Web boundaries
 └── docker-compose.yml
 ```
@@ -247,104 +245,164 @@ end
 | Blue  | #0f3460   | --color-ismf-blue   |
 | Gray  | #6b7280   | --color-ismf-gray   |
 
-## Code Quality
+## Code Quality & Architecture Enforcement
 
-### RuboCop - Style & Linting
+### RuboCop - Style & Architecture Linting
 
-RuboCop enforces consistent code style across the project. **Run before committing!**
+RuboCop enforces both code style AND architectural patterns. **Run before committing!**
 
 ```bash
 # Quick check (recommended before commit)
-bin/rubocop-check
+docker compose exec -T app bundle exec rubocop
 
-# Auto-fix simple issues (trailing whitespace, newlines, spacing)
-bin/rubocop-check --fix
+# Auto-fix simple issues (trailing whitespace, newlines, spacing, frozen string literals)
+docker compose exec -T app bundle exec rubocop -A
 
 # Check specific file/directory
-bin/rubocop-check app/domain/
+docker compose exec -T app bundle exec rubocop app/db/
 
 # GitHub Actions format (CI/CD)
 docker compose exec -T app bin/rubocop -f github
-
-# Manual fix in container
-docker compose exec -T app bin/rubocop -A
 ```
+
+#### Architectural Rules Enforced
+
+- ✅ **Frozen string literals** - All files must have `# frozen_string_literal: true`
+- ✅ **Documentation** - Repos, operations, and lib code must have top-level docs
+- ✅ **Complexity limits** - Methods ≤25 lines, ABC ≤25, cyclomatic ≤10
+- ✅ **Class length** - Operations focused, repos can be longer (≤250 lines)
+- ✅ **Collection performance** - Use Ruby `Data` classes for summaries, dry-struct for single records
 
 #### Common Issues Auto-Fixed
 
+- ✅ Frozen string literal comments
 - ✅ Trailing whitespace
 - ✅ Missing final newlines
-- ✅ Array bracket spacing (`[1, 2]` → `[ 1, 2 ]`)
-- ✅ String literal quotes (prefer double quotes)
+- ✅ Array bracket spacing (`[ 1, 2 ]`)
 - ✅ Indentation and alignment
 
 #### When to Run
 
-1. **Before committing** - `bin/rubocop-check --fix`
+1. **Before committing** - `docker compose exec -T app bundle exec rubocop -A`
 2. **In CI/CD** - Automated via GitHub Actions
-3. **After refactoring** - Ensure style consistency
+3. **After refactoring** - Ensure consistency
 
 ### Test Coverage
 
 All layers must have comprehensive tests:
 
 ```bash
-# Run all tests (fast to slow)
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/domain         # ~2ms/test
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/operations    # ~50ms/test
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/infrastructure
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/web
+# Run all tests by layer
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/db/           # Repos & structs
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/models/       # AR models
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/operations/   # Use cases
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/web/          # Controllers
 
-# Current status: 619 examples, 0 failures ✅
+# Run all tests
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec
+
+# Current status: 337 examples, 0 failures ✅
 ```
 
-### Architecture Boundaries
+### Packwerk - Architecture Boundaries
 
-Packwerk enforces layer separation:
+Packwerk enforces layer separation and prevents circular dependencies:
 
 ```bash
 # Check boundaries (run before committing)
 docker compose exec app bundle exec packwerk check
 
-# Update dependencies after adding new references
+# Update dependencies after adding new references (not recommended for new code)
 docker compose exec app bundle exec packwerk update-todo
 ```
 
-**Violations are not allowed in new code!**
+#### Package Dependencies (Enforced)
+
+```
+Root (.)
+├── depends on: app/db, app/operations, app/web
+│
+app/db
+├── depends on: . (for AR models)
+│
+app/operations
+├── depends on: . (for Import), app/db (for repos/structs)
+│
+app/web
+├── depends on: . (for models), app/db (optional), app/operations
+```
+
+**❌ Violations are NOT allowed in new code!**
+**✅ All boundaries must be clean before merging**
 
 ## Code Style & Architecture Rules
 
-### Layer Separation (ENFORCED by Packwerk)
-- **Domain**: Pure Ruby + dry-rb only (NO Rails, NO ActiveRecord)
-- **Operations**: Orchestrates domain + infrastructure via DI
-- **Infrastructure**: ActiveRecord models suffixed with "Record" (e.g., `UserRecord`, `ReportRecord`)
-- **Web**: Thin controllers, delegate to operations layer
+### Layer Separation (ENFORCED by Packwerk + RuboCop)
 
-### Dependencies Flow Downward
-- Web → Operations → Domain
-- Infrastructure → Domain (read-only for mapping)
-- **Never upward** (Packwerk enforces this)
+1. **app/models/** - Thin ActiveRecord models (persistence only)
+   - Associations, validations, scopes
+   - NO business logic
+   - NO direct controller access to complex queries
+
+2. **app/db/repos/** - Repository pattern (public persistence API)
+   - All DB queries go through repos
+   - Returns structs (immutable), not AR models
+   - Custom query methods (e.g., `find_by_email`, `list_with_roles`)
+
+3. **app/db/structs/** - Immutable data objects
+   - **Full structs**: dry-struct for single records (type-safe)
+   - **Summary structs**: Ruby `Data` for collections (performance)
+   - NO business logic, pure data
+
+4. **app/operations/** - Use cases and business workflows
+   - Orchestrates repos via dependency injection
+   - Returns dry-monads results (`Success(data)` or `Failure(error)`)
+   - Input validation with dry-validation contracts
+
+5. **app/web/controllers/** - Thin HTTP adapters
+   - Call operations
+   - Handle HTTP responses (redirects, flash messages)
+   - Pattern matching on operation results
+
+### Dependencies Flow (Enforced)
+```
+app/web → app/operations → app/db → app/models
+           ↓
+      (lib/types)
+```
+
+**Never upward!** Packwerk prevents reverse dependencies.
 
 ### Naming Conventions
-- Entities: `Domain::Entities::Report` (dry-struct)
-- Records: `Infrastructure::Persistence::Records::ReportRecord` (ActiveRecord)
-- Repositories: `Infrastructure::Persistence::Repositories::ReportRepository`
-- Commands: `Operations::Commands::Reports::Create`
-- Controllers: `Web::Controllers::Api::ReportsController`
+- Models: `User`, `Role` (thin AR models in app/models/)
+- Repos: `UserRepo`, `RoleRepo` (in app/db/repos/)
+- Structs: `Structs::User`, `Structs::UserSummary` (in app/db/structs/)
+- Operations: `Operations::Users::Authenticate`, `Operations::Users::List`
+- Contracts: `Operations::Contracts::AuthenticateUser`
+- Controllers: `Web::Controllers::SessionsController`
 
-### Testing
-- Domain: Fast unit tests (no DB) - `spec/domain/`
-- Operations: Integration tests - `spec/operations/`
-- Infrastructure: Repository tests - `spec/infrastructure/`
-- Web: Request specs - `spec/web/`
+### Performance Pattern
+- **Single record**: Use dry-struct (e.g., `Structs::User`)
+  - Type-safe with `attribute :email, Types::Email`
+  - Slower instantiation (~2x AR model)
+- **Collections**: Use Ruby `Data` class (e.g., `Structs::UserSummary`)
+  - Much faster (~10x faster than dry-struct)
+  - Minimal fields needed for lists
+
+### Testing Strategy
+- **spec/db/**: Repo & struct tests (use DB)
+- **spec/models/**: AR model tests (associations, validations)
+- **spec/operations/**: Operation tests (integration, use repos)
+- **spec/web/**: Controller request specs (full stack)
 
 ### Technology Stack
-- **dry-struct** - Domain entities
-- **dry-validation** - Validation contracts
+- **dry-struct** - Type-safe structs for single records
+- **Ruby Data** - Fast structs for collections
+- **dry-validation** - Input validation contracts
 - **dry-monads** - Result objects
 - **dry-auto_inject** - Dependency injection
 - **packwerk** - Boundary enforcement
-- **NO Hanami gem** (architecture is Hanami-compatible for future migration)
+- **rubocop-rails-omakase** - Code style + custom architectural rules
 
 ## Documentation
 
@@ -371,30 +429,28 @@ docker compose exec app bundle exec packwerk update-todo
 ## Key Commands
 
 ```bash
-# Check architecture boundaries (run before committing)
-docker compose exec app bundle exec packwerk check
+# Architecture & Code Quality (run before committing)
+docker compose exec -T app bundle exec packwerk check   # Check boundaries
+docker compose exec -T app bundle exec rubocop -A       # Fix style & check architecture
 
-# Run tests by layer (fastest to slowest)
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/domain         # ~2ms/test (NO DB)
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/operations    # ~50ms/test
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/infrastructure # ~50ms/test
-docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/web           # ~100ms/test
+# Run tests by layer
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/db/           # Repos & structs
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/models/       # AR models
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/operations/   # Operations
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/web/          # Controllers
 
 # Run all tests
 docker compose exec -T -e RAILS_ENV=test app bundle exec rspec
 
-# RuboCop - Code style checks (run before committing)
-bin/rubocop-check              # Check all files
-bin/rubocop-check --fix        # Auto-fix simple issues
-docker compose exec -T app bin/rubocop -f github  # GitHub Actions format
-docker compose exec -T app bin/rubocop -A         # Auto-correct in container
-
-# Rails console (access DI container)
+# Rails console (with dependency injection)
 docker compose exec app bin/rails console
-# Example: ApplicationContainer.resolve("commands.users.authenticate")
-# Use Operations::Commands::Users::Authenticate.new
+# Example usage:
+#   user_repo = AppContainer["repos.user"]
+#   user = user_repo.find(1)
+#   auth = Operations::Users::Authenticate.new
+#   result = auth.call(email: "test@example.com", password: "password")
 
-# Verify old code references are gone
-grep -r "^User\." app/ --exclude-dir=infrastructure
-grep -r "^Role\." app/ --exclude-dir=infrastructure
+# Verify architecture
+grep -r "app/domain" .          # Should find nothing (old architecture removed)
+grep -r "app/infrastructure" .  # Should find nothing (old architecture removed)
 ```

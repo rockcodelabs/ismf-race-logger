@@ -217,7 +217,7 @@ RSpec.describe DB::Repo do
     let!(:user3) { create(:user) }
 
     it "returns records for given IDs as summary structs" do
-      result = repo.many([user1.id, user3.id])
+      result = repo.many([ user1.id, user3.id ])
 
       expect(result).to be_an(Array)
       expect(result.size).to eq(2)
@@ -226,7 +226,7 @@ RSpec.describe DB::Repo do
     end
 
     it "returns empty array for non-existent IDs" do
-      result = repo.many([999998, 999999])
+      result = repo.many([ 999998, 999999 ])
 
       expect(result).to eq([])
     end
@@ -265,7 +265,7 @@ RSpec.describe DB::Repo do
     it "returns array of arrays for multiple columns" do
       result = repo.pluck(:id, :name)
 
-      expect(result).to contain_exactly([user1.id, "Alice"], [user2.id, "Bob"])
+      expect(result).to contain_exactly([ user1.id, "Alice" ], [ user2.id, "Bob" ])
     end
   end
 

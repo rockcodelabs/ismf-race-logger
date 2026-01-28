@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 Rails.application.routes.draw do
   # Authentication routes - using web layer controllers
   resource :session, controller: "web/controllers/sessions"

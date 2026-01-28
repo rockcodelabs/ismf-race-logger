@@ -3,6 +3,8 @@
 require "dry-types"
 
 module IsmfRaceLogger
+  # Shared type definitions for the application using dry-types.
+  # Provides strict types, constrained types, and custom business types.
   module Types
     include Dry.Types()
 
