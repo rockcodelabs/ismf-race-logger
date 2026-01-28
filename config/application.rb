@@ -44,18 +44,31 @@ module IsmfRaceLogger
     # Define the namespace modules first (required before push_dir)
     require_relative "../app/operations"
     require_relative "../app/web"
-    require_relative "../app/db"
+    
+    # Load DB base classes first (these are used by structs/repos)
+    require_relative "../app/db/struct"
+    require_relative "../app/db/repo"
     require_relative "../app/db/structs"
 
     # Configure Zeitwerk to use custom root namespaces
     Rails.autoloaders.main.push_dir(Rails.root.join("app/operations"), namespace: ::Operations)
     Rails.autoloaders.main.push_dir(Rails.root.join("app/web"), namespace: ::Web)
-    Rails.autoloaders.main.push_dir(Rails.root.join("app/db"), namespace: ::DB)
+    
+    # Structs is a top-level namespace (not DB::Structs)
     Rails.autoloaders.main.push_dir(Rails.root.join("app/db/structs"), namespace: ::Structs)
+    
     # Repos are top-level classes (UserRepo, not DB::Repos::UserRepo)
     Rails.autoloaders.main.push_dir(Rails.root.join("app/db/repos"), namespace: ::Object)
+    
     # Broadcasters are top-level classes
     Rails.autoloaders.main.push_dir(Rails.root.join("app/broadcasters"), namespace: ::Object)
+    
+    # Ignore app/db base files since we load them manually above
+    Rails.autoloaders.main.ignore(Rails.root.join("app/db.rb"))
+    Rails.autoloaders.main.ignore(Rails.root.join("app/db/repo.rb"))
+    Rails.autoloaders.main.ignore(Rails.root.join("app/db/struct.rb"))
+    Rails.autoloaders.main.ignore(Rails.root.join("app/db/structs.rb"))
+    Rails.autoloaders.main.ignore(Rails.root.join("app/db/package.yml"))
 
     # Don't generate system test files.
     config.generators.system_tests = nil
