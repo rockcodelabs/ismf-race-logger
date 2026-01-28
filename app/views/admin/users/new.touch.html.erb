@@ -1,0 +1,109 @@
+<% content_for :page_title, "New User" %>
+
+<div class="min-h-screen touch-spacing pb-32">
+  <h1 class="text-3xl font-extrabold text-white mb-8 text-center">Create New User</h1>
+
+  <!-- Form Card -->
+  <div class="bg-white rounded-2xl shadow-xl p-6">
+    <%= form_with(model: [:admin, @user], class: "space-y-6") do |form| %>
+      <% if @user.errors.any? %>
+        <div class="bg-red-50 border-2 border-red-200 rounded-xl p-4">
+          <div class="flex items-start gap-3">
+            <svg class="w-6 h-6 text-red-600 shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div class="flex-1">
+              <h3 class="text-lg font-bold text-red-900 mb-2">Please fix the following errors:</h3>
+              <ul class="space-y-1">
+                <% @user.errors.full_messages.each do |message| %>
+                  <li class="text-base text-red-800">• <%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Name Field -->
+      <div>
+        <label for="user_name" class="touch-label">Full Name</label>
+        <%= form.text_field :name, 
+            class: "touch-input", 
+            placeholder: "John Doe", 
+            required: true,
+            id: "user_name",
+            autocomplete: "name" %>
+      </div>
+
+      <!-- Email Field -->
+      <div>
+        <label for="user_email_address" class="touch-label">Email Address</label>
+        <%= form.email_field :email_address, 
+            class: "touch-input", 
+            placeholder: "john@example.com", 
+            required: true,
+            id: "user_email_address",
+            inputmode: "email",
+            autocomplete: "email" %>
+      </div>
+
+      <!-- Password Field -->
+      <div>
+        <label for="user_password" class="touch-label">Password</label>
+        <%= form.password_field :password, 
+            class: "touch-input", 
+            placeholder: "Enter password",
+            required: true,
+            id: "user_password",
+            autocomplete: "new-password" %>
+      </div>
+
+      <!-- Password Confirmation Field -->
+      <div>
+        <label for="user_password_confirmation" class="touch-label">Confirm Password</label>
+        <%= form.password_field :password_confirmation, 
+            class: "touch-input", 
+            placeholder: "Confirm password",
+            required: true,
+            id: "user_password_confirmation",
+            autocomplete: "new-password" %>
+      </div>
+
+      <!-- Admin Toggle -->
+      <div class="bg-gray-50 rounded-xl p-5 border-2 border-gray-200">
+        <div class="flex items-start gap-4">
+          <div class="flex items-center h-10">
+            <%= form.check_box :admin, 
+                class: "h-8 w-8 rounded-lg border-gray-300 text-ismf-red focus:ring-ismf-red cursor-pointer",
+                id: "user_admin" %>
+          </div>
+          <div class="flex-1">
+            <%= form.label :admin, "Administrator Access", class: "text-xl font-bold text-ismf-navy block mb-1 cursor-pointer" %>
+            <p class="text-base text-ismf-gray">Grant full administrative access to this user</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col gap-4 pt-4">
+        <%= form.submit "Create User", 
+            class: "touch-btn touch-btn-primary cursor-pointer w-full" do %>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2.5rem; height: 2.5rem;">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+          </svg>
+          <span>Create User</span>
+        <% end %>
+        
+        <%= link_to admin_users_path, class: "touch-btn touch-btn-secondary w-full" do %>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2.5rem; height: 2.5rem;">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          <span>Cancel</span>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+
+</div>
+

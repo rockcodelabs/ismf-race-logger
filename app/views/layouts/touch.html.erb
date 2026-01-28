@@ -222,6 +222,37 @@
         font-family: monospace;
         z-index: 9999;
       }
+      
+      /* Touch Navigation Bar */
+      .touch-nav-btn {
+        width: 64px;
+        height: 64px;
+        border-radius: 0.875rem;
+        background: rgba(233, 69, 96, 0.15);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        transition: all 0.15s ease;
+        border: 2px solid rgba(233, 69, 96, 0.3);
+        flex-shrink: 0;
+      }
+      
+      .touch-nav-btn:active {
+        transform: scale(0.95);
+        background: rgba(233, 69, 96, 0.3);
+        border-color: rgba(233, 69, 96, 0.5);
+      }
+      
+      .touch-nav-btn:hover {
+        background: rgba(233, 69, 96, 0.25);
+      }
+      
+      /* Navigation bar collapsed state */
+      .nav-hidden {
+        transform: translateY(-100%);
+      }
     </style>
     
     <script>
@@ -257,6 +288,88 @@
             playTouchSound();
           }
         }, { passive: true });
+        
+        // Create floating hamburger button
+        const createFloatingHamburger = () => {
+          const floatingBtn = document.createElement('button');
+          floatingBtn.id = 'floating-hamburger';
+          floatingBtn.className = 'fixed top-4 left-4 z-50 touch-nav-btn shadow-2xl';
+          floatingBtn.style.display = 'none';
+          floatingBtn.title = 'Show Menu';
+          floatingBtn.innerHTML = `
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2rem; height: 2rem;">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          `;
+          document.body.appendChild(floatingBtn);
+          return floatingBtn;
+        };
+        
+        // Hamburger menu toggle
+        const navToggle = document.getElementById('nav-toggle');
+        const navbar = document.getElementById('touch-navbar');
+        const hamburgerIcon = document.getElementById('hamburger-icon');
+        const closeIcon = document.getElementById('close-icon');
+        const navSpacer = document.getElementById('nav-spacer');
+        const floatingHamburger = navbar ? createFloatingHamburger() : null;
+        let navVisible = true;
+        let navCollapsed = false;
+        
+        if (navToggle && navbar && floatingHamburger) {
+          // Toggle handler
+          const toggleNav = (show) => {
+            navCollapsed = !show;
+            
+            if (show) {
+              navbar.classList.remove('nav-hidden');
+              if (navSpacer) navSpacer.style.height = '84px';
+              floatingHamburger.style.display = 'none';
+            } else {
+              navbar.classList.add('nav-hidden');
+              if (navSpacer) navSpacer.style.height = '0';
+              floatingHamburger.style.display = 'flex';
+            }
+          };
+          
+          // Hamburger icon toggle in navbar
+          navToggle.addEventListener('click', function() {
+            toggleNav(navCollapsed);
+          });
+          
+          // Floating hamburger click handler
+          floatingHamburger.addEventListener('click', function() {
+            toggleNav(true);
+          });
+          
+          // Auto-hide nav when scrolling down, show when scrolling up
+          let lastScrollY = window.scrollY;
+          let ticking = false;
+          
+          window.addEventListener('scroll', function() {
+            if (!ticking) {
+              window.requestAnimationFrame(function() {
+                const currentScrollY = window.scrollY;
+                
+                if (currentScrollY > lastScrollY && currentScrollY > 100) {
+                  // Scrolling down - auto-hide nav
+                  if (!navCollapsed) {
+                    toggleNav(false);
+                  }
+                } else if (currentScrollY < lastScrollY) {
+                  // Scrolling up - auto-show nav
+                  if (!navCollapsed) {
+                    toggleNav(true);
+                  }
+                }
+                
+                lastScrollY = currentScrollY;
+                ticking = false;
+              });
+              
+              ticking = true;
+            }
+          }, { passive: true });
+        }
         
         // Display detection info
         const screenWidth = window.screen.width;
@@ -333,8 +446,61 @@
   </head>
 
   <body class="min-h-screen bg-gradient-to-br from-ismf-navy via-ismf-blue to-ismf-navy text-white antialiased">
+    <!-- Collapsible Touch Navigation Bar -->
+    <% unless request.path == root_path %>
+      <nav id="touch-navbar" class="fixed top-0 left-0 right-0 z-40 bg-ismf-navy/95 backdrop-blur-sm border-b-2 border-ismf-red shadow-lg transition-transform duration-300">
+        <div class="flex items-center justify-between px-6 py-4 gap-4">
+          <!-- Hamburger Menu -->
+          <button id="nav-toggle" class="touch-nav-btn" title="Toggle Menu">
+            <svg id="hamburger-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2rem; height: 2rem;">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <svg id="close-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2rem; height: 2rem; display: none;">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          
+          <!-- Home Button -->
+          <%= link_to root_path, class: "touch-nav-btn", title: "Home" do %>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2rem; height: 2rem;">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+          <% end %>
+          
+          <!-- Back Button (JavaScript controlled) -->
+          <button onclick="window.history.back()" class="touch-nav-btn" title="Back">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2rem; height: 2rem;">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </button>
+          
+          <!-- Page Title (centered) -->
+          <div class="flex-1 text-center">
+            <h1 class="text-xl font-bold text-white truncate px-2" id="touch-nav-title">
+              <%= content_for?(:page_title) ? yield(:page_title) : "ISMF" %>
+            </h1>
+          </div>
+          
+          <!-- Sign Out Button (if authenticated) -->
+          <% if Current.user %>
+            <%= button_to session_path, method: :delete, class: "touch-nav-btn", title: "Sign Out" do %>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2rem; height: 2rem;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            <% end %>
+          <% else %>
+            <!-- Placeholder to maintain layout balance -->
+            <div class="w-16 h-16"></div>
+          <% end %>
+        </div>
+      </nav>
+      
+      <!-- Spacer for fixed nav -->
+      <div id="nav-spacer" style="height: 84px;"></div>
+    <% end %>
+    
     <% if notice %>
-      <div class="touch-flash touch-flash-notice fixed top-4 left-4 right-4 z-50" data-controller="flash" data-flash-dismiss-after-value="5000">
+      <div class="touch-flash touch-flash-notice fixed top-20 left-4 right-4 z-50" data-controller="flash" data-flash-dismiss-after-value="5000">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
@@ -343,7 +509,7 @@
     <% end %>
     
     <% if alert %>
-      <div class="touch-flash touch-flash-alert fixed top-4 left-4 right-4 z-50" data-controller="flash" data-flash-dismiss-after-value="5000">
+      <div class="touch-flash touch-flash-alert fixed top-20 left-4 right-4 z-50" data-controller="flash" data-flash-dismiss-after-value="5000">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
@@ -528,12 +694,51 @@
         // Handle keyboard clicks
         keyboard.addEventListener('click', function(e) {
           if (!e.target.classList.contains('kbd-key')) return;
-          if (!activeInput) return;
           
           const key = e.target.dataset.key;
           
+          // Hide keyboard button
+          if (e.target.classList.contains('kbd-hide')) {
+            keyboard.style.display = 'none';
+            if (activeInput) {
+              activeInput.blur();
+              activeInput = null;
+            }
+            previewText.textContent = '';
+            return;
+          }
+          
           if (!activeInput) return;
           
+          const val = activeInput.value;
+          
+          // Special character toggle button
+          if (e.target.classList.contains('kbd-special')) {
+            specialCharIndex = (specialCharIndex + 1) % specialChars.length;
+            const newChar = specialChars[specialCharIndex];
+            e.target.textContent = newChar;
+            e.target.dataset.key = newChar;
+            return;
+          }
+          
+          // Enter key - submit form or insert newline
+          if (key === 'enter') {
+            if (activeInput.tagName === 'TEXTAREA') {
+              // Insert newline in textarea
+              activeInput.value = val + '\n';
+            } else {
+              // Submit form for input fields
+              const form = activeInput.closest('form');
+              if (form) {
+                form.requestSubmit();
+              }
+            }
+            activeInput.dispatchEvent(new Event('input', { bubbles: true }));
+            updatePreview();
+            return;
+          }
+          
+          // Handle special keys
           if (key === 'backspace') {
             activeInput.value = val.slice(0, -1);
           } else if (key === 'shift') {

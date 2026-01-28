@@ -292,4 +292,113 @@ Available templates:
 
 ---
 
+## 15. Touch Display UI Requirements (MANDATORY)
+
+This project includes a **7" touch display kiosk mode** (Raspberry Pi Touch Display 2, 800×480).
+
+### Touch View Requirements
+
+**All touch views MUST include:**
+- ✅ **Persistent navigation bar** (fixed top, collapsible with hamburger menu)
+- ✅ **Page title** (set via `content_for :page_title`)
+- ✅ **Large touch targets** (minimum 64px for nav, 56px for content)
+- ✅ **Clear navigation** (Home, Back, Sign Out always visible)
+- ✅ **Touch-optimized spacing** (16-24px gaps between nav buttons)
+- ✅ **Proper layout** (flexbox with justified content, no overlapping footer)
+- ❌ **NO desktop toggle links** (users are already in touch mode)
+
+### Touch View File Convention
+
+Touch views use `.touch.html.erb` suffix:
+- `app/views/home/index.touch.html.erb`
+- `app/views/sessions/new.touch.html.erb`
+- `app/views/admin/dashboard/index.touch.html.erb`
+- Rails automatically selects `.touch` variant when `request.variant = :touch`
+
+### Navigation Patterns
+
+**Navigation is now automatic!** A persistent, collapsible navigation bar appears on all pages except home.
+
+**Home Screen:**
+```erb
+<!-- No navigation bar on home (root page) -->
+<!-- Use flexbox layout to prevent footer overlap -->
+<div class="min-h-screen flex flex-col items-center justify-between py-8 px-6">
+  <div class="flex-1 flex flex-col items-center justify-center w-full">
+    <!-- Content here -->
+  </div>
+  <div class="w-full text-center pb-4">
+    <!-- Footer here -->
+  </div>
+</div>
+```
+
+**All Other Pages:**
+```erb
+<!-- Set page title for navigation bar -->
+<% content_for :page_title, "Your Page Title" %>
+
+<div class="min-h-screen touch-spacing">
+  <h1 class="text-4xl font-extrabold text-white mb-8 text-center">Your Page Title</h1>
+  
+  <!-- Your content here -->
+  <!-- Navigation bar is automatic (Home, Back, Sign Out) -->
+</div>
+```
+
+**Navigation Bar Features:**
+- **Hamburger menu** - Toggle to show/hide navigation
+- **Auto-hide on scroll** - Hides when scrolling down (after 100px)
+- **Auto-show on scroll up** - Shows when scrolling up
+- **Floating hamburger** - Appears when nav is hidden (top-left)
+- **Home button** - Navigate to root
+- **Back button** - Browser history back
+- **Sign Out** - Logs out authenticated users
+
+### Virtual Keyboard
+
+Touch views automatically include a **web-based virtual keyboard** (defined in `touch.html.erb` layout):
+- Shows on input focus (text, email, password, textarea)
+- Integrated preview bar (shows what you're typing, left side of bottom row)
+- Special character toggle button (@ → . → -)
+- Enter key (green ↵, submits forms)
+- Hide button (red, dismisses keyboard)
+- Audio feedback on key press
+
+**Keyboard is universal** - no need to add keyboard markup to individual views.
+
+**For forms:** Add `pb-32` class to page container for extra bottom padding.
+
+### Touch CSS Classes
+
+Use these predefined classes from `touch.html.erb` layout:
+
+| Class | Usage | Size |
+|-------|-------|------|
+| `touch-btn` | Base button | 80px height |
+| `touch-btn-primary` | Primary action | Red gradient |
+| `touch-btn-secondary` | Secondary action | Blue gradient |
+| `touch-btn-icon` | Icon-only button | 64×64px |
+| `touch-input` | Form input | 70px height, 1.25rem font |
+| `touch-label` | Form label | 1.25rem font, bold |
+| `touch-spacing` | Page padding | 2rem |
+| `touch-logo` | Logo container | 120×120px |
+
+### When Creating New Touch Views
+
+1. **Set page title** with `<% content_for :page_title, "Title" %>`
+2. **Use flexbox layout** on home page to prevent footer overlap
+3. **Use large touch targets** (touch-btn classes, 64px for nav, 56px+ for content)
+4. **Add bottom padding** for forms (`pb-32` class for keyboard clearance)
+5. **Test on 800×480** (or with `?touch=1` on desktop)
+6. **NO desktop toggle links** (users are already in touch mode)
+7. **Ensure keyboard works** (test all input fields, verify Hide button)
+8. **Test navigation** (Home, Back, hamburger menu collapse/expand)
+
+### Documentation
+
+Full touch display UX details: `docs/VIRTUAL_KEYBOARD.md`
+
+---
+
 These rules override default AI behavior.
