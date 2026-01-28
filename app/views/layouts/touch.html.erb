@@ -415,6 +415,35 @@
       </div>
     </div>
     
+    <style>
+      .kbd-key {
+        background: #34495e;
+        color: white;
+        border: 2px solid #4a5f7f;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        font-size: 1.25rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.1s;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: rgba(233, 69, 96, 0.3);
+      }
+      .kbd-key:active {
+        transform: scale(0.95);
+        background: #e94560;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3) inset;
+      }
+      .kbd-shift.active {
+        background: #e94560;
+      }
+    </style>
+    
     <script>
       (function() {
         let activeInput = null;
@@ -503,47 +532,8 @@
           
           const key = e.target.dataset.key;
           
-          // Hide keyboard
-          if (e.target.classList.contains('kbd-hide')) {
-            keyboard.style.display = 'none';
-            if (activeInput) {
-              activeInput.blur();
-              activeInput = null;
-            }
-            previewText.textContent = '';
-            return;
-          }
+          if (!activeInput) return;
           
-          // Special character toggle button
-          if (e.target.classList.contains('kbd-special')) {
-            specialCharIndex = (specialCharIndex + 1) % specialChars.length;
-            const newChar = specialChars[specialCharIndex];
-            e.target.textContent = newChar;
-            e.target.dataset.key = newChar;
-            return;
-          }
-          
-          // Enter key - submit form or insert newline
-          if (key === 'enter') {
-            if (activeInput.tagName === 'TEXTAREA') {
-              // Insert newline in textarea
-              const val = activeInput.value;
-              activeInput.value = val + '\n';
-            } else {
-              // Submit form for input fields
-              const form = activeInput.closest('form');
-              if (form) {
-                form.requestSubmit();
-              }
-            }
-            activeInput.dispatchEvent(new Event('input', { bubbles: true }));
-            updatePreview();
-            return;
-          }
-          
-          const val = activeInput.value;
-          
-          // Handle special keys
           if (key === 'backspace') {
             activeInput.value = val.slice(0, -1);
           } else if (key === 'shift') {
