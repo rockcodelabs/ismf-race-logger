@@ -30,7 +30,8 @@ RSpec.describe Structs::UserSummary do
     end
 
     it "is immutable" do
-      expect { summary.instance_variable_set(:@id, 999) }.not_to change { summary.id }
+      # Ruby Data classes are frozen and raise FrozenError when mutated
+      expect { summary.instance_variable_set(:@id, 999) }.to raise_error(FrozenError)
     end
   end
 

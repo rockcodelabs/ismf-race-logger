@@ -299,7 +299,7 @@ RSpec.describe Structs::User do
         "email_address" => "string@example.com",
         "name" => "String Keys",
         "admin" => true,
-        "role_name" => "admin",
+        "role_name" => "referee_manager",
         "created_at" => Time.current,
         "updated_at" => Time.current
       )

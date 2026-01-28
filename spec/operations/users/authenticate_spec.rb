@@ -29,7 +29,8 @@ RSpec.describe Operations::Users::Authenticate do
       let!(:user) do
         create(:user,
           email_address: "user@example.com",
-          password: "correctpassword"
+          password: "correctpassword",
+          password_confirmation: "correctpassword"
         )
       end
 
@@ -93,7 +94,7 @@ RSpec.describe Operations::Users::Authenticate do
 
   describe "dependency injection" do
     let(:mock_repo) { instance_double(UserRepo) }
-    let(:operation_with_mock) { described_class.new(repos_user: mock_repo) }
+    let(:operation_with_mock) { described_class.new(user: mock_repo) }
 
     it "allows injecting a mock repo for testing" do
       user_struct = Structs::User.new(

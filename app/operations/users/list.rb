@@ -68,10 +68,10 @@ module Operations
 
       private
 
-      # Access the injected repo (dry-auto_inject uses underscored names)
-      def user_repo
-        repos_user
-      end
+      # Access the injected repo
+      # dry-auto_inject uses the last segment of the key as the method name
+      # Import["repos.user"] creates a `user` method (not repos_user)
+      alias_method :user_repo, :user
     end
   end
 end

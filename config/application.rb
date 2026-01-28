@@ -46,12 +46,18 @@ module IsmfRaceLogger
     require_relative "../app/operations"
     require_relative "../app/infrastructure"
     require_relative "../app/web"
+    require_relative "../app/db"
+    require_relative "../app/db/structs"
 
     # Configure Zeitwerk to use custom root namespaces
     Rails.autoloaders.main.push_dir(Rails.root.join("app/domain"), namespace: ::Domain)
     Rails.autoloaders.main.push_dir(Rails.root.join("app/operations"), namespace: ::Operations)
     Rails.autoloaders.main.push_dir(Rails.root.join("app/infrastructure"), namespace: ::Infrastructure)
     Rails.autoloaders.main.push_dir(Rails.root.join("app/web"), namespace: ::Web)
+    Rails.autoloaders.main.push_dir(Rails.root.join("app/db"), namespace: ::DB)
+    Rails.autoloaders.main.push_dir(Rails.root.join("app/db/structs"), namespace: ::Structs)
+    # Repos are top-level classes (UserRepo, not DB::Repos::UserRepo)
+    Rails.autoloaders.main.push_dir(Rails.root.join("app/db/repos"), namespace: ::Object)
 
     # Don't generate system test files.
     config.generators.system_tests = nil

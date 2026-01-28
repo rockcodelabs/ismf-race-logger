@@ -365,10 +365,10 @@ RSpec.describe DB::Repo do
     end
 
     it "raises NotImplementedError" do
-      create(:user)
+      user = create(:user)
       repo = incomplete_repo_class.new
 
-      expect { repo.find(1) }.to raise_error(NotImplementedError)
+      expect { repo.find(user.id) }.to raise_error(NotImplementedError)
     end
   end
 

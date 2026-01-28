@@ -152,7 +152,7 @@ RSpec.describe Operations::Users::List do
 
   describe "dependency injection" do
     let(:mock_repo) { instance_double(UserRepo) }
-    let(:operation_with_mock) { described_class.new(repos_user: mock_repo) }
+    let(:operation_with_mock) { described_class.new(user: mock_repo) }
 
     describe "#call with mock" do
       it "uses the injected repo" do
