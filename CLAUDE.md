@@ -4,6 +4,8 @@
 
 **⚠️ Ruby Environment Required:** All Docker/Kamal commands require Ruby 3.4.8 via chruby. See `.rules` section 6.
 
+**⚠️ Deployment:** Code changes deploy automatically via GitHub Actions. Push to main and wait 3-5 minutes. See `@deploy` agent.
+
 ## Documentation
 
 | Document | Purpose |
@@ -12,7 +14,7 @@
 | `docs/ARCHITECTURE.md` | Full architecture details |
 | `docs/DEV_COMMANDS.md` | All shell commands |
 | `docs/FEATURE_WORKFLOW.md` | @feature development phases |
-| `AGENTS.md` | Available agents and routing |
+| `AGENTS.md` | Available agents and routing (includes @deploy) |
 | `templates/` | Code templates |
 
 ## Critical Commands
