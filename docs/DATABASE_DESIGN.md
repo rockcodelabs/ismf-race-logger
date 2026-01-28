@@ -16,9 +16,10 @@ This document defines the complete database schema and how each table maps to ou
 6. [Domain: Races](#domain-races)
 7. [Domain: Athletes](#domain-athletes)
 8. [Domain: Incidents & Reports](#domain-incidents--reports)
-9. [Types Definition](#types-definition)
-10. [Database Indexes](#database-indexes)
-11. [Migrations Reference](#migrations-reference)
+9. [Domain: Offline Sync](#domain-offline-sync)
+10. [Types Definition](#types-definition)
+11. [Database Indexes](#database-indexes)
+12. [Migrations Reference](#migrations-reference)
 
 ---
 
@@ -1335,6 +1336,184 @@ end
 
 ---
 
+## Domain: Offline Sync
+
+> **See [OFFLINE_SYNC_STRATEGY.md](OFFLINE_SYNC_STRATEGY.md) for complete documentation**
+
+This system supports **bi-directional sync** between online (cloud) and offline (Raspberry Pi) instances. All syncable tables use `client_uuid` as the distributed identifier.
+
+### Design Principle: UUID-Based Sync
+
+- **Integer IDs (1, 2, 3...)** are local-only and differ between systems
+- **`client_uuid`** is the real distributed identifier, used for all sync operations
+- **Reference data** (competitions, races, athletes) created in ONE place only
+- **Operational data** (incidents, reports) created in BOTH places, intelligently merged
+
+### Table: devices
+
+Tracks known devices (cloud server, Raspberry Pi units).
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | bigint | PK | |
+| device_uuid | uuid | NOT NULL, UNIQUE | Unique device identifier |
+| name | string | NOT NULL | "Cloud Server", "Start Line Pi" |
+| system_mode | string | NOT NULL | "cloud", "offline_device" |
+| status | string | DEFAULT 'active' | "active", "offline", "decommissioned" |
+| last_seen_at | datetime | | Last contact timestamp |
+| api_token_digest | string | | Authentication token (hashed) |
+| metadata | jsonb | | Hardware/software info |
+| created_at | datetime | NOT NULL | |
+| updated_at | datetime | NOT NULL | |
+
+**Indexes:** `device_uuid` (unique)
+
+#### Model
+
+```ruby
+# app/models/device.rb
+class Device < ApplicationRecord
+  has_secure_token :api_token
+  
+  validates :device_uuid, presence: true, uniqueness: true
+  validates :name, presence: true
+  validates :system_mode, inclusion: { in: %w[cloud offline_device] }
+end
+```
+
+---
+
+### Table: sync_queue (Pi only)
+
+Tracks pending sync operations on offline devices.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | bigint | PK | |
+| client_uuid | uuid | NOT NULL, UNIQUE | Record identifier |
+| record_type | string | NOT NULL | "Competition", "Race", "Incident", "Report" |
+| local_id | bigint | NOT NULL | ID in local database |
+| payload | jsonb | NOT NULL | Full record data |
+| status | string | DEFAULT 'pending' | "pending", "synced", "conflict", "failed" |
+| retry_count | integer | DEFAULT 0 | Number of retry attempts |
+| last_retry_at | datetime | | Last retry timestamp |
+| error_message | text | | Error details |
+| created_at | datetime | NOT NULL | |
+| updated_at | datetime | NOT NULL | |
+
+**Indexes:** `client_uuid` (unique), `status`, `(record_type, status)`
+
+---
+
+### Table: sync_conflicts (Cloud only)
+
+Tracks conflicts requiring manual resolution.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | bigint | PK | |
+| incident_id | bigint | FK | Related incident (if applicable) |
+| device_uuid_source | uuid | NOT NULL | Device that sent conflicting data |
+| conflict_type | string | NOT NULL | Type of conflict (see below) |
+| record_type | string | NOT NULL | "Incident", "Report", "Athlete", etc |
+| record_client_uuid | uuid | NOT NULL | Affected record UUID |
+| cloud_data | jsonb | NOT NULL | Current state on cloud |
+| device_data | jsonb | NOT NULL | Incoming data from device |
+| resolution | string | DEFAULT 'pending' | "pending", "cloud_wins", "device_wins", "manual" |
+| resolved_by_user_id | bigint | FK | Admin who resolved |
+| resolved_at | datetime | | Resolution timestamp |
+| resolution_notes | text | | Admin notes |
+| created_at | datetime | NOT NULL | |
+| updated_at | datetime | NOT NULL | |
+
+**Indexes:** `resolution`, `record_client_uuid`
+
+**Conflict Types:**
+- `uuid_exists_different_data` - Same UUID, different content
+- `decision_mismatch` - Different incident decisions
+- `fingerprint_match_uuid_differs` - Same incident, different UUIDs
+- `foreign_key_not_found` - References non-existent record
+
+#### Model
+
+```ruby
+# app/models/sync_conflict.rb
+class SyncConflict < ApplicationRecord
+  belongs_to :incident, optional: true
+  belongs_to :resolved_by_user, class_name: "User", optional: true
+  
+  validates :conflict_type, inclusion: { 
+    in: %w[uuid_exists_different_data decision_mismatch 
+           fingerprint_match_uuid_differs foreign_key_not_found] 
+  }
+  
+  scope :pending, -> { where(resolution: "pending") }
+  scope :resolved, -> { where.not(resolution: "pending") }
+end
+```
+
+---
+
+### Schema Changes for Sync Support
+
+All syncable tables require `client_uuid`:
+
+```ruby
+# Migration: Add client_uuid to all syncable tables
+add_column :competitions, :client_uuid, :uuid, null: false
+add_index :competitions, :client_uuid, unique: true
+
+add_column :stages, :client_uuid, :uuid, null: false
+add_index :stages, :client_uuid, unique: true
+
+add_column :races, :client_uuid, :uuid, null: false
+add_index :races, :client_uuid, unique: true
+
+add_column :race_locations, :client_uuid, :uuid, null: false
+add_index :race_locations, :client_uuid, unique: true
+
+add_column :athletes, :client_uuid, :uuid, null: false
+add_index :athletes, :client_uuid, unique: true
+
+add_column :teams, :client_uuid, :uuid, null: false
+add_index :teams, :client_uuid, unique: true
+
+add_column :race_participations, :client_uuid, :uuid, null: false
+add_index :race_participations, :client_uuid, unique: true
+
+add_column :incidents, :client_uuid, :uuid, null: false
+add_index :incidents, :client_uuid, unique: true
+
+# Reports already has client_uuid!
+```
+
+### Automatic UUID Generation
+
+```ruby
+# app/models/concerns/syncable.rb
+module Syncable
+  extend ActiveSupport::Concern
+  
+  included do
+    before_validation :ensure_client_uuid, on: :create
+  end
+  
+  private
+  
+  def ensure_client_uuid
+    self.client_uuid ||= SecureRandom.uuid
+  end
+end
+
+# Usage in models:
+class Competition < ApplicationRecord
+  include Syncable
+  # ...
+end
+```
+
+---
+
 ## Types Definition
 
 ```ruby
@@ -1385,7 +1564,18 @@ module IsmfRaceLogger
     )
 
     # Incident status (two-level system)
-    IncidentStatus = String.enum("unofficial", "official")
+    IncidentStatus = Types::String.enum("unofficial", "official")
+    
+    # Sync Types
+    SyncStatus = Types::String.enum("pending", "synced", "conflict", "failed")
+    ConflictType = Types::String.enum(
+      "uuid_exists_different_data",
+      "decision_mismatch",
+      "fingerprint_match_uuid_differs",
+      "foreign_key_not_found"
+    )
+    ResolutionStatus = Types::String.enum("pending", "cloud_wins", "device_wins", "manual")
+    SystemMode = Types::String.enum("cloud", "offline_device")
 
     # Decision types
     DecisionType = String.enum(

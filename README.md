@@ -73,7 +73,7 @@ docker compose exec app bundle exec packwerk check
 |----------|-------------|
 | [Architecture](docs/ARCHITECTURE.md) | Full Hanami-Hybrid architecture guide |
 | [Database Design](docs/DATABASE_DESIGN.md) | Complete database schema and domain models |
-| [Offline Sync](docs/OFFLINE_SYNC.md) | Offline-first synchronization strategy for Pi devices |
+| [Offline Sync Strategy](docs/OFFLINE_SYNC_STRATEGY.md) | **Complete bi-directional sync for Pi devices** |
 | [Feature Workflow](docs/FEATURE_WORKFLOW.md) | Step-by-step feature development process |
 | [Dev Commands](docs/DEV_COMMANDS.md) | Docker, testing, and deployment commands |
 | [CLAUDE.md](CLAUDE.md) | AI assistant quick reference |

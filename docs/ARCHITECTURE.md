@@ -25,9 +25,10 @@ This document is the single source of truth for the ISMF Race Logger architectur
 15. [Packwerk Boundaries](#packwerk-boundaries)
 16. [Real-Time Architecture](#real-time-architecture)
 17. [Turbo Native Support](#turbo-native-support)
-18. [Performance Patterns](#performance-patterns)
-19. [Testing Strategy](#testing-strategy)
-20. [Quick Reference](#quick-reference)
+18. [Offline Sync Architecture](#offline-sync-architecture)
+19. [Performance Patterns](#performance-patterns)
+20. [Testing Strategy](#testing-strategy)
+21. [Quick Reference](#quick-reference)
 
 ---
 
@@ -1172,6 +1173,259 @@ app/views/layouts/
 
 ---
 
+## Offline Sync Architecture
+
+> **See [OFFLINE_SYNC_STRATEGY.md](OFFLINE_SYNC_STRATEGY.md) for complete implementation guide**
+
+This application supports **bi-directional sync** between online (cloud) and offline (Raspberry Pi) deployments.
+
+### System Modes
+
+The same codebase runs in two modes:
+
+```ruby
+# config/application.rb
+config.system_mode = ENV.fetch("SYSTEM_MODE", "cloud")
+# Values: "cloud" or "offline_device"
+```
+
+| Mode | Environment | Purpose |
+|------|-------------|---------|
+| **cloud** | Production server | Full web interface, multi-user, ActionCable |
+| **offline_device** | Raspberry Pi | Touch UI, single user, sync queue, offline-first |
+
+---
+
+### UUID-Based Distributed Identifiers
+
+All syncable tables include `client_uuid`:
+
+```ruby
+# app/models/concerns/syncable.rb
+module Syncable
+  extend ActiveSupport::Concern
+  
+  included do
+    before_validation :ensure_client_uuid, on: :create
+  end
+  
+  private
+  
+  def ensure_client_uuid
+    self.client_uuid ||= SecureRandom.uuid
+  end
+end
+
+# Usage:
+class Competition < ApplicationRecord
+  include Syncable
+  # Auto-generates client_uuid on create
+end
+```
+
+**Key Principle:** Integer IDs are local-only. UUIDs are the distributed identifier.
+
+---
+
+### Data Categories
+
+#### Reference Data (Created Once)
+
+Created in ONE place only (cloud OR Pi, never both):
+
+- Competitions, Stages, Races
+- Race Locations, Race Types
+- Athletes, Teams, Race Participations
+
+**Sync:** Whoever creates → Other syncs
+
+#### Operational Data (Merged)
+
+Created in BOTH places simultaneously:
+
+- Incidents
+- Reports
+
+**Sync:** Bi-directional with 3-layer deduplication
+
+---
+
+### Deduplication Layers
+
+```ruby
+# app/operations/sync/create_incident.rb
+module Operations
+  module Sync
+    class CreateIncident
+      def call(attrs)
+        # Layer 1: UUID exact match
+        existing = incident_repo.find_by_client_uuid(attrs[:client_uuid])
+        return Success(existing) if existing && data_matches?(existing, attrs)
+        return Failure([:conflict, "UUID exists with different data"]) if existing
+        
+        # Layer 2: Fingerprint match (auto-merge)
+        fingerprint = IncidentFingerprintService.generate(attrs)
+        mergeable = incident_repo.find_by_fingerprint(fingerprint)
+        if mergeable
+          merge_reports_to_incident(attrs, mergeable)
+          return Success(mergeable)
+        end
+        
+        # Layer 3: Create new
+        incident_repo.create(attrs)
+      end
+    end
+  end
+end
+```
+
+---
+
+### Sync API Pattern
+
+All sync endpoints follow this pattern:
+
+```ruby
+# app/controllers/api/v1/sync_controller.rb
+module Api
+  module V1
+    class SyncController < BaseController
+      before_action :authenticate_device!
+      
+      def create_incidents
+        results = params[:incidents].map do |incident_attrs|
+          result = Operations::Sync::CreateIncident.new.call(incident_attrs)
+          
+          if result.success?
+            { client_uuid: incident_attrs[:client_uuid], status: "created" }
+          else
+            { client_uuid: incident_attrs[:client_uuid], status: "conflict", error: result.failure }
+          end
+        end
+        
+        render json: { results: results }
+      end
+      
+      private
+      
+      def authenticate_device!
+        token = request.headers["Authorization"]&.remove("Bearer ")
+        @current_device = DeviceRepo.new.find_by_token(token)
+        head :unauthorized unless @current_device
+      end
+    end
+  end
+end
+```
+
+**Foreign Key Resolution:**
+
+Sync API uses UUIDs for all foreign keys:
+
+```ruby
+# Client sends:
+{
+  "incident": {
+    "client_uuid": "incident-123",
+    "race_client_uuid": "race-456",  # UUID, not ID!
+    "bib_number": 42
+  }
+}
+
+# Server resolves:
+race = Race.find_by!(client_uuid: attrs[:race_client_uuid])
+incident = Incident.create!(race_id: race.id, ...)
+```
+
+---
+
+### Sync Queue (Pi Only)
+
+```ruby
+# app/jobs/sync_queue_worker.rb
+class SyncQueueWorker < ApplicationJob
+  def perform
+    return unless offline_device_mode?
+    return unless network_available?
+    
+    SyncQueue.pending.find_each do |entry|
+      SyncService.new.sync_entry(entry)
+    rescue => e
+      handle_error(entry, e)
+    end
+  end
+  
+  private
+  
+  def network_available?
+    HTTP.timeout(2).get("#{server_url}/api/v1/sync/health").status.success?
+  rescue
+    false
+  end
+end
+```
+
+**Incremental Sync:**
+
+Each record tracks its sync status:
+
+```ruby
+# sync_queue table
+client_uuid | record_type | status    | retry_count
+abc-123     | Incident    | pending   | 0
+def-456     | Report      | synced    | 0
+ghi-789     | Incident    | failed    | 3
+
+# Only "pending" and "failed" (retry_count < 5) are synced
+```
+
+---
+
+### Conflict Resolution
+
+Conflicts flagged for manual admin review:
+
+```ruby
+# Admin UI shows:
+SyncConflict.pending.each do |conflict|
+  # Display:
+  # - Cloud data vs Device data side-by-side
+  # - Conflict type (decision_mismatch, etc)
+  # - Resolution options: [Keep Cloud] [Keep Device] [Manual Override]
+end
+
+# Resolution operation:
+Operations::Sync::ResolveConflict.new.call(
+  conflict_id: conflict.id,
+  resolution: "cloud_wins", # or "device_wins", "manual"
+  user_id: current_user.id
+)
+```
+
+---
+
+### Container Registration
+
+```ruby
+# config/initializers/container.rb
+class AppContainer
+  extend Dry::Container::Mixin
+  
+  # Sync services (only in offline_device mode)
+  if Rails.application.config.system_mode == "offline_device"
+    register "services.sync" do
+      SyncService.new
+    end
+    
+    register "services.incident_fingerprint" do
+      IncidentFingerprintService
+    end
+  end
+end
+```
+
+---
+
 ## Performance Patterns
 
 ### Struct Type Selection
@@ -1256,10 +1510,13 @@ docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/requests/
 | Summary | `Structs::UserSummary` | `app/db/structs/user_summary.rb` |
 | Repo | `UserRepo` | `app/db/repos/user_repo.rb` |
 | Operation | `Operations::Users::Create` | `app/operations/users/create.rb` |
+| Sync Operation | `Operations::Sync::CreateIncident` | `app/operations/sync/create_incident.rb` |
 | Contract | `Operations::Contracts::CreateUser` | `app/operations/contracts/create_user.rb` |
 | Controller | `Admin::UsersController` | `app/web/controllers/admin/users_controller.rb` |
+| Sync API | `Api::V1::SyncController` | `app/controllers/api/v1/sync_controller.rb` |
 | Part | `Web::Parts::User` | `app/web/parts/user.rb` |
 | Broadcaster | `UserBroadcaster` | `app/broadcasters/user_broadcaster.rb` |
+| Service | `IncidentFingerprintService` | `app/services/incident_fingerprint_service.rb` |
 
 ### Parts vs Structs
 
@@ -1270,6 +1527,24 @@ docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/requests/
 | Location | `app/db/structs/` | `app/web/parts/` |
 | Mutable | No (immutable) | No (wraps struct) |
 | Used in | Operations, Repos | Templates, Broadcasters |
+
+### Offline Sync Quick Reference
+
+| Concept | Description |
+|---------|-------------|
+| **`client_uuid`** | Real distributed identifier (UUIDs), not integer IDs |
+| **System Mode** | `SYSTEM_MODE=cloud` or `SYSTEM_MODE=offline_device` |
+| **Reference Data** | Created once (cloud OR Pi), synced |
+| **Operational Data** | Created in both, merged via 3-layer deduplication |
+| **Layer 1** | UUID exact match (idempotent) |
+| **Layer 2** | Fingerprint match (auto-merge) |
+| **Layer 3** | Create new or flag conflict |
+
+**Sync Endpoints:** `POST /api/v1/sync/incidents`, `POST /api/v1/sync/reports`, etc.
+
+**See:** [OFFLINE_SYNC_STRATEGY.md](OFFLINE_SYNC_STRATEGY.md) for complete guide.
+
+---
 
 ### File Creation Order
 
