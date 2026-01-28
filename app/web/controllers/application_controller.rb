@@ -45,7 +45,23 @@ module Web
       # - Touch: index.touch.html.erb (falls back to index.html.erb)
       def set_variant
         request.variant = :turbo_native if turbo_native_app?
-        request.variant = :touch if touch_display?
+        
+        is_touch = touch_display?
+        Rails.logger.info "=== TOUCH DEBUG ==="
+        Rails.logger.info "touch_display? result: #{is_touch}"
+        Rails.logger.info "params[:touch]: #{params[:touch]}"
+        Rails.logger.info "cookies[:touch_display]: #{cookies[:touch_display]}"
+        Rails.logger.info "User-Agent: #{request.user_agent}"
+        
+        if is_touch
+          request.variant = :touch
+          Rails.logger.info "VARIANT SET TO: #{request.variant.inspect}"
+        else
+          Rails.logger.info "VARIANT NOT SET (touch=false)"
+        end
+        
+        Rails.logger.info "Final request.variant: #{request.variant.inspect}"
+        Rails.logger.info "==================="
       end
 
       # Detect Turbo Native app requests
@@ -67,23 +83,32 @@ module Web
         # Allow explicit override via query parameter
         if params[:touch].present?
           touch_enabled = params[:touch] == "1"
+          Rails.logger.info "TOUCH: Setting cookie to #{touch_enabled ? '1' : '0'} from params"
           cookies[:touch_display] = { value: touch_enabled ? "1" : "0", expires: 1.year.from_now }
           return touch_enabled
         end
         
         # Check persisted cookie preference
-        return true if cookies[:touch_display] == "1"
-        return false if cookies[:touch_display] == "0"
+        if cookies[:touch_display] == "1"
+          Rails.logger.info "TOUCH: Cookie is '1', returning true"
+          return true
+        end
+        if cookies[:touch_display] == "0"
+          Rails.logger.info "TOUCH: Cookie is '0', returning false"
+          return false
+        end
         
         # Detect Raspberry Pi or mobile devices from User-Agent
         ua = request.user_agent.to_s.downcase
         if ua.include?("raspberry") || ua.include?("rpi") || 
            ua.include?("mobile") || ua.include?("android") ||
            ua.include?("iphone") || ua.include?("ipad")
+          Rails.logger.info "TOUCH: Detected touch device from User-Agent, setting cookie"
           cookies[:touch_display] = { value: "1", expires: 1.year.from_now }
           return true
         end
         
+        Rails.logger.info "TOUCH: No touch detected, returning false"
         false
       end
 

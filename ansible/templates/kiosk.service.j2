@@ -18,9 +18,6 @@ Environment=WAYLAND_DISPLAY=wayland-1
 # Wait a few seconds for system to stabilize
 ExecStartPre=/bin/sleep 3
 
-# Remove any cached profile data before starting
-ExecStartPre=/bin/rm -rf /home/{{ kiosk_user }}/.config/chromium /home/{{ kiosk_user }}/.cache/chromium
-
 # Start Weston with Chromium in kiosk mode
 ExecStart=/usr/bin/weston \
   --backend=drm-backend.so \
@@ -31,7 +28,6 @@ ExecStart=/usr/bin/weston \
 {% for flag in chromium_flags %}
     {{ flag }} \
 {% endfor %}
-    --user-data-dir=/tmp/chromium-kiosk-$RANDOM \
     {{ kiosk_url }}
 
 # Restart policy
