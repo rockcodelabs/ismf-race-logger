@@ -130,21 +130,29 @@ docker compose exec -T -e RAILS_ENV=test app bin/rails runner "puts User.count"
 
 **Production:**
 ```bash
-# Step 1: Get container ID
-ssh rege@pi5main.local "docker ps | grep ismf-race-logger-web"
+# Interactive console
+kamal app exec "bin/rails console" --reuse -i
 
-# Step 2: Execute (replace container-id)
-ssh rege@pi5main.local "docker exec -it <container-id> bin/rails console"
+# Runner (one-liner)
+kamal app exec "bin/rails runner 'puts User.count'" --reuse
+
+# Runner (multi-line)
+kamal app exec "bin/rails runner \"
+  user = User.find_by(email_address: 'test@example.com')
+  puts user.name
+\"" --reuse
 
 # For complex operations, use script file:
 scp tmp/script.rb rege@pi5main.local:/tmp/script.rb
-ssh rege@pi5main.local 'docker cp /tmp/script.rb <container-id>:/tmp/script.rb && docker exec <container-id> bin/rails runner /tmp/script.rb'
+ssh rege@pi5main.local "docker cp /tmp/script.rb \$(docker ps -q -f name=ismf-race-logger-web):/tmp/script.rb"
+kamal app exec "bin/rails runner /tmp/script.rb" --reuse
 ```
 
 **Rules:**
-- Always use `-T` flag for non-interactive runner commands
+- Always use `-T` flag for non-interactive runner commands in dev/test
 - Use single quotes inside double-quoted runner strings
-- For production, check container name first (changes on each deploy)
+- For production, use `kamal app exec` with `--reuse` flag
+- Use `-i` flag for interactive console in production
 - If Zeitwerk or code is broken in prod, deploy fix before running commands
 
 ---
