@@ -611,17 +611,57 @@
     </style>
     
     <script>
+      // Virtual Keyboard - Turbo-safe implementation
       (function() {
+        'use strict';
+        
+        // Guard against multiple initializations
+        if (window.virtualKeyboardInitialized) {
+          return;
+        }
+        window.virtualKeyboardInitialized = true;
+        
         let activeInput = null;
         let isShiftActive = false;
         let specialChars = ['@', '.', '-'];
         let specialCharIndex = 0;
+        let audioContext = null;
+        let isProcessingKey = false;
+        
         const keyboard = document.getElementById('virtual-keyboard');
+        if (!keyboard) return;
+        
         const previewText = document.getElementById('preview-text');
         let keyboardHeight = 0;
         
-        // Update preview text display
-        const updatePreview = () => {
+        // Initialize audio context on first use
+        function initAudio() {
+          if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          }
+        }
+        
+        // Play key press sound
+        function playKeySound() {
+          initAudio();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.value = 800;
+          oscillator.type = 'sine';
+          
+          gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.05);
+        }
+        
+        // Update preview display
+        function updatePreview() {
           if (!activeInput) {
             previewText.textContent = '';
             return;
@@ -630,16 +670,20 @@
           const value = activeInput.value;
           
           if (activeInput.type === 'password') {
-            // Show bullets for password fields
             previewText.textContent = value ? '•'.repeat(value.length) : '';
           } else {
-            // Show actual text for other inputs
             previewText.textContent = value || '';
           }
-        };
+          
+          // Auto-scroll preview to show end of text
+          const previewContainer = document.getElementById('input-preview');
+          if (previewContainer) {
+            previewContainer.scrollLeft = previewContainer.scrollWidth;
+          }
+        }
         
-        // Position keyboard properly for viewport
-        const updateKeyboardPosition = () => {
+        // Position keyboard using Visual Viewport API
+        function updateKeyboardPosition() {
           if (keyboard.style.display !== 'none') {
             const visualViewport = window.visualViewport;
             if (visualViewport) {
@@ -648,132 +692,223 @@
               keyboard.style.width = visualViewport.width + 'px';
             }
           }
-        };
+        }
         
-        // Show keyboard on ANY input/textarea focus
-        document.addEventListener('focus', function(e) {
+        // Scroll input into view above keyboard
+        function scrollInputIntoView(input) {
+          setTimeout(() => {
+            const inputRect = input.getBoundingClientRect();
+            const visualViewport = window.visualViewport || window;
+            const availableHeight = visualViewport.height - keyboardHeight;
+            
+            if (inputRect.bottom > availableHeight - 20) {
+              const scrollAmount = inputRect.bottom - (availableHeight - 40);
+              window.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+            }
+          }, 100);
+        }
+        
+        // Show keyboard when input is focused
+        document.addEventListener('focusin', function(e) {
           if (e.target.matches('input[type="text"], input[type="email"], input[type="password"], textarea')) {
             activeInput = e.target;
             keyboard.style.display = 'block';
-            updatePreview(); // This will show preview only if there's text
             
-            // Listen for input changes to update preview
-            const inputHandler = () => updatePreview();
-            activeInput.addEventListener('input', inputHandler);
-            activeInput.addEventListener('blur', function cleanup() {
-              activeInput.removeEventListener('input', inputHandler);
-              activeInput.removeEventListener('blur', cleanup);
-            });
-            
-            // Get keyboard height after it's displayed
+            // Get keyboard height and position
             setTimeout(() => {
               keyboardHeight = keyboard.offsetHeight;
               updateKeyboardPosition();
-              
-              // Scroll input into view - keep it visible above keyboard
-              const inputRect = e.target.getBoundingClientRect();
-              const availableSpace = window.visualViewport ? 
-                window.visualViewport.height - keyboardHeight : 
-                window.innerHeight - keyboardHeight;
-              
-              if (inputRect.bottom > availableSpace - 20) {
-                // Scroll so input is visible above keyboard
-                const scrollAmount = inputRect.bottom - (availableSpace - 20);
-                window.scrollBy({ top: scrollAmount, behavior: 'smooth' });
-              }
-            }, 100);
+              scrollInputIntoView(e.target);
+            }, 50);
+            
+            updatePreview();
           }
         }, true);
         
-        // Handle viewport changes (orientation, browser chrome)
+        // CRITICAL: Prevent native keyboard on touch devices
+        let preventNativeKeyboard = function(e) {
+          if (e.target.matches('input[type="text"], input[type="email"], input[type="password"], textarea')) {
+            // Don't preventDefault on keyboard buttons
+            if (e.target.closest('#virtual-keyboard')) {
+              return;
+            }
+            e.target.setAttribute('readonly', 'readonly');
+            setTimeout(() => {
+              e.target.removeAttribute('readonly');
+              e.target.focus();
+            }, 100);
+          }
+        };
+        document.addEventListener('touchstart', preventNativeKeyboard, { passive: false });
+        
+        // Update preview when input value changes externally (but not from our keyboard)
+        let handleInputChange = function(e) {
+          if (!isProcessingKey && e.target === activeInput) {
+            updatePreview();
+          }
+        };
+        document.addEventListener('input', handleInputChange, true);
+        
+        // Handle viewport changes
         if (window.visualViewport) {
           window.visualViewport.addEventListener('resize', updateKeyboardPosition);
           window.visualViewport.addEventListener('scroll', updateKeyboardPosition);
         }
         
-        // Handle keyboard clicks
-        keyboard.addEventListener('click', function(e) {
-          if (!e.target.classList.contains('kbd-key')) return;
+        // Handle keyboard button presses
+        let handleKeyPress = function(e) {
+          e.preventDefault(); // Prevent focus loss and double events
+          e.stopPropagation();
           
-          const key = e.target.dataset.key;
+          const key = e.target.closest('.kbd-key');
+          if (!key) return;
           
-          // Hide keyboard button
-          if (e.target.classList.contains('kbd-hide')) {
+          // Prevent double-tap issues
+          if (isProcessingKey) return;
+          
+          isProcessingKey = true;
+          playKeySound();
+          
+          const keyValue = key.dataset.key;
+          
+          // Hide keyboard
+          if (key.classList.contains('kbd-hide')) {
             keyboard.style.display = 'none';
             if (activeInput) {
               activeInput.blur();
               activeInput = null;
             }
             previewText.textContent = '';
+            isProcessingKey = false;
             return;
           }
           
-          if (!activeInput) return;
+          if (!activeInput) {
+            isProcessingKey = false;
+            return;
+          }
           
-          const val = activeInput.value;
-          
-          // Special character toggle button
-          if (e.target.classList.contains('kbd-special')) {
+          // Special character cycling button
+          if (key.classList.contains('kbd-special')) {
             specialCharIndex = (specialCharIndex + 1) % specialChars.length;
             const newChar = specialChars[specialCharIndex];
-            e.target.textContent = newChar;
-            e.target.dataset.key = newChar;
+            key.textContent = newChar;
+            key.dataset.key = newChar;
+            isProcessingKey = false;
             return;
           }
           
-          // Enter key - submit form or insert newline
-          if (key === 'enter') {
+          // Shift key
+          if (keyValue === 'shift') {
+            isShiftActive = !isShiftActive;
+            key.classList.toggle('active', isShiftActive);
+            isProcessingKey = false;
+            return;
+          }
+          
+          // Get current cursor position (or end of text)
+          const start = activeInput.selectionStart || activeInput.value.length;
+          const end = activeInput.selectionEnd || activeInput.value.length;
+          const currentValue = activeInput.value;
+          
+          let newValue = currentValue;
+          let newCursorPos = start;
+          
+          // Enter key
+          if (keyValue === 'enter') {
             if (activeInput.tagName === 'TEXTAREA') {
-              // Insert newline in textarea
-              activeInput.value = val + '\n';
+              newValue = currentValue.slice(0, start) + '\n' + currentValue.slice(end);
+              newCursorPos = start + 1;
             } else {
-              // Submit form for input fields
+              // Submit form
               const form = activeInput.closest('form');
               if (form) {
+                isProcessingKey = false;
                 form.requestSubmit();
+                return;
               }
             }
-            activeInput.dispatchEvent(new Event('input', { bubbles: true }));
-            updatePreview();
-            return;
           }
-          
-          // Handle special keys
-          if (key === 'backspace') {
-            activeInput.value = val.slice(0, -1);
-          } else if (key === 'shift') {
-            isShiftActive = !isShiftActive;
-            e.target.classList.toggle('active', isShiftActive);
-            return; // Don't trigger input event yet
-          } else {
-            // Regular character
-            let char = key;
-            if (key === 'space') {
-              char = ' ';
-            } else if (isShiftActive && key.length === 1) {
-              char = key.toUpperCase();
+          // Backspace
+          else if (keyValue === 'backspace') {
+            if (start > 0) {
+              newValue = currentValue.slice(0, start - 1) + currentValue.slice(end);
+              newCursorPos = start - 1;
+            }
+          }
+          // Space
+          else if (keyValue === 'space') {
+            newValue = currentValue.slice(0, start) + ' ' + currentValue.slice(end);
+            newCursorPos = start + 1;
+          }
+          // Regular character
+          else {
+            let char = keyValue;
+            
+            // Apply shift if active
+            if (isShiftActive && char.length === 1 && char.match(/[a-z]/)) {
+              char = char.toUpperCase();
               isShiftActive = false;
               document.querySelector('.kbd-shift').classList.remove('active');
             }
-            activeInput.value = val + char;
+            
+            newValue = currentValue.slice(0, start) + char + currentValue.slice(end);
+            newCursorPos = start + char.length;
           }
           
-          // Trigger input event for form validation
-          activeInput.dispatchEvent(new Event('input', { bubbles: true }));
+          // Update input value and cursor position
+          activeInput.value = newValue;
+          activeInput.setSelectionRange(newCursorPos, newCursorPos);
+          
+          // Update preview immediately
           updatePreview();
           
-          // Audio feedback
-          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-          const oscillator = audioContext.createOscillator();
-          const gainNode = audioContext.createGain();
-          oscillator.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-          oscillator.frequency.value = 800;
-          oscillator.type = 'sine';
-          gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
-          oscillator.start(audioContext.currentTime);
-          oscillator.stop(audioContext.currentTime + 0.05);
+          // Trigger input event for validation/listeners
+          activeInput.dispatchEvent(new Event('input', { bubbles: true }));
+          
+          // Reset processing flag after a short delay to prevent rapid double-taps
+          setTimeout(() => {
+            isProcessingKey = false;
+          }, 100);
+        };
+        
+        keyboard.addEventListener('touchstart', handleKeyPress, { passive: false });
+        
+        // Fallback for click events (desktop testing)
+        keyboard.addEventListener('click', handleKeyPress, { passive: false });
+        
+        // Cleanup on Turbo navigation
+        document.addEventListener('turbo:before-render', function() {
+          if (keyboard && keyboard.style.display !== 'none') {
+            keyboard.style.display = 'none';
+          }
+          if (activeInput) {
+            activeInput.blur();
+            activeInput = null;
+          }
+        });
+        
+        // Reset on page restore (back button)
+        document.addEventListener('turbo:load', function() {
+          if (keyboard) {
+            keyboard.style.display = 'none';
+          }
+          activeInput = null;
+          isShiftActive = false;
+          specialCharIndex = 0;
+          
+          // Reset special char button
+          const specialBtn = keyboard.querySelector('.kbd-special');
+          if (specialBtn) {
+            specialBtn.textContent = '@';
+            specialBtn.dataset.key = '@';
+          }
+          
+          // Reset shift button
+          const shiftBtn = keyboard.querySelector('.kbd-shift');
+          if (shiftBtn) {
+            shiftBtn.classList.remove('active');
+          }
         });
       })();
     </script>
