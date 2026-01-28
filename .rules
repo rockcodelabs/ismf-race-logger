@@ -1,0 +1,500 @@
+# ISMF Race Logger - Zed Rules
+
+> These rules guide the AI assistant for feature development in the ISMF Race Logger project.
+
+## Quick Commands Reference
+
+### Running Tests (CRITICAL: Always use RAILS_ENV=test)
+
+```bash
+# Run all tests
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec
+
+# Run specific file
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/requests/sessions_spec.rb
+
+# Run specific test by line number
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec spec/requests/sessions_spec.rb:25
+
+# With documentation format
+docker compose exec -T -e RAILS_ENV=test app bundle exec rspec --format documentation
+```
+
+### Rails Console
+
+```bash
+# Development console
+docker compose exec app bin/rails console
+
+# Run one-off commands
+docker compose exec -T app bin/rails runner "puts User.count"
+
+# Example with DI container
+docker compose exec app bin/rails console
+# > user_repo = AppContainer["repos.user"]
+# > user = user_repo.find(1)
+```
+
+### Testing with curl
+
+```bash
+# Login (get session cookie)
+curl -c cookies.txt -X POST http://localhost:3005/session \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "email_address=admin@ismf-ski.com&password=password123"
+
+# Authenticated request
+curl -b cookies.txt http://localhost:3005/admin/dashboard
+
+# JSON API request
+curl -b cookies.txt -H "Accept: application/json" http://localhost:3005/admin/users
+
+# POST with JSON
+curl -b cookies.txt -X POST http://localhost:3005/admin/incidents \
+  -H "Content-Type: application/json" \
+  -d '{"incident": {"name": "Test", "description": "Test incident"}}'
+```
+
+### Code Quality
+
+```bash
+# RuboCop check (run before committing)
+docker compose exec -T app bundle exec rubocop
+
+# Auto-fix simple issues
+docker compose exec -T app bundle exec rubocop -A
+
+# Packwerk boundary check
+docker compose exec app bundle exec packwerk check
+```
+
+### Database
+
+```bash
+# Migrations
+docker compose exec -T app bin/rails db:migrate
+
+# Reset database
+docker compose exec -T app bin/rails db:drop db:create db:migrate db:seed
+
+# Generate migration
+docker compose exec -T app bin/rails generate migration AddFieldToTable field:type
+```
+
+---
+
+## Architecture Overview (Hanami-Hybrid)
+
+### Layer Structure
+
+```
+Request → Controller → Operation → Repo → Database
+               ↓           ↓
+         Broadcaster    Struct
+               ↓           ↓
+             Part     ← Factory
+               ↓
+           Template
+               ↓
+        Turbo Stream → All Clients
+```
+
+### Directory Map
+
+| Layer | Location | Purpose |
+|-------|----------|---------|
+| Models | `app/models/` | Thin ActiveRecord (associations only) |
+| Structs | `app/db/structs/` | Immutable domain objects |
+| Repos | `app/db/repos/` | Data access (returns structs) |
+| Operations | `app/operations/` | Business logic (dry-monads) |
+| Contracts | `app/operations/contracts/` | Input validation |
+| Controllers | `app/web/controllers/` | Thin HTTP adapters |
+| Parts | `app/web/parts/` | Presentation decorators |
+| Templates | `app/views/` | ERB views |
+| Broadcasters | `app/broadcasters/` | Real-time Turbo Streams |
+
+### Naming Conventions
+
+- **Model**: `User` (in `app/models/user.rb`)
+- **Repo**: `UserRepo` (in `app/db/repos/user_repo.rb`)
+- **Struct**: `Structs::User` (in `app/db/structs/user.rb`)
+- **Summary**: `Structs::UserSummary` (in `app/db/structs/user_summary.rb`)
+- **Operation**: `Operations::Users::Create` (in `app/operations/users/create.rb`)
+- **Contract**: `Operations::Contracts::CreateUser` (in `app/operations/contracts/create_user.rb`)
+- **Controller**: `Web::Controllers::Admin::UsersController` (in `app/web/controllers/admin/users_controller.rb`)
+- **Part**: `Web::Parts::User` (in `app/web/parts/user.rb`)
+- **Broadcaster**: `IncidentBroadcaster` (in `app/broadcasters/incident_broadcaster.rb`)
+
+### DI Container Keys
+
+```ruby
+AppContainer["repos.user"]            # => UserRepo
+AppContainer["repos.incident"]        # => IncidentRepo
+AppContainer["parts.factory"]         # => Web::Parts::Factory
+AppContainer["broadcasters.incident"] # => IncidentBroadcaster
+```
+
+---
+
+## @feature Workflow
+
+When the user mentions `@feature` or asks to build a new feature, follow this interactive workflow:
+
+### Phase 1: Requirements Gathering
+
+Ask these questions ONE BY ONE (wait for answer before next question):
+
+1. **Feature Name**: "What is the name/title of this feature?" (e.g., "Admin Incidents Management")
+
+2. **Resource/Model**: "What is the main resource/model?" (e.g., "Incident")
+   - If new model: "What attributes/fields does it need?"
+   - Example: `name:string, description:text, status:string, bib_number:integer, race_id:references`
+
+3. **Views Needed**: "Which views do you need?"
+   - [ ] Index (list)
+   - [ ] Show (detail)
+   - [ ] New/Create form
+   - [ ] Edit/Update form
+   - [ ] Delete confirmation
+   - [ ] Turbo Native variants?
+
+4. **Platform Support**: "Desktop only, or also mobile/Turbo Native?"
+
+5. **Real-time Features**: "Any real-time updates needed?" (Turbo Streams broadcasting)
+
+6. **Authorization**: "Who can access this?" (admin only, referees, var_operators, public)
+
+7. **Special Requirements**: "Any special validations, workflows, or integrations?"
+
+### Phase 2: Solution Proposal
+
+After gathering requirements, present:
+
+1. **Files to Create** (grouped by layer):
+   - Migration(s)
+   - Model
+   - Struct(s) - full and/or summary
+   - Repo
+   - Operation(s) - list which CRUD operations
+   - Contract(s) - list validation contracts
+   - Controller
+   - Part
+   - Views/Templates
+   - Broadcaster (if real-time)
+   - Tests
+
+2. **Architecture Decisions**:
+   - Struct type: dry-struct (single) vs Ruby Data (collections)
+   - Authorization strategy
+   - Broadcasting strategy
+
+3. **Example Code Snippets** for key components
+
+4. **Ask for approval**: "Does this plan look good? Any changes before I start?"
+
+### Phase 3: Implementation
+
+After approval:
+
+1. **Create files in order**:
+   - Migration → Model → Struct → Repo → Operation → Contract → Controller → Part → Views → Broadcaster
+
+2. **Add to DI container** if needed (`config/initializers/container.rb`)
+
+3. **Add routes** (`config/routes.rb`)
+
+4. **Create Pundit policy** if authorization needed
+
+### Phase 4: Testing
+
+After implementation:
+
+1. **Generate test files**:
+   - `spec/models/` - Model associations/validations
+   - `spec/db/repos/` - Repo queries
+   - `spec/db/structs/` - Struct attributes
+   - `spec/operations/` - Business logic
+   - `spec/requests/` - Controller/integration
+
+2. **Run the test suite**:
+   ```bash
+   docker compose exec -T -e RAILS_ENV=test app bundle exec rspec --format documentation
+   ```
+
+3. **Fix any failures** before completing
+
+4. **Run code quality checks**:
+   ```bash
+   docker compose exec -T app bundle exec rubocop -A
+   docker compose exec app bundle exec packwerk check
+   ```
+
+---
+
+## Code Templates
+
+### Struct (Full - dry-struct)
+
+```ruby
+# frozen_string_literal: true
+
+module Structs
+  # Immutable representation of a [Resource] record
+  class Resource < DB::Struct
+    attribute :id, Types::Integer
+    attribute :name, Types::String
+    attribute :created_at, Types::Time
+    attribute :updated_at, Types::Time
+    
+    # Domain methods (no presentation logic)
+    def active?
+      status == "active"
+    end
+  end
+end
+```
+
+### Struct (Summary - Ruby Data)
+
+```ruby
+# frozen_string_literal: true
+
+module Structs
+  # Lightweight struct for [Resource] collections (performance optimized)
+  ResourceSummary = Data.define(:id, :name, :status) do
+    def active?
+      status == "active"
+    end
+  end
+end
+```
+
+### Repo
+
+```ruby
+# frozen_string_literal: true
+
+# Repository for [Resource] persistence operations
+class ResourceRepo < DB::Repo
+  returns_one :find_by_name, :find_active
+  returns_many :all_active, :search
+
+  def find_by_name(name)
+    find_by(name: name)
+  end
+
+  def all_active
+    where(status: "active")
+  end
+
+  protected
+
+  def build_struct(record)
+    Structs::Resource.new(
+      id: record.id,
+      name: record.name,
+      status: record.status,
+      created_at: record.created_at,
+      updated_at: record.updated_at
+    )
+  end
+
+  def build_summary(record)
+    Structs::ResourceSummary.new(
+      id: record.id,
+      name: record.name,
+      status: record.status
+    )
+  end
+end
+```
+
+### Operation
+
+```ruby
+# frozen_string_literal: true
+
+module Operations
+  module Resources
+    # Creates a new resource
+    class Create
+      include Dry::Monads[:result]
+      include Import["repos.resource"]
+
+      def call(params)
+        contract = Operations::Contracts::CreateResource.new
+        validation = contract.call(params)
+
+        if validation.success?
+          resource = repo.create(validation.to_h)
+          Success(resource)
+        else
+          Failure(validation.errors.to_h)
+        end
+      end
+    end
+  end
+end
+```
+
+### Contract
+
+```ruby
+# frozen_string_literal: true
+
+module Operations
+  module Contracts
+    # Validates input for creating a resource
+    class CreateResource < Dry::Validation::Contract
+      params do
+        required(:name).filled(:string)
+        optional(:description).maybe(:string)
+        required(:status).filled(:string)
+      end
+
+      rule(:name) do
+        key.failure("must be at least 3 characters") if value.length < 3
+      end
+    end
+  end
+end
+```
+
+### Controller
+
+```ruby
+# frozen_string_literal: true
+
+module Web
+  module Controllers
+    module Admin
+      # Handles HTTP requests for resources
+      class ResourcesController < Admin::BaseController
+        def index
+          resources = resource_repo.all
+          @resources = parts_factory.wrap_many(resources)
+        end
+
+        def show
+          resource = resource_repo.find!(params[:id])
+          @resource = parts_factory.wrap(resource)
+        end
+
+        def create
+          result = Operations::Resources::Create.new.call(resource_params)
+
+          case result
+          in Success(resource)
+            redirect_to admin_resource_path(resource.id), notice: "Created!"
+          in Failure(errors)
+            @errors = errors
+            render :new, status: :unprocessable_entity
+          end
+        end
+
+        private
+
+        def resource_repo
+          @resource_repo ||= AppContainer["repos.resource"]
+        end
+
+        def parts_factory
+          @parts_factory ||= AppContainer["parts.factory"]
+        end
+
+        def resource_params
+          params.require(:resource).permit(:name, :description, :status)
+        end
+      end
+    end
+  end
+end
+```
+
+### Part
+
+```ruby
+# frozen_string_literal: true
+
+module Web
+  module Parts
+    # Presentation logic for Resource
+    class Resource < Base
+      def status_badge
+        case value.status
+        when "active" then helpers.tag.span("Active", class: "badge badge-green")
+        when "pending" then helpers.tag.span("Pending", class: "badge badge-yellow")
+        else helpers.tag.span(value.status, class: "badge badge-gray")
+        end
+      end
+
+      def created_at_formatted
+        value.created_at.strftime("%B %d, %Y")
+      end
+
+      def dom_id
+        "resource_#{value.id}"
+      end
+    end
+  end
+end
+```
+
+### Broadcaster
+
+```ruby
+# frozen_string_literal: true
+
+# Broadcasts real-time updates for Resource changes
+class ResourceBroadcaster < BaseBroadcaster
+  def created(resource)
+    broadcast_prepend(
+      stream: stream_name,
+      target: "resources",
+      partial: "admin/resources/resource",
+      locals: { resource: wrap(resource) }
+    )
+  end
+
+  def updated(resource)
+    broadcast_replace(
+      stream: stream_name,
+      target: wrap(resource).dom_id,
+      partial: "admin/resources/resource",
+      locals: { resource: wrap(resource) }
+    )
+  end
+
+  def deleted(resource)
+    broadcast_remove(
+      stream: stream_name,
+      target: wrap(resource).dom_id
+    )
+  end
+
+  private
+
+  def stream_name
+    "admin_resources"
+  end
+end
+```
+
+---
+
+## Default Development Users
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@ismf-ski.com | password123 |
+| Referee | referee@ismf-ski.com | password123 |
+| VAR Operator | var@ismf-ski.com | password123 |
+| User | user@example.com | password123 |
+
+---
+
+## Documentation
+
+- Architecture: `docs/ARCHITECTURE.md`
+- Project guidelines: `CLAUDE.md`
+- API endpoints: Test with curl commands above
