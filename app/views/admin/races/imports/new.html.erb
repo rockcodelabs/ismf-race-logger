@@ -1,0 +1,227 @@
+<div class="space-y-6">
+  <!-- Page header with breadcrumb -->
+  <div class="space-y-2">
+    <nav class="flex text-sm text-gray-500">
+      <%= link_to "Competitions", admin_competitions_path, class: "hover:text-ismf-blue" %>
+      <span class="mx-2">/</span>
+      <%= link_to @competition.name, admin_competition_path(@competition), class: "hover:text-ismf-blue" %>
+      <span class="mx-2">/</span>
+      <%= link_to "Races", admin_competition_races_path(@competition), class: "hover:text-ismf-blue" %>
+      <span class="mx-2">/</span>
+      <%= link_to @race.name, admin_competition_race_path(@competition, @race), class: "hover:text-ismf-blue" %>
+      <span class="mx-2">/</span>
+      <span class="text-ismf-navy font-medium">Import Athletes</span>
+    </nav>
+
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-ismf-navy">Import Athletes</h1>
+        <p class="mt-1 text-sm text-ismf-gray">
+          Bulk import athletes for <%= @race.name %>
+        </p>
+      </div>
+      <div>
+        <%= link_to admin_competition_race_path(@competition, @race), class: "btn-secondary" do %>
+          <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          <span>Cancel</span>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flash messages -->
+  <% if flash[:alert] %>
+    <div class="card border-l-4 border-red-500 bg-red-50">
+      <div class="p-4">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <div class="text-sm text-red-700">
+              <%= flash[:alert] %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Race context card -->
+  <div class="card bg-gradient-to-r from-ismf-blue to-blue-600 text-white">
+    <div class="p-4">
+      <div class="flex items-center gap-4">
+        <div>
+          <div class="text-sm opacity-75">Race</div>
+          <div class="text-lg font-semibold"><%= @race.name %></div>
+        </div>
+        <div class="h-10 w-px bg-white/20"></div>
+        <div>
+          <div class="text-sm opacity-75">Type</div>
+          <div class="text-lg font-semibold"><%= @race.race_type_name %></div>
+        </div>
+        <div class="h-10 w-px bg-white/20"></div>
+        <div>
+          <div class="text-sm opacity-75">Stage</div>
+          <div class="text-lg font-semibold"><%= @race.stage_name %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import form -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main form area -->
+    <div class="lg:col-span-2">
+      <div class="card">
+        <div class="px-6 py-5 border-b border-gray-200 bg-gray-50">
+          <h3 class="text-lg font-medium text-ismf-navy">Paste JSON Data</h3>
+          <p class="mt-1 text-sm text-gray-500">
+            Paste the JSON array of athletes to import into this race
+          </p>
+        </div>
+        
+        <%= form_with url: admin_race_import_path(@race), method: :post, local: true, class: "p-6" do |f| %>
+          <div class="space-y-4">
+            <!-- JSON textarea -->
+            <div>
+              <%= f.label :athletes_json, "JSON Data", class: "block text-sm font-medium text-gray-700 mb-2" %>
+              <%= f.text_area :athletes_json, 
+                  rows: 20,
+                  placeholder: '[
+  {
+    "bib_number": 1,
+    "first_name": "John",
+    "last_name": "Doe",
+    "gender": "M",
+    "country": "ITA",
+    "license_number": "ABC123"
+  },
+  {
+    "bib_number": 2,
+    "first_name": "Jane",
+    "last_name": "Smith",
+    "gender": "F",
+    "country": "USA"
+  }
+]',
+                  class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-ismf-blue focus:ring-ismf-blue font-mono text-sm" %>
+              <p class="mt-2 text-sm text-gray-500">
+                Paste a JSON array with athlete objects. Each athlete must have: bib_number, first_name, last_name, gender, country
+              </p>
+            </div>
+
+            <!-- Submit button -->
+            <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+              <%= link_to "Cancel", admin_competition_race_path(@competition, @race), class: "btn-secondary" %>
+              <%= f.submit "Import Athletes", class: "btn-primary" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Sidebar with instructions -->
+    <div class="space-y-6">
+      <!-- Instructions card -->
+      <div class="card">
+        <div class="px-6 py-5 border-b border-gray-200 bg-gray-50">
+          <h3 class="text-lg font-medium text-ismf-navy">Instructions</h3>
+        </div>
+        <div class="p-6">
+          <div class="space-y-4 text-sm">
+            <div>
+              <h4 class="font-medium text-ismf-navy mb-2">Required Fields</h4>
+              <ul class="space-y-1 text-gray-600">
+                <li class="flex items-start">
+                  <span class="text-ismf-blue mr-2">•</span>
+                  <span><strong>bib_number</strong> - Integer (1-9999)</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-ismf-blue mr-2">•</span>
+                  <span><strong>first_name</strong> - String</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-ismf-blue mr-2">•</span>
+                  <span><strong>last_name</strong> - String</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-ismf-blue mr-2">•</span>
+                  <span><strong>gender</strong> - "M" or "F"</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-ismf-blue mr-2">•</span>
+                  <span><strong>country</strong> - 3-letter code (e.g., "ITA", "USA")</span>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 class="font-medium text-ismf-navy mb-2">Optional Fields</h4>
+              <ul class="space-y-1 text-gray-600">
+                <li class="flex items-start">
+                  <span class="text-gray-400 mr-2">•</span>
+                  <span><strong>license_number</strong> - String</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="pt-4 border-t border-gray-200">
+              <h4 class="font-medium text-ismf-navy mb-2">Import Behavior</h4>
+              <ul class="space-y-2 text-gray-600">
+                <li class="flex items-start">
+                  <span class="text-green-500 mr-2">✓</span>
+                  <span>Existing athletes (same name, gender, country) will be reused</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-green-500 mr-2">✓</span>
+                  <span>New athletes will be created automatically</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-red-500 mr-2">✗</span>
+                  <span>Duplicate bib numbers will cause an error</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-red-500 mr-2">✗</span>
+                  <span>Athletes already in this race will cause an error</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Example card -->
+      <div class="card border-l-4 border-blue-500">
+        <div class="p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-gray-800">Example JSON</h3>
+              <div class="mt-2 text-xs text-gray-600">
+                <pre class="bg-gray-50 p-2 rounded border border-gray-200 overflow-x-auto"><code>[
+  {
+    "bib_number": 1,
+    "first_name": "John",
+    "last_name": "Doe",
+    "gender": "M",
+    "country": "ITA",
+    "license_number": "ABC123"
+  }
+]</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

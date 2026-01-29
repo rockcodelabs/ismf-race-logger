@@ -12,6 +12,11 @@ Rails.application.routes.draw do
     resources :competitions do
       resources :races
     end
+    
+    # Athlete import routes (nested under races)
+    resources :races, only: [] do
+      resource :imports, only: [:new, :create], controller: "races/imports", as: :import
+    end
   end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

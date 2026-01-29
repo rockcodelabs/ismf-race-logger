@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_29_191427) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_29_203229) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -42,6 +42,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_29_191427) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "athletes", force: :cascade do |t|
+    t.string "country", limit: 3, null: false
+    t.datetime "created_at", null: false
+    t.string "first_name", null: false
+    t.string "gender", limit: 1, null: false
+    t.string "last_name", null: false
+    t.string "license_number"
+    t.datetime "updated_at", null: false
+    t.index ["country"], name: "index_athletes_on_country"
+    t.index ["first_name", "last_name", "gender", "country"], name: "index_athletes_on_name_gender_country"
+    t.index ["license_number"], name: "index_athletes_on_license_number", unique: true, where: "(license_number IS NOT NULL)"
+  end
+
   create_table "competitions", force: :cascade do |t|
     t.string "city", null: false
     t.string "country", limit: 3, null: false
@@ -67,6 +80,28 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_29_191427) do
     t.bigint "user_id", null: false
     t.index ["token"], name: "index_magic_links_on_token", unique: true
     t.index ["user_id"], name: "index_magic_links_on_user_id"
+  end
+
+  create_table "race_participations", force: :cascade do |t|
+    t.boolean "active_in_heat", default: true
+    t.bigint "athlete_id", null: false
+    t.integer "bib_number", null: false
+    t.datetime "created_at", null: false
+    t.datetime "finish_time"
+    t.string "heat"
+    t.bigint "race_id", null: false
+    t.integer "rank"
+    t.datetime "start_time"
+    t.string "status", default: "registered"
+    t.bigint "team_id"
+    t.datetime "updated_at", null: false
+    t.index ["athlete_id"], name: "index_race_participations_on_athlete_id"
+    t.index ["heat"], name: "index_race_participations_on_heat"
+    t.index ["race_id", "athlete_id"], name: "index_race_participations_on_race_id_and_athlete_id", unique: true
+    t.index ["race_id", "bib_number"], name: "index_race_participations_on_race_id_and_bib_number", unique: true
+    t.index ["race_id"], name: "index_race_participations_on_race_id"
+    t.index ["status"], name: "index_race_participations_on_status"
+    t.index ["team_id"], name: "index_race_participations_on_team_id"
   end
 
   create_table "race_types", force: :cascade do |t|
@@ -112,6 +147,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_29_191427) do
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
+  create_table "teams", force: :cascade do |t|
+    t.bigint "athlete_1_id", null: false
+    t.bigint "athlete_2_id"
+    t.integer "bib_number", null: false
+    t.datetime "created_at", null: false
+    t.string "name"
+    t.bigint "race_id", null: false
+    t.string "team_type", null: false
+    t.datetime "updated_at", null: false
+    t.index ["athlete_1_id"], name: "index_teams_on_athlete_1_id"
+    t.index ["athlete_2_id"], name: "index_teams_on_athlete_2_id"
+    t.index ["race_id", "bib_number"], name: "index_teams_on_race_id_and_bib_number", unique: true
+    t.index ["race_id"], name: "index_teams_on_race_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.boolean "admin", default: false, null: false
     t.datetime "created_at", null: false
@@ -127,8 +177,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_29_191427) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "magic_links", "users"
+  add_foreign_key "race_participations", "athletes"
+  add_foreign_key "race_participations", "races"
+  add_foreign_key "race_participations", "teams"
   add_foreign_key "races", "competitions"
   add_foreign_key "races", "race_types"
   add_foreign_key "sessions", "users"
+  add_foreign_key "teams", "athletes", column: "athlete_1_id"
+  add_foreign_key "teams", "athletes", column: "athlete_2_id"
+  add_foreign_key "teams", "races"
   add_foreign_key "users", "roles"
 end

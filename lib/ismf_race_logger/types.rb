@@ -36,6 +36,21 @@ module IsmfRaceLogger
       "no_action"
     )
 
+    # Gender types
+    Gender = Strict::String.enum("M", "F")
+
+    # Team types
+    TeamType = Strict::String.enum("pair", "relay_team")
+
+    # Participation statuses
+    ParticipationStatus = Strict::String.enum(
+      "registered",
+      "dns",      # Did Not Start
+      "dnf",      # Did Not Finish
+      "dsq",      # Disqualified
+      "finished"
+    )
+
     # Race types
     RaceTypeName = Strict::String.enum(
       "individual",

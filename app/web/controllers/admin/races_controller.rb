@@ -39,6 +39,7 @@ module Web
         def show
           authorize @race
           # @race is already set by before_action as struct
+          @participations = race_participation_repo.for_race(@race.id)
         end
 
         # GET /admin/competitions/:competition_id/races/new
@@ -182,6 +183,10 @@ module Web
 
         def competition_repo
           @competition_repo ||= AppContainer["repos.competition"]
+        end
+
+        def race_participation_repo
+          @race_participation_repo ||= AppContainer["repos.race_participation"]
         end
       end
     end

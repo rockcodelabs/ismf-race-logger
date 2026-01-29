@@ -24,4 +24,8 @@
 class Race < ApplicationRecord
   belongs_to :competition
   belongs_to :race_type
+
+  has_many :race_participations, dependent: :destroy
+  has_many :athletes, through: :race_participations
+  has_many :teams, dependent: :destroy
 end

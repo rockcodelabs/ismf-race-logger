@@ -57,6 +57,14 @@ class AppContainer
     register :race_type, memoize: true do
       RaceTypeRepo.new
     end
+
+    register :athlete, memoize: true do
+      AthleteRepo.new
+    end
+
+    register :race_participation, memoize: true do
+      RaceParticipationRepo.new
+    end
   end
 
   # ============================================================================
