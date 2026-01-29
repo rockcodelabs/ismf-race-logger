@@ -16,6 +16,7 @@
 6. [Code Structure](#code-structure)
 7. [Testing Strategy](#testing-strategy)
 8. [Deployment & Configuration](#deployment--configuration)
+9. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -37,6 +38,12 @@ This document outlines the complete touch screen implementation for the ISMF Rac
 ### What Exists
 
 #### 1. Files & Structure
+
+**IMPORTANT:** The app uses **simple-keyboard** JavaScript library for virtual keyboard functionality. 
+No native on-screen keyboard (like squeekboard) is needed or should be used.
+
+**IMPORTANT:** The app uses **simple-keyboard** JavaScript library for virtual keyboard.  
+❌ **Do NOT use squeekboard or other native on-screen keyboards** - they will conflict and cause boot failures.
 
 ```
 app/
@@ -1266,6 +1273,65 @@ journalctl -u chromium-kiosk -f
 ---
 
 ## Troubleshooting
+
+### Issue: "Failure keyboard" error during kiosk boot
+
+**Symptoms:**
+- During Raspberry Pi reboot, see message: "Failure keyboard ..." in boot logs
+- Kiosk service fails to start or starts with delays
+- `journalctl -u kiosk` shows squeekboard errors
+
+**Root Cause:**
+The systemd service was trying to start `squeekboard` (a native on-screen keyboard), but:
+- It's not needed (app has built-in simple-keyboard)
+- It conflicts with Chromium's kiosk mode
+- It causes boot failures when missing or misconfigured
+
+**Solution:**
+
+1. **Remove squeekboard from deployment** (already fixed in latest Ansible):
+   ```yaml
+   # ansible/setup-kiosk.yml - squeekboard removed from package list
+   # The kiosk.service.j2 template never launches squeekboard
+   ```
+
+2. **Redeploy kiosk configuration** to the Pi:
+   ```bash
+   cd ansible
+   ansible-playbook -i inventory.yml setup-kiosk.yml
+   ```
+
+3. **Verify the deployed service doesn't reference squeekboard**:
+   ```bash
+   ssh rege@pi5cam.local
+   cat /etc/systemd/system/kiosk.service | grep squeekboard
+   # Should return nothing
+   ```
+
+4. **If manually fixing on Pi**:
+   ```bash
+   ssh rege@pi5cam.local
+   sudo systemctl stop kiosk
+   sudo nano /etc/systemd/system/kiosk.service
+   # Remove any lines referencing 'squeekboard'
+   sudo systemctl daemon-reload
+   sudo systemctl restart kiosk
+   ```
+
+5. **Check service is running properly**:
+   ```bash
+   ssh rege@pi5cam.local
+   sudo systemctl status kiosk
+   sudo journalctl -u kiosk -f
+   # Should show Weston and Chromium starting, no keyboard errors
+   ```
+
+**Prevention:**
+- The app's virtual keyboard is implemented in JavaScript (simple-keyboard)
+- No native on-screen keyboard should be installed or launched
+- Chromium flags already disable native keyboard: `--disable-touch-keyboard`, `--disable-features=VirtualKeyboard`
+
+---
 
 ### Issue: Buttons not clickable
 
