@@ -1,98 +1,100 @@
 <% content_for :page_title, "Users" %>
 
-<div class="h-screen touch-spacing overflow-hidden flex flex-col">
-  <h1 class="text-3xl font-extrabold text-white mb-4 text-center flex-shrink-0">Users</h1>
-
+<div class="h-screen overflow-hidden flex flex-col">
   <!-- Add User Button -->
-  <div class="mb-4 flex-shrink-0">
-    <%= link_to new_admin_user_path, class: "touch-btn touch-btn-primary w-full" do %>
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2rem; height: 2rem;">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-      </svg>
-      <span>Add New User</span>
+  <div class="mb-2 flex-shrink-0 px-3 pt-3">
+    <%= link_to new_admin_user_path, class: "touch-btn touch-btn-primary w-full min-h-[88px]" do %>
+      <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-8 h-8">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+        </svg>
+      </div>
+      <span class="text-xl font-bold">Add New User</span>
     <% end %>
   </div>
 
   <!-- Users List -->
-  <div class="bg-white rounded-2xl shadow-xl p-4 flex-1 flex flex-col min-h-0">
+  <div class="bg-white rounded-2xl shadow-xl px-3 py-2 flex-1 flex flex-col min-h-0 mx-3">
+    <div class="flex items-center justify-between mb-2 flex-shrink-0">
+      <h2 class="text-xl font-bold text-ismf-navy">All Users</h2>
+
+    </div>
+
     <% if @users.any? %>
-      <div class="space-y-3 touch-scrollable flex-1">
+      <!-- Users List -->
+      <div class="space-y-1.5 touch-scrollable flex-1">
         <% @users.each do |user| %>
-          <div class="bg-gray-50 rounded-xl p-3 hover:bg-gray-100 active:bg-gray-200 transition">
-            <div class="flex items-center justify-between mb-3">
-              <div class="flex items-center flex-1">
-                <div class="w-12 h-12 bg-ismf-blue rounded-xl flex items-center justify-center shrink-0">
-                  <span class="text-white font-bold text-lg">
-                    <%= user.name.first.upcase rescue user.email_address.first.upcase %>
-                  </span>
+          <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-ismf-blue active:border-ismf-red transition overflow-hidden min-h-[80px]">
+            <div class="flex items-stretch">
+              <!-- Left Side: User Info (Clickable) -->
+              <%= link_to admin_user_path(user), class: "flex items-center gap-3 py-3 px-3 flex-1 min-w-0 hover:bg-gray-50 active:bg-gray-100 ml-2" do %>
+                <!-- Avatar -->
+                <div class="flex-shrink-0 w-14 h-14 rounded-xl <%= user.admin? ? 'bg-ismf-red' : 'bg-ismf-blue' %> flex items-center justify-center shadow-sm ml-2">
+                  <span class="text-2xl font-bold text-white"><%= user.display_name[0].upcase %></span>
                 </div>
-                <div class="ml-3 flex-1">
-                  <p class="text-lg font-bold text-ismf-navy"><%= user.display_name %></p>
-                  <p class="text-sm text-ismf-gray mt-0.5"><%= user.email_address %></p>
-                  <p class="text-xs text-ismf-gray mt-0.5"><%= user.created_at.strftime("%b %d, %Y") %></p>
+                
+                <!-- User Details (Two Lines) -->
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <p class="text-base font-extrabold text-ismf-navy truncate"><%= user.display_name %></p>
+                    <% if user.admin? %>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-extrabold text-white bg-ismf-red flex-shrink-0">Admin</span>
+                    <% end %>
+                  </div>
+                  <p class="text-xs text-ismf-gray truncate"><%= user.email_address %></p>
+                  <p class="text-xs text-ismf-gray/70 mt-0.5">Joined <%= user.created_at.strftime("%b %d, %Y") %></p>
                 </div>
-              </div>
-              <div class="ml-3">
-                <% if user.admin? %>
-                  <span class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold text-white bg-ismf-red">Admin</span>
+              <% end %>
+
+              <!-- Right Side: Action Buttons (Horizontal Inline, Full Height) -->
+              <div class="flex gap-2 p-2 flex-shrink-0 items-stretch">
+                <%= link_to edit_admin_user_path(user), class: "flex items-center justify-center w-20 bg-ismf-navy text-white rounded-lg text-xs font-bold hover:bg-ismf-blue active:bg-ismf-red transition shadow-sm" do %>
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-4 h-4 mr-1">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  <span>Edit</span>
+                <% end %>
+                
+                <% if user == Current.user %>
+                  <div class="flex items-center justify-center w-20 bg-gray-300 text-gray-600 rounded-lg text-xs font-bold cursor-not-allowed">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-4 h-4 mr-1">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span>You</span>
+                  </div>
                 <% else %>
-                  <span class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold text-white bg-ismf-blue">User</span>
+                  <%= button_to admin_user_path(user), method: :delete, class: "flex items-center justify-center w-20 h-full bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 active:bg-red-800 transition shadow-sm", data: { turbo_confirm: "Delete #{user.display_name}?" } do %>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-4 h-4 mr-1">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <span>Delete</span>
+                  <% end %>
                 <% end %>
               </div>
-            </div>
-            
-            <!-- Action Buttons -->
-            <div class="grid grid-cols-3 gap-2">
-              <%= link_to admin_user_path(user), class: "touch-btn touch-btn-secondary !min-h-[50px] !py-2" do %>
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1.5rem; height: 1.5rem;">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                <span class="text-sm">View</span>
-              <% end %>
-              
-              <%= link_to edit_admin_user_path(user), class: "touch-btn touch-btn-secondary !min-h-[50px] !py-2" do %>
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1.5rem; height: 1.5rem;">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                <span class="text-sm">Edit</span>
-              <% end %>
-              
-              <% unless user == Current.user %>
-                <%= button_to admin_user_path(user), method: :delete, class: "touch-btn !bg-red-600 hover:!bg-red-700 !min-h-[50px] !py-2", data: { turbo_confirm: "Delete this user?" } do %>
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1.5rem; height: 1.5rem;">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  <span class="text-sm">Delete</span>
-                <% end %>
-              <% else %>
-                <div class="touch-btn !bg-gray-400 !cursor-not-allowed !opacity-50 !min-h-[50px] !py-2">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1.5rem; height: 1.5rem;">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  <span class="text-sm">You</span>
-                </div>
-              <% end %>
             </div>
           </div>
         <% end %>
       </div>
+
+
+
     <% else %>
-      <div class="text-center py-8">
-        <svg class="mx-auto h-12 w-12 text-ismf-gray opacity-50 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="flex-1 flex flex-col items-center justify-center">
+        <svg class="h-16 w-16 text-ismf-gray opacity-50 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
         </svg>
         <h3 class="text-xl font-bold text-ismf-navy mb-2">No users yet</h3>
         <p class="text-lg text-ismf-gray mb-4">Get started by creating your first user</p>
-        <%= link_to new_admin_user_path, class: "touch-btn touch-btn-primary inline-flex" do %>
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2rem; height: 2rem;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          <span>Add First User</span>
+        <%= link_to new_admin_user_path, class: "touch-btn touch-btn-primary inline-flex min-h-[88px]" do %>
+          <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-8 h-8">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </div>
+          <span class="text-xl font-bold">Add First User</span>
         <% end %>
       </div>
     <% end %>
   </div>
-
-
 </div>
+
