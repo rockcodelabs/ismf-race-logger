@@ -354,5 +354,42 @@ ssh rege@pi5main.local
 - **Container naming:** ismf-race-logger-web-{hash}
 
 **Important:** After fixing code issues (like Zeitwerk), always deploy before running production commands.
+
+### Asset Serving Configuration
+
+**Critical:** Rails must be configured to serve static assets in production when using Kamal (no separate web server like Nginx).
+
+**Required configuration in `config/environments/production.rb`:**
+
+```ruby
+# Enable serving of static files from the public/ folder (required for Kamal deployments)
+config.public_file_server.enabled = true
+
+# Cache assets for far-future expiry since they are all digest stamped.
+config.public_file_server.headers = { "cache-control" => "public, max-age=#{1.year.to_i}" }
+```
+
+**What this does:**
+- Allows Rails/Puma to serve compiled assets from `/public/assets/`
+- Without this, you'll see 404 errors for CSS/JS files in production
+- Assets are precompiled during Docker build (see Dockerfile)
+
+**Troubleshooting asset 404s:**
+
+```bash
+# 1. Verify assets exist in container
+kamal app exec --reuse "ls -la /rails/public/assets/"
+
+# 2. Check if public_file_server.enabled is set
+kamal app exec --reuse "bin/rails runner 'puts Rails.configuration.public_file_server.enabled'"
+
+# 3. If false, add the config and redeploy
+# Edit config/environments/production.rb, commit, push to trigger GitHub Actions
+```
+
+**Why not use asset_path in deploy.yml?**
+- `asset_path` is for kamal-proxy asset bridging (advanced feature)
+- Simpler to let Rails serve assets directly through Puma
+- We removed `asset_path: /rails/public/assets` from deploy.yml for this reason
 ```
 
