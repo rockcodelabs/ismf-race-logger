@@ -1,0 +1,265 @@
+<!-- Page Header -->
+<div class="mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-ismf-navy">ISMF Penalties Reference</h1>
+    <p class="mt-1 text-sm text-ismf-gray">Official ISMF race penalties organized by category.</p>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="mb-6" data-controller="penalty-filter">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Category Filters -->
+    <div class="card">
+      <div class="px-4 py-3 border-b border-gray-200">
+        <h3 class="text-sm font-semibold text-ismf-navy">Filter by Category</h3>
+      </div>
+      <div class="p-4">
+        <div class="flex flex-wrap gap-2">
+          <button 
+            data-action="click->penalty-filter#filterCategory"
+            data-category="all"
+            data-penalty-filter-target="categoryBtn"
+            class="px-4 py-2 text-sm font-medium rounded-lg bg-ismf-red text-white hover:bg-ismf-red/90 transition">
+            All Categories
+          </button>
+          <button 
+            data-action="click->penalty-filter#filterCategory"
+            data-category="A"
+            data-penalty-filter-target="categoryBtn"
+            class="px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+            A - General
+          </button>
+          <button 
+            data-action="click->penalty-filter#filterCategory"
+            data-category="B"
+            data-penalty-filter-target="categoryBtn"
+            class="px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+            B - Equipment
+          </button>
+          <button 
+            data-action="click->penalty-filter#filterCategory"
+            data-category="C"
+            data-penalty-filter-target="categoryBtn"
+            class="px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+            C - Behaviour
+          </button>
+          <button 
+            data-action="click->penalty-filter#filterCategory"
+            data-category="D"
+            data-penalty-filter-target="categoryBtn"
+            class="px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+            D - Team
+          </button>
+          <button 
+            data-action="click->penalty-filter#filterCategory"
+            data-category="E"
+            data-penalty-filter-target="categoryBtn"
+            class="px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+            E - Relay
+          </button>
+          <button 
+            data-action="click->penalty-filter#filterCategory"
+            data-category="F"
+            data-penalty-filter-target="categoryBtn"
+            class="px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+            F - Coaches
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Race Type Filters -->
+    <div class="card">
+      <div class="px-4 py-3 border-b border-gray-200">
+        <h3 class="text-sm font-semibold text-ismf-navy">Filter by Race Type</h3>
+      </div>
+      <div class="p-4">
+        <div class="flex flex-wrap gap-2">
+          <button 
+            data-action="click->penalty-filter#filterRaceType"
+            data-race-type="all"
+            data-penalty-filter-target="raceTypeBtn"
+            class="px-4 py-2 text-sm font-medium rounded-lg bg-ismf-red text-white hover:bg-ismf-red/90 transition">
+            All Race Types
+          </button>
+          <button 
+            data-action="click->penalty-filter#filterRaceType"
+            data-race-type="team_individual"
+            data-penalty-filter-target="raceTypeBtn"
+            class="px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+            Individual/Team
+          </button>
+          <button 
+            data-action="click->penalty-filter#filterRaceType"
+            data-race-type="vertical"
+            data-penalty-filter-target="raceTypeBtn"
+            class="px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+            Vertical
+          </button>
+          <button 
+            data-action="click->penalty-filter#filterRaceType"
+            data-race-type="sprint_relay"
+            data-penalty-filter-target="raceTypeBtn"
+            class="px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+            Sprint/Relay
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Penalties table -->
+<div class="card" data-controller="penalty-filter">
+  <div class="table-container border-0 rounded-none">
+    <table class="table">
+      <thead>
+        <tr>
+          <th class="w-24">Category</th>
+          <th class="w-28">Number</th>
+          <th>Penalty Description</th>
+          <th class="w-40">Team/Individual</th>
+          <th class="w-32">Vertical</th>
+          <th class="w-32">Sprint/Relay</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 bg-white">
+        <% if @penalties.any? %>
+          <% current_category = nil %>
+          <% @penalties.each do |penalty| %>
+            <% if current_category != penalty.category %>
+              <% current_category = penalty.category %>
+              <!-- Category Header Row -->
+              <tr class="bg-ismf-navy/5 category-section" data-category="<%= penalty.category %>" data-penalty-filter-target="categorySection">
+                <td colspan="6" class="py-4!">
+                  <div class="flex items-start gap-3">
+                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-ismf-red text-white font-bold text-lg shrink-0">
+                      <%= penalty.category %>
+                    </span>
+                    <div>
+                      <h3 class="font-bold text-ismf-navy text-base"><%= penalty.category_title %></h3>
+                      <% if penalty.respond_to?(:category_description) %>
+                        <p class="text-sm text-ismf-gray mt-1">
+                          <%= Penalty.find(penalty.id).category_description %>
+                        </p>
+                      <% end %>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+            
+            <!-- Penalty Row -->
+            <tr class="hover:bg-gray-50 penalty-card" 
+                data-category="<%= penalty.category %>"
+                data-team-individual="<%= penalty.team_individual.present? ? 'yes' : 'no' %>"
+                data-vertical="<%= penalty.vertical.present? ? 'yes' : 'no' %>"
+                data-sprint-relay="<%= penalty.sprint_relay.present? ? 'yes' : 'no' %>"
+                data-penalty-filter-target="penaltyCard">
+              <td class="text-center">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-ismf-navy font-semibold text-sm">
+                  <%= penalty.category %>
+                </span>
+              </td>
+              <td>
+                <span class="font-mono font-semibold text-ismf-navy">
+                  <%= penalty.penalty_number %>
+                </span>
+              </td>
+              <td>
+                <div class="font-medium text-ismf-navy">
+                  <%= penalty.name %>
+                </div>
+              </td>
+              <td>
+                <% if penalty.team_individual.present? %>
+                  <% if penalty.team_individual == "disqualification" %>
+                    <span class="badge-danger">Disqualification</span>
+                  <% elsif penalty.team_individual == "no start" %>
+                    <span class="badge-warning">No Start</span>
+                  <% else %>
+                    <span class="badge-info"><%= penalty.team_individual %></span>
+                  <% end %>
+                <% else %>
+                  <span class="text-gray-400 text-sm">N/A</span>
+                <% end %>
+              </td>
+              <td>
+                <% if penalty.vertical.present? %>
+                  <% if penalty.vertical == "disqualification" %>
+                    <span class="badge-danger">Disqualification</span>
+                  <% elsif penalty.vertical == "no start" %>
+                    <span class="badge-warning">No Start</span>
+                  <% else %>
+                    <span class="badge-info"><%= penalty.vertical %></span>
+                  <% end %>
+                <% else %>
+                  <span class="text-gray-400 text-sm">N/A</span>
+                <% end %>
+              </td>
+              <td>
+                <% if penalty.sprint_relay.present? %>
+                  <% if penalty.sprint_relay == "disqualification" %>
+                    <span class="badge-danger">Disqualification</span>
+                  <% elsif penalty.sprint_relay == "no start" %>
+                    <span class="badge-warning">No Start</span>
+                  <% else %>
+                    <span class="badge-info"><%= penalty.sprint_relay %></span>
+                  <% end %>
+                <% else %>
+                  <span class="text-gray-400 text-sm">N/A</span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+          <!-- No Results Message -->
+          <tr class="hidden" data-penalty-filter-target="noResults">
+            <td colspan="6" class="text-center py-12">
+              <svg class="mx-auto h-12 w-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-ismf-navy">No penalties match the selected filters</h3>
+              <p class="mt-1 text-sm text-ismf-gray">Try selecting different category or race type filters.</p>
+            </td>
+          </tr>
+        <% else %>
+          <tr class="empty-state">
+            <td colspan="6" class="text-center py-12">
+              <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-ismf-navy">No penalties</h3>
+              <p class="mt-1 text-sm text-ismf-gray">Penalty data has not been seeded yet.</p>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Info Note -->
+<% if @penalties.any? %>
+  <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+    <div class="flex items-start gap-3">
+      <svg class="w-5 h-5 text-blue-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <div class="text-sm">
+        <p class="font-medium text-blue-900">Penalty Reference Data</p>
+        <p class="text-blue-700 mt-1">
+          These penalties are based on official ISMF regulations. Different race types may have different penalty values 
+          or may not apply (shown as N/A). Cumulative penalties may apply where specified in the notes.
+        </p>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<style>
+  .category-section.hidden,
+  .penalty-card.hidden {
+    display: none;
+  }
+</style>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_29_211127) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_29_220332) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -80,6 +80,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_29_211127) do
     t.bigint "user_id", null: false
     t.index ["token"], name: "index_magic_links_on_token", unique: true
     t.index ["user_id"], name: "index_magic_links_on_user_id"
+  end
+
+  create_table "penalties", force: :cascade do |t|
+    t.string "category", limit: 1, null: false
+    t.text "category_description"
+    t.string "category_title", null: false
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.text "notes"
+    t.string "penalty_number", null: false
+    t.string "sprint_relay"
+    t.string "team_individual"
+    t.datetime "updated_at", null: false
+    t.string "vertical"
+    t.index ["category"], name: "index_penalties_on_category"
+    t.index ["penalty_number"], name: "index_penalties_on_penalty_number", unique: true
   end
 
   create_table "race_participations", force: :cascade do |t|

@@ -65,6 +65,10 @@ class AppContainer
     register :race_participation, memoize: true do
       RaceParticipationRepo.new
     end
+
+    register :penalty, memoize: true do
+      PenaltyRepo.new
+    end
   end
 
   # ============================================================================

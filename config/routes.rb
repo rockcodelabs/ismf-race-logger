@@ -9,6 +9,7 @@ Rails.application.routes.draw do
   namespace :admin, module: "web/controllers/admin" do
     root to: "dashboard#index"
     resources :users
+    resources :penalties, only: [:index]
     resources :competitions do
       resources :races do
         resources :participations, only: [:destroy], controller: "races/participations" do
