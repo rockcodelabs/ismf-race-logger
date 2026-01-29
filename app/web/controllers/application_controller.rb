@@ -14,15 +14,15 @@ module Web
       include Concerns::Authentication
       include Pundit::Authorization
 
-      # Explicitly set application layout
-      layout "application"
+      # Dynamic layout selection based on touch mode
+      # This is evaluated per-request, avoiding class-level state contamination
+      layout :select_layout
 
       # Make touch_display? available in views
       helper_method :touch_display?
 
       # Set Turbo Native variant for template selection
       before_action :set_variant
-      before_action :set_touch_layout
 
       # Override controller_path to remove Web::Controllers namespace from view lookup
       # This allows controllers in Web::Controllers namespace to use standard view paths
@@ -124,12 +124,15 @@ module Web
         false
       end
 
-      # Switch to touch layout for touch displays
-      # The touch layout provides larger UI elements optimized for touchscreens
-      def set_touch_layout
-        if touch_display?
-          self.class.layout "touch"
-        end
+      # Select layout dynamically per-request based on device type
+      # This method is called for each request via `layout :select_layout`
+      # and returns the appropriate layout name without modifying class-level state.
+      #
+      # Logic:
+      # - Touch device → "touch" layout
+      # - Desktop device → "application" layout (child controllers can override)
+      def select_layout
+        touch_display? ? "touch" : "application"
       end
 
       # Access the parts factory for wrapping structs with presentation logic
