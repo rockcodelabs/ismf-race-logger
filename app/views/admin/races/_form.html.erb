@@ -1,0 +1,121 @@
+<%= form_with(model: [:admin, @competition, race], class: "space-y-6") do |form| %>
+  <% if @errors.present? %>
+    <div class="flash-alert">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <div>
+        <h3 class="font-medium">Please fix the following errors:</h3>
+        <ul class="mt-1 text-sm list-disc list-inside">
+          <% if @errors.is_a?(Hash) %>
+            <% @errors.each do |field, messages| %>
+              <% messages = [messages] unless messages.is_a?(Array) %>
+              <% messages.each do |message| %>
+                <li><%= field.to_s.humanize %>: <%= message %></li>
+              <% end %>
+            <% end %>
+          <% else %>
+            <li><%= @errors %></li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+    <!-- Race Type -->
+    <div class="sm:col-span-2">
+      <%= form.label :race_type_id, "Race Type", class: "form-label" %>
+      <%= form.select :race_type_id,
+          options_for_select(
+            @race_types.map { |rt| [rt.name, rt.id] },
+            race.respond_to?(:race_type_id) ? race.race_type_id : nil
+          ),
+          { prompt: "Select race type..." },
+          { class: "form-input", required: true } %>
+      <p class="mt-1 text-xs text-ismf-gray">Choose the race format (Individual, Team, Sprint, Vertical, Mixed Relay)</p>
+    </div>
+
+    <!-- Race Name -->
+    <div class="sm:col-span-2">
+      <%= form.label :name, "Race Name", class: "form-label" %>
+      <%= form.text_field :name, 
+          class: "form-input", 
+          placeholder: "Women's Sprint - Qualification",
+          required: true,
+          value: race.respond_to?(:name) ? race.name : nil %>
+      <p class="mt-1 text-xs text-ismf-gray">Descriptive name for this race</p>
+    </div>
+
+    <!-- Stage Type -->
+    <div>
+      <%= form.label :stage_type, "Stage Type", class: "form-label" %>
+      <%= form.select :stage_type,
+          options_for_select(
+            @stage_types,
+            race.respond_to?(:stage_type) ? race.stage_type : nil
+          ),
+          { prompt: "Select stage type..." },
+          { class: "form-input", required: true } %>
+      <p class="mt-1 text-xs text-ismf-gray">Qualification, Heat, Quarterfinal, Semifinal, or Final</p>
+    </div>
+
+    <!-- Heat Number -->
+    <div>
+      <%= form.label :heat_number, "Heat Number (Optional)", class: "form-label" %>
+      <%= form.select :heat_number,
+          options_for_select(
+            [["None", ""]] + @heat_numbers.map { |n| [n.to_s, n] },
+            race.respond_to?(:heat_number) ? race.heat_number : nil
+          ),
+          {},
+          { class: "form-input" } %>
+      <p class="mt-1 text-xs text-ismf-gray">Leave as "None" for single-stage races</p>
+    </div>
+
+    <!-- Scheduled Date/Time -->
+    <div class="sm:col-span-2">
+      <%= form.label :scheduled_at, "Scheduled Date & Time (Optional)", class: "form-label" %>
+      <%= form.datetime_local_field :scheduled_at,
+          class: "form-input",
+          value: race.respond_to?(:scheduled_at) && race.scheduled_at.present? ? race.scheduled_at.strftime("%Y-%m-%dT%H:%M") : nil %>
+      <p class="mt-1 text-xs text-ismf-gray">When the race is scheduled to start (can be changed later)</p>
+    </div>
+
+    <!-- Position (Optional - for manual ordering) -->
+    <% if race.respond_to?(:id) && race.id.present? %>
+      <div>
+        <%= form.label :position, "Position (Order)", class: "form-label" %>
+        <%= form.number_field :position,
+            class: "form-input",
+            min: 0,
+            value: race.position %>
+        <p class="mt-1 text-xs text-ismf-gray">Order within race type group (0-based)</p>
+      </div>
+
+      <!-- Status (only for existing races) -->
+      <div>
+        <%= form.label :status, class: "form-label" %>
+        <%= form.select :status,
+            options_for_select(
+              [
+                ["Scheduled", "scheduled"],
+                ["In Progress", "in_progress"],
+                ["Completed", "completed"],
+                ["Cancelled", "cancelled"]
+              ],
+              race.status
+            ),
+            {},
+            { class: "form-input" } %>
+        <p class="mt-1 text-xs text-ismf-gray">Current race status</p>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Form actions -->
+  <div class="flex items-center justify-end gap-4 pt-6 border-t border-gray-200">
+    <%= link_to "Cancel", admin_competition_races_path(@competition), class: "btn-secondary" %>
+    <%= form.submit race.respond_to?(:id) && race.id.present? ? "Update Race" : "Create Race", class: "btn-primary" %>
+  </div>
+<% end %>

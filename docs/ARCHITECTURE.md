@@ -1567,3 +1567,75 @@ When creating a new feature:
 **Architecture Version**: 2.0
 **Last Updated**: 2025
 **Status**: Approved
+
+
+
+
+---
+
+## 📋 Complete Requirements Summary
+
+Let me summarize everything we've discussed:
+
+### **Race Types** (Predefined - Seeded Data)
+- Individual
+- Team  
+- Sprint
+- Vertical
+- Mixed Relay
+- *(Full CRUD to be added later)*
+
+### **Race Management - Desktop Admin**
+
+**Permissions:**
+- ✅ Admins can: Create, Edit, Delete
+- ✅ VAR Operators can: Create, Edit, Delete
+- ❌ Referees: No access (for now)
+
+**Context:** Races managed within competition detail page
+
+**Race Form Fields:**
+1. **Competition** - implicit (already in context)
+2. **Race Type** - dropdown (Individual, Team, Sprint, Vertical, Mixed Relay)
+3. **Name** - text (e.g., "Women's Sprint - Qualification")
+4. **Stage Type** - dropdown (Qualification, Heat, Quarterfinal, Semifinal, Final)
+5. **Heat Number** - optional number (1-10, displays as "Semifinal 2")
+6. **Scheduled At** - optional datetime (last-minute changes allowed)
+7. **Position** - auto-assigned (for ordering)
+8. **Status** - enum (scheduled, in_progress, completed, cancelled)
+
+**Race List Display:**
+- Grouped by race type (Sprint section, Individual section, etc.)
+- Ordered by schedule within each group (chronological)
+- Show: name, stage, scheduled time, status badge, participant count
+- Actions: Edit, Delete, View Details
+
+**Editing Restrictions:**
+- ❌ Can't change race type if participants exist
+- ❌ Can't edit completed races (read-only)
+- ✅ Can always change: scheduled_at, name, stage, position
+
+**Deletion:**
+- ✅ Can delete anytime (even with participants)
+
+**Status Workflow:**
+- Default: **scheduled**
+- Auto: **scheduled → in_progress** (when scheduled_at time arrives)
+- Manual: **→ cancelled** (anytime)
+- Auto: **in_progress → completed** (midnight after competition.end_date)
+- Manual: **→ completed** (anytime)
+
+### **Touch Display** (Read-Only)
+- Race index (list view)
+- Race detail view
+- No create/edit forms
+
+### **Deferred Features**
+- Race locations (will implement with templates later)
+- Race type CRUD (predefined for now)
+
+---
+
+## 🎯 Ready to Implement?
+
+Does this summary match your vision? If yes, I'll create an implementation plan with the components we need to build (models, structs, repos, operations, controllers, views, etc.) following the Hanami-hybrid architecture.

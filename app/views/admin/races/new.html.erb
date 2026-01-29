@@ -1,0 +1,80 @@
+<div class="space-y-6">
+  <!-- Page header with breadcrumb -->
+  <div class="space-y-2">
+    <nav class="flex text-sm text-gray-500">
+      <%= link_to "Competitions", admin_competitions_path, class: "hover:text-ismf-blue" %>
+      <span class="mx-2">/</span>
+      <%= link_to @competition.name, admin_competition_path(@competition), class: "hover:text-ismf-blue" %>
+      <span class="mx-2">/</span>
+      <%= link_to "Races", admin_competition_races_path(@competition), class: "hover:text-ismf-blue" %>
+      <span class="mx-2">/</span>
+      <span class="text-ismf-navy font-medium">New Race</span>
+    </nav>
+
+    <div>
+      <h1 class="text-2xl font-bold text-ismf-navy">Create New Race</h1>
+      <p class="mt-1 text-sm text-ismf-gray">
+        Add a new race to <%= @competition.name %>
+      </p>
+    </div>
+  </div>
+
+  <!-- Competition info card -->
+  <div class="card bg-gradient-to-r from-ismf-blue to-blue-600 text-white">
+    <div class="p-4">
+      <div class="flex items-center gap-4">
+        <div>
+          <div class="text-sm opacity-75">Competition</div>
+          <div class="text-lg font-semibold"><%= @competition.name %></div>
+        </div>
+        <div class="h-10 w-px bg-white/20"></div>
+        <div>
+          <div class="text-sm opacity-75">Dates</div>
+          <div class="text-lg font-semibold"><%= @competition.short_date_range %></div>
+        </div>
+        <div class="h-10 w-px bg-white/20"></div>
+        <div>
+          <div class="text-sm opacity-75">Location</div>
+          <div class="text-lg font-semibold"><%= @competition.place %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form card -->
+  <div class="card">
+    <div class="px-6 py-5 border-b border-gray-200 bg-gray-50">
+      <h3 class="text-lg font-medium text-ismf-navy">Race Details</h3>
+      <p class="mt-1 text-sm text-ismf-gray">
+        Fill in the race information. Stage name will be automatically generated from stage type and heat number.
+      </p>
+    </div>
+    <div class="p-6">
+      <%= render "form", race: OpenStruct.new %>
+    </div>
+  </div>
+
+  <!-- Help card -->
+  <div class="card border-l-4 border-blue-500">
+    <div class="p-4">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-blue-800">Tips for creating races</h3>
+          <div class="mt-2 text-sm text-blue-700">
+            <ul class="list-disc list-inside space-y-1">
+              <li><strong>Stage Type:</strong> Choose Qualification, Heat, Quarterfinal, Semifinal, or Final</li>
+              <li><strong>Heat Number:</strong> Only needed for multi-heat stages (e.g., Semifinal 1, Semifinal 2)</li>
+              <li><strong>Scheduled Time:</strong> Optional - can be set later when exact timing is confirmed</li>
+              <li><strong>Position:</strong> Automatically assigned based on race type and schedule</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

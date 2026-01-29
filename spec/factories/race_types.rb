@@ -2,24 +2,32 @@
 
 FactoryBot.define do
   factory :race_type do
-    trait :individual do
-      name { "individual" }
-      description { "Individual race" }
+    name { "Individual" }
+    description { "Individual race format" }
+
+    factory :race_type_individual do
+      name { "Individual" }
+      description { "Individual race format" }
     end
 
-    trait :sprint do
-      name { "sprint" }
-      description { "Sprint race" }
+    factory :race_type_team do
+      name { "Team" }
+      description { "Team race format (2 athletes)" }
     end
 
-    trait :vertical do
-      name { "vertical" }
-      description { "Vertical race" }
+    factory :race_type_sprint do
+      name { "Sprint" }
+      description { "Sprint race format with heats" }
     end
 
-    trait :relay do
-      name { "relay" }
-      description { "Relay race" }
+    factory :race_type_vertical do
+      name { "Vertical" }
+      description { "Vertical race format" }
+    end
+
+    factory :race_type_relay do
+      name { "Mixed Relay" }
+      description { "Mixed relay race format" }
     end
   end
 end

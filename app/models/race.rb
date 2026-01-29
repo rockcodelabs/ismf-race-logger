@@ -8,9 +8,9 @@
 #
 # Example:
 #   Competition: "World Cup Verbier 2024"
-#     Race 1: "Individual Qualification" (race_type: individual, stage: qualification)
-#     Race 2: "Individual Final" (race_type: individual, stage: final)
-#     Race 3: "Sprint Qualification" (race_type: sprint, stage: qualification)
+#     Race 1: "Individual Qualification" (race_type: individual, stage_type: qualification)
+#     Race 2: "Individual Final" (race_type: individual, stage_type: final)
+#     Race 3: "Sprint Qualification" (race_type: sprint, stage_type: qualification)
 #
 # Associations:
 # - belongs_to :competition

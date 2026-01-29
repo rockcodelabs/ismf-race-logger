@@ -11,15 +11,17 @@ module Structs
   #     id: 1,
   #     competition_id: 1,
   #     race_type_id: 1,
-  #     name: "Individual Qualification",
-  #     stage: "qualification",
-  #     start_time: Time.current + 2.hours,
+  #     name: "Women's Sprint - Qualification",
+  #     stage_type: "qualification",
+  #     heat_number: nil,
+  #     stage_name: "Qualification",
+  #     scheduled_at: Time.current + 2.hours,
   #     position: 1,
   #     status: "scheduled",
-  #     race_type_name: "individual"
+  #     race_type_name: "Sprint"
   #   )
   #
-  #   race.display_name    # => "Individual - Qualification"
+  #   race.display_name    # => "Sprint - Qualification"
   #   race.scheduled?      # => true
   #   race.in_progress?    # => false
   #
@@ -29,26 +31,31 @@ module Structs
     attribute :competition_id, Types::Integer
     attribute :race_type_id, Types::Integer
     attribute :name, Types::String
-    attribute :stage, Types::RaceStage
-    attribute :start_time, Types::FlexibleDateTime
+    attribute :stage_type, Types::String
+    attribute :stage_name, Types::String
     attribute :position, Types::Integer
     attribute :status, Types::RaceStatus
-    attribute :created_at, Types::FlexibleDateTime
-    attribute :updated_at, Types::FlexibleDateTime
+    attribute :created_at, Types::Time
+    attribute :updated_at, Types::Time
+
+    # Optional attributes
+    attribute? :heat_number, Types::Integer.optional
+    attribute? :scheduled_at, Types::Time.optional
 
     # Optional attributes (from joins/eager loading)
     attribute? :race_type_name, Types::String.optional
+    attribute? :competition_name, Types::String.optional
 
     # =========================================================================
     # Display methods
     # =========================================================================
 
     def display_name
-      "#{race_type_name&.titleize || 'Race'} - #{stage.titleize}"
+      name
     end
 
     def stage_display
-      stage.titleize
+      stage_name
     end
 
     def short_name
@@ -56,15 +63,27 @@ module Structs
     end
 
     def stage_abbrev
-      case stage
+      case stage_type.downcase
       when "qualification"
-        "Q"
+        heat_number ? "Q#{heat_number}" : "Q"
+      when "heat"
+        heat_number ? "H#{heat_number}" : "H"
+      when "quarterfinal"
+        heat_number ? "QF#{heat_number}" : "QF"
       when "semifinal"
-        "SF"
+        heat_number ? "SF#{heat_number}" : "SF"
       when "final"
-        "F"
+        heat_number ? "F#{heat_number}" : "F"
       else
-        stage[0].upcase
+        stage_type[0].upcase
+      end
+    end
+
+    def full_stage_name
+      if heat_number
+        "#{stage_type.titleize} #{heat_number}"
+      else
+        stage_type.titleize
       end
     end
 
@@ -89,11 +108,15 @@ module Structs
     end
 
     def can_start?
-      scheduled? && start_time <= Time.current
+      scheduled? && scheduled_at.present? && scheduled_at <= Time.current
     end
 
     def can_report?
       in_progress?
+    end
+
+    def can_edit?
+      !completed?
     end
 
     # =========================================================================
@@ -105,24 +128,36 @@ module Structs
     end
 
     def upcoming?
-      scheduled? && start_time > Time.current
+      scheduled? && scheduled_at.present? && scheduled_at > Time.current
+    end
+
+    def scheduled_today?
+      scheduled_at.present? && scheduled_at.to_date == Date.current
     end
 
     def minutes_until_start
+      return 0 unless scheduled_at.present?
       return 0 if started?
-      ((start_time - Time.current) / 60).to_i
+      ((scheduled_at - Time.current) / 60).to_i
     end
 
-    def formatted_start_time
-      start_time.strftime("%H:%M")
+    def formatted_scheduled_time
+      return "Not scheduled" unless scheduled_at.present?
+      scheduled_at.strftime("%H:%M")
     end
 
-    def formatted_start_datetime
-      start_time.strftime("%b %d, %Y %H:%M")
+    def formatted_scheduled_datetime
+      return "Not scheduled" unless scheduled_at.present?
+      scheduled_at.strftime("%b %d, %Y %H:%M")
+    end
+
+    def formatted_scheduled_date
+      return "Not scheduled" unless scheduled_at.present?
+      scheduled_at.strftime("%b %d, %Y")
     end
 
     # =========================================================================
-    # Badge styling
+    # Badge styling (for Tailwind CSS)
     # =========================================================================
 
     def status_badge_class
@@ -130,12 +165,18 @@ module Structs
       when "scheduled"
         "bg-blue-100 text-blue-800"
       when "in_progress"
-        "bg-green-100 text-green-800"
+        "bg-green-100 text-green-800 animate-pulse"
       when "completed"
         "bg-gray-100 text-gray-800"
       when "cancelled"
         "bg-red-100 text-red-800"
+      else
+        "bg-gray-100 text-gray-800"
       end
+    end
+
+    def status_text
+      status.titleize
     end
   end
 end

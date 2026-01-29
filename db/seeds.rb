@@ -8,8 +8,41 @@ puts "Seeding database..."
 
 # Create all roles first
 puts "Creating roles..."
-Role.seed_all!
+roles_data = [
+  "var_operator",
+  "national_referee",
+  "international_referee",
+  "jury_president",
+  "referee_manager",
+  "broadcast_viewer"
+]
+
+roles_data.each do |role_name|
+  role = Role.find_or_create_by(name: role_name)
+  puts "  ✓ #{role.name}"
+end
 puts "✅ Created #{Role.count} roles"
+
+# Create race types
+puts "Creating race types..."
+race_types_data = [
+  { name: "Individual", description: "Individual race format" },
+  { name: "Team", description: "Team race format (2 athletes)" },
+  { name: "Sprint", description: "Sprint race format with heats" },
+  { name: "Vertical", description: "Vertical race format" },
+  { name: "Mixed Relay", description: "Mixed relay race format" }
+]
+
+race_types_data.each do |race_type_data|
+  race_type = RaceType.find_or_initialize_by(name: race_type_data[:name])
+  race_type.assign_attributes(description: race_type_data[:description])
+  if race_type.save
+    puts "  ✓ #{race_type.name}"
+  else
+    puts "  ✗ Failed to create #{race_type_data[:name]}: #{race_type.errors.full_messages.join(', ')}"
+  end
+end
+puts "✅ Created #{RaceType.count} race types"
 
 # Get roles for assignment
 referee_manager_role = Role.find_by(name: "referee_manager")
@@ -106,7 +139,8 @@ end
 puts ""
 puts "Seeding completed!"
 puts "  Total roles: #{Role.count}"
+puts "  Total race types: #{RaceType.count}"
 puts "  Total users: #{User.count}"
-puts "  Admin users: #{User.admins.count}"
-puts "  Referees: #{User.referees.count}"
-puts "  VAR operators: #{User.var_operators.count}"
+puts "  Admin users: #{User.where(admin: true).count}"
+puts "  Referees: #{User.joins(:role).where(roles: { name: ['national_referee', 'international_referee'] }).count}"
+puts "  VAR operators: #{User.joins(:role).where(roles: { name: 'var_operator' }).count}"

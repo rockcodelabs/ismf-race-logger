@@ -21,6 +21,12 @@ module Web
         def select_layout
           touch_display? ? "touch" : "admin"
         end
+
+        # Access to parts factory for wrapping structs with presentation logic
+        def parts_factory
+          @parts_factory ||= AppContainer["parts.factory"]
+        end
+        helper_method :parts_factory
       end
     end
   end

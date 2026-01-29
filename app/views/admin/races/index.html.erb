@@ -1,0 +1,177 @@
+<div class="space-y-6">
+  <!-- Page header with breadcrumb -->
+  <div class="space-y-2">
+    <nav class="flex text-sm text-gray-500">
+      <%= link_to "Competitions", admin_competitions_path, class: "hover:text-ismf-blue" %>
+      <span class="mx-2">/</span>
+      <%= link_to @competition.name, admin_competition_path(@competition), class: "hover:text-ismf-blue" %>
+      <span class="mx-2">/</span>
+      <span class="text-ismf-navy font-medium">Races</span>
+    </nav>
+
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-ismf-navy"><%= @competition.name %> - Races</h1>
+        <p class="mt-1 text-sm text-ismf-gray">
+          Manage races for this competition • <%= @races.count %> race<%= 's' if @races.count != 1 %>
+        </p>
+      </div>
+      <%= link_to new_admin_competition_race_path(@competition), class: "btn-primary whitespace-nowrap" do %>
+        <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+        <span>Add Race</span>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Competition summary card -->
+  <div class="card bg-gradient-to-r from-ismf-blue to-blue-600 text-white">
+    <div class="p-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div>
+            <div class="text-sm opacity-75">Competition Period</div>
+            <div class="text-lg font-semibold"><%= @competition.short_date_range %></div>
+          </div>
+          <div class="h-10 w-px bg-white/20"></div>
+          <div>
+            <div class="text-sm opacity-75">Location</div>
+            <div class="text-lg font-semibold"><%= @competition.place %>, <%= @competition.country_name %></div>
+          </div>
+        </div>
+        <%= link_to admin_competition_path(@competition), class: "text-white hover:text-blue-100 flex items-center gap-1 text-sm" do %>
+          <span>View Competition</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Races grouped by race type -->
+  <% if @races.any? %>
+    <% @races_by_type.each do |race_type_name, races| %>
+      <div class="card">
+        <!-- Race type header -->
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-lg font-bold text-ismf-navy"><%= race_type_name %></h2>
+                <p class="text-sm text-ismf-gray"><%= races.count %> race<%= 's' if races.count != 1 %></p>
+              </div>
+            </div>
+            <span class="px-3 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+              <%= race_type_name %>
+            </span>
+          </div>
+        </div>
+
+        <!-- Races table -->
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Race
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Stage
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Scheduled
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <% races.each do |race| %>
+                <% race_part = parts_factory.wrap(race) %>
+                <tr class="hover:bg-gray-50 transition-colors" id="<%= race_part.dom_id %>">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-2">
+                      <%= race_part.status_dot %>
+                      <div>
+                        <div class="text-sm font-medium text-ismf-navy">
+                          <%= race.name %>
+                        </div>
+                        <div class="text-xs text-gray-500">
+                          Position: #<%= race.position + 1 %>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="text-sm text-ismf-gray">
+                      <%= race_part.stage_display_with_icon %>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="text-sm text-ismf-gray">
+                      <% if race.scheduled_at.present? %>
+                        <div class="font-medium"><%= race.formatted_scheduled_time %></div>
+                        <div class="text-xs text-gray-500"><%= race.formatted_scheduled_date %></div>
+                      <% else %>
+                        <span class="text-gray-400 italic">Not scheduled</span>
+                      <% end %>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <%= race_part.status_badge %>
+                  </td>
+                  <td class="px-6 py-4 text-right text-sm font-medium space-x-3">
+                    <%= link_to "View", admin_competition_race_path(@competition, race), 
+                        class: "text-blue-600 hover:text-blue-900" %>
+                    <% if race.can_edit? %>
+                      <%= link_to "Edit", edit_admin_competition_race_path(@competition, race), 
+                          class: "text-indigo-600 hover:text-indigo-900" %>
+                    <% end %>
+                    <%= link_to "Delete", admin_competition_race_path(@competition, race),
+                        data: { 
+                          turbo_method: :delete,
+                          turbo_confirm: "Are you sure you want to delete '#{race.name}'?" 
+                        },
+                        class: "text-red-600 hover:text-red-900" %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    <% end %>
+  <% else %>
+    <!-- Empty state -->
+    <div class="card">
+      <div class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-ismf-navy">No races yet</h3>
+        <p class="mt-1 text-sm text-ismf-gray">
+          Get started by creating the first race for this competition.
+        </p>
+        <div class="mt-6">
+          <%= link_to new_admin_competition_race_path(@competition), class: "btn-primary whitespace-nowrap" do %>
+            <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span>Add First Race</span>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_29_161754) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_29_191427) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -80,17 +80,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_29_161754) do
   create_table "races", force: :cascade do |t|
     t.bigint "competition_id", null: false
     t.datetime "created_at", null: false
+    t.integer "heat_number"
     t.string "name", null: false
     t.integer "position", default: 0, null: false
     t.bigint "race_type_id", null: false
-    t.string "stage", null: false
-    t.datetime "start_time", null: false
+    t.datetime "scheduled_at"
+    t.string "stage_name", null: false
+    t.string "stage_type", null: false
     t.string "status", default: "scheduled", null: false
     t.datetime "updated_at", null: false
     t.index ["competition_id", "position"], name: "index_races_on_competition_id_and_position"
     t.index ["competition_id"], name: "index_races_on_competition_id"
     t.index ["race_type_id"], name: "index_races_on_race_type_id"
-    t.index ["start_time"], name: "index_races_on_start_time"
+    t.index ["scheduled_at"], name: "index_races_on_scheduled_at"
     t.index ["status"], name: "index_races_on_status"
   end
 

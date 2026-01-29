@@ -20,34 +20,14 @@ module Structs
     :competition_id,
     :race_type_id,
     :name,
-    :stage,
-    :start_time,
-    :position,
+    :stage_name,
+    :scheduled_at,
     :status,
     :race_type_name
   ) do
-    # Display name combining race type and stage
+    # Display name is just the race name
     def display_name
-      "#{race_type_name&.titleize || 'Race'} - #{stage.titleize}"
-    end
-
-    # Short name with abbreviation
-    def short_name
-      "#{race_type_name&.titleize || 'Race'} #{stage_abbrev}"
-    end
-
-    # Stage abbreviation
-    def stage_abbrev
-      case stage
-      when "qualification"
-        "Q"
-      when "semifinal"
-        "SF"
-      when "final"
-        "F"
-      else
-        stage[0].upcase
-      end
+      name
     end
 
     # Status predicates
@@ -67,9 +47,23 @@ module Structs
       status == "cancelled"
     end
 
+    def can_edit?
+      !completed?
+    end
+
     # Time formatting
-    def formatted_start_time
-      start_time.strftime("%H:%M")
+    def formatted_scheduled_time
+      return "Not scheduled" unless scheduled_at.present?
+      scheduled_at.strftime("%H:%M")
+    end
+
+    def formatted_scheduled_date
+      return "Not scheduled" unless scheduled_at.present?
+      scheduled_at.strftime("%b %d, %Y")
+    end
+
+    def scheduled_today?
+      scheduled_at.present? && scheduled_at.to_date == Date.current
     end
 
     # Badge styling for status
@@ -78,12 +72,18 @@ module Structs
       when "scheduled"
         "bg-blue-100 text-blue-800"
       when "in_progress"
-        "bg-green-100 text-green-800"
+        "bg-green-100 text-green-800 animate-pulse"
       when "completed"
         "bg-gray-100 text-gray-800"
       when "cancelled"
         "bg-red-100 text-red-800"
+      else
+        "bg-gray-100 text-gray-800"
       end
+    end
+
+    def status_text
+      status.titleize
     end
   end
 end

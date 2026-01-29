@@ -8,7 +8,7 @@ RSpec.describe Race do
     it { is_expected.to belong_to(:race_type) }
   end
 
-  describe "model is thin" do
+  describe "model is thin (Hanami-hybrid architecture)" do
     it "has no scopes defined" do
       # Race model should have no scopes - all query logic belongs in RaceRepo
       expect(described_class).not_to respond_to(:ordered)
@@ -27,6 +27,7 @@ RSpec.describe Race do
       expect(race).not_to respond_to(:in_progress?)
       expect(race).not_to respond_to(:completed?)
       expect(race).not_to respond_to(:can_start?)
+      expect(race).not_to respond_to(:can_edit?)
     end
 
     it "has no custom class methods beyond Rails defaults" do
@@ -43,8 +44,10 @@ RSpec.describe Race do
     it { is_expected.to have_db_column(:competition_id).of_type(:integer) }
     it { is_expected.to have_db_column(:race_type_id).of_type(:integer) }
     it { is_expected.to have_db_column(:name).of_type(:string) }
-    it { is_expected.to have_db_column(:stage).of_type(:string) }
-    it { is_expected.to have_db_column(:start_time).of_type(:datetime) }
+    it { is_expected.to have_db_column(:stage_type).of_type(:string) }
+    it { is_expected.to have_db_column(:stage_name).of_type(:string) }
+    it { is_expected.to have_db_column(:heat_number).of_type(:integer) }
+    it { is_expected.to have_db_column(:scheduled_at).of_type(:datetime) }
     it { is_expected.to have_db_column(:position).of_type(:integer) }
     it { is_expected.to have_db_column(:status).of_type(:string) }
     it { is_expected.to have_db_column(:created_at).of_type(:datetime) }
@@ -54,7 +57,7 @@ RSpec.describe Race do
   describe "database indexes" do
     it { is_expected.to have_db_index([:competition_id, :position]) }
     it { is_expected.to have_db_index(:status) }
-    it { is_expected.to have_db_index(:start_time) }
+    it { is_expected.to have_db_index(:scheduled_at) }
   end
 
   describe "default values" do
@@ -66,6 +69,30 @@ RSpec.describe Race do
     it "has default position of 0" do
       race = described_class.new
       expect(race.position).to eq(0)
+    end
+  end
+
+  describe "data integrity" do
+    subject(:race) { create(:race) }
+
+    it "requires a competition" do
+      race.competition = nil
+      expect(race).not_to be_valid
+    end
+
+    it "requires a race_type" do
+      race.race_type = nil
+      expect(race).not_to be_valid
+    end
+
+    it "allows nullable scheduled_at (can be set later)" do
+      race.scheduled_at = nil
+      expect(race).to be_valid
+    end
+
+    it "allows nullable heat_number (for single-stage races)" do
+      race.heat_number = nil
+      expect(race).to be_valid
     end
   end
 end

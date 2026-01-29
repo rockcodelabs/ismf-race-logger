@@ -46,9 +46,11 @@ module IsmfRaceLogger
 
     # Race stages
     RaceStage = Strict::String.enum(
-      "qualification",
-      "semifinal",
-      "final"
+      "Qualification",
+      "Heat",
+      "Quarterfinal",
+      "Semifinal",
+      "Final"
     )
 
     # Race statuses

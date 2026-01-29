@@ -1,0 +1,317 @@
+<div class="space-y-6">
+  <!-- Page header with breadcrumb -->
+  <div class="space-y-2">
+    <nav class="flex text-sm text-gray-500">
+      <%= link_to "Competitions", admin_competitions_path, class: "hover:text-ismf-blue" %>
+      <span class="mx-2">/</span>
+      <%= link_to @competition.name, admin_competition_path(@competition), class: "hover:text-ismf-blue" %>
+      <span class="mx-2">/</span>
+      <%= link_to "Races", admin_competition_races_path(@competition), class: "hover:text-ismf-blue" %>
+      <span class="mx-2">/</span>
+      <span class="text-ismf-navy font-medium"><%= @race.name %></span>
+    </nav>
+
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-ismf-navy"><%= @race.name %></h1>
+        <p class="mt-1 text-sm text-ismf-gray">
+          <%= @race.race_type_name %> • <%= @race.stage_name %>
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <%= link_to admin_competition_races_path(@competition), class: "btn-secondary" do %>
+          <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>Back to Races</span>
+        <% end %>
+        <% if @race.can_edit? %>
+          <%= link_to edit_admin_competition_race_path(@competition, @race), class: "btn-primary" do %>
+            <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            <span>Edit Race</span>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Competition context card -->
+  <div class="card bg-gradient-to-r from-ismf-blue to-blue-600 text-white">
+    <div class="p-4">
+      <div class="flex items-center gap-4">
+        <div>
+          <div class="text-sm opacity-75">Competition</div>
+          <div class="text-lg font-semibold"><%= @competition.name %></div>
+        </div>
+        <div class="h-10 w-px bg-white/20"></div>
+        <div>
+          <div class="text-sm opacity-75">Dates</div>
+          <div class="text-lg font-semibold"><%= @competition.short_date_range %></div>
+        </div>
+        <div class="h-10 w-px bg-white/20"></div>
+        <div>
+          <div class="text-sm opacity-75">Location</div>
+          <div class="text-lg font-semibold"><%= @competition.place %>, <%= @competition.country_name %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Race details grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main info card -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Race information -->
+      <div class="card">
+        <div class="px-6 py-5 border-b border-gray-200 bg-gray-50">
+          <h3 class="text-lg font-medium text-ismf-navy">Race Information</h3>
+        </div>
+        <div class="p-6">
+          <dl class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <!-- Race Type -->
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Race Type</dt>
+              <dd class="mt-1 text-sm text-ismf-navy">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                  <%= @race.race_type_name %>
+                </span>
+              </dd>
+            </div>
+
+            <!-- Stage -->
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Stage</dt>
+              <dd class="mt-1 text-sm text-ismf-navy font-medium">
+                <% race_part = parts_factory.wrap(@race) %>
+                <%= race_part.stage_display_with_icon %>
+              </dd>
+            </div>
+
+            <!-- Stage Type -->
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Stage Type</dt>
+              <dd class="mt-1 text-sm text-ismf-navy"><%= @race.stage_type %></dd>
+            </div>
+
+            <!-- Heat Number -->
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Heat Number</dt>
+              <dd class="mt-1 text-sm text-ismf-navy">
+                <% if @race.heat_number.present? %>
+                  Heat <%= @race.heat_number %>
+                <% else %>
+                  <span class="text-gray-400 italic">Single stage (no heat number)</span>
+                <% end %>
+              </dd>
+            </div>
+
+            <!-- Position -->
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Position (Order)</dt>
+              <dd class="mt-1 text-sm text-ismf-navy">
+                <span class="inline-flex items-center justify-center w-8 h-8 text-sm font-bold text-gray-600 bg-gray-200 rounded-full">
+                  #<%= @race.position + 1 %>
+                </span>
+              </dd>
+            </div>
+
+            <!-- Status -->
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Status</dt>
+              <dd class="mt-1">
+                <%= race_part.status_badge %>
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <!-- Schedule information -->
+      <div class="card">
+        <div class="px-6 py-5 border-b border-gray-200 bg-gray-50">
+          <h3 class="text-lg font-medium text-ismf-navy">Schedule</h3>
+        </div>
+        <div class="p-6">
+          <% if @race.scheduled_at.present? %>
+            <dl class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <!-- Full Date/Time -->
+              <div class="sm:col-span-2">
+                <dt class="text-sm font-medium text-gray-500">Scheduled Date & Time</dt>
+                <dd class="mt-1 text-lg font-semibold text-ismf-navy">
+                  <%= @race.formatted_scheduled_datetime %>
+                </dd>
+              </div>
+
+              <!-- Time only -->
+              <div>
+                <dt class="text-sm font-medium text-gray-500">Start Time</dt>
+                <dd class="mt-1 text-sm text-ismf-navy font-medium">
+                  <%= race_part.formatted_scheduled_time_with_icon %>
+                </dd>
+              </div>
+
+              <!-- Date only -->
+              <div>
+                <dt class="text-sm font-medium text-gray-500">Race Date</dt>
+                <dd class="mt-1 text-sm text-ismf-navy">
+                  <%= @race.formatted_scheduled_date %>
+                </dd>
+              </div>
+
+              <!-- Time until start -->
+              <% unless @race.started? %>
+                <div class="sm:col-span-2">
+                  <dt class="text-sm font-medium text-gray-500">Time Until Start</dt>
+                  <dd class="mt-1 text-sm text-ismf-navy font-medium">
+                    <%= race_part.time_until_start %>
+                  </dd>
+                </div>
+              <% end %>
+            </dl>
+          <% else %>
+            <div class="text-center py-8">
+              <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-ismf-navy">No schedule set</h3>
+              <p class="mt-1 text-sm text-ismf-gray">
+                This race doesn't have a scheduled start time yet.
+              </p>
+              <% if @race.can_edit? %>
+                <div class="mt-4">
+                  <%= link_to "Set Schedule", edit_admin_competition_race_path(@competition, @race), class: "btn-primary" %>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Metadata -->
+      <div class="card">
+        <div class="px-6 py-5 border-b border-gray-200 bg-gray-50">
+          <h3 class="text-lg font-medium text-ismf-navy">Metadata</h3>
+        </div>
+        <div class="p-6">
+          <dl class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <!-- Created -->
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Created</dt>
+              <dd class="mt-1 text-sm text-ismf-navy">
+                <%= @race.created_at.strftime("%B %d, %Y at %H:%M") %>
+              </dd>
+            </div>
+
+            <!-- Last Updated -->
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Last Updated</dt>
+              <dd class="mt-1 text-sm text-ismf-navy">
+                <%= @race.updated_at.strftime("%B %d, %Y at %H:%M") %>
+              </dd>
+            </div>
+
+            <!-- Race ID -->
+            <div class="sm:col-span-2">
+              <dt class="text-sm font-medium text-gray-500">Race ID</dt>
+              <dd class="mt-1 text-sm text-ismf-gray font-mono">
+                <%= @race.id %>
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- Quick actions -->
+      <div class="card">
+        <div class="px-6 py-5 border-b border-gray-200 bg-gray-50">
+          <h3 class="text-lg font-medium text-ismf-navy">Quick Actions</h3>
+        </div>
+        <div class="p-4 space-y-2">
+          <% if @race.can_edit? %>
+            <%= link_to edit_admin_competition_race_path(@competition, @race), class: "flex items-center w-full px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" do %>
+              <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Edit Race Details
+            <% end %>
+          <% end %>
+
+          <%= link_to admin_competition_races_path(@competition), class: "flex items-center w-full px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" do %>
+            <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+            View All Races
+          <% end %>
+
+          <%= link_to admin_competition_path(@competition), class: "flex items-center w-full px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" do %>
+            <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+            </svg>
+            View Competition
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Race stats (placeholder for future) -->
+      <div class="card">
+        <div class="px-6 py-5 border-b border-gray-200 bg-gray-50">
+          <h3 class="text-lg font-medium text-ismf-navy">Race Statistics</h3>
+        </div>
+        <div class="p-6">
+          <div class="text-center space-y-4">
+            <div>
+              <div class="text-3xl font-bold text-ismf-navy">0</div>
+              <div class="text-sm text-gray-500">Participants</div>
+            </div>
+            <div>
+              <div class="text-3xl font-bold text-ismf-navy">0</div>
+              <div class="text-sm text-gray-500">Reports</div>
+            </div>
+            <div>
+              <div class="text-3xl font-bold text-ismf-navy">0</div>
+              <div class="text-sm text-gray-500">Incidents</div>
+            </div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-gray-200">
+            <p class="text-xs text-center text-gray-500 italic">
+              Statistics will be available once participants are registered
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status info -->
+      <div class="card border-l-4 <%= @race.status == 'scheduled' ? 'border-blue-500' : @race.status == 'in_progress' ? 'border-green-500' : @race.status == 'completed' ? 'border-gray-500' : 'border-red-500' %>">
+        <div class="p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <span class="text-2xl">
+                <%= race_part.status_icon %>
+              </span>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-gray-800">Race Status: <%= @race.status.titleize %></h3>
+              <div class="mt-2 text-sm text-gray-600">
+                <% case @race.status %>
+                <% when "scheduled" %>
+                  <p>This race is scheduled and waiting to start.</p>
+                <% when "in_progress" %>
+                  <p>This race is currently in progress.</p>
+                <% when "completed" %>
+                  <p>This race has been completed. It cannot be edited.</p>
+                <% when "cancelled" %>
+                  <p>This race has been cancelled.</p>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

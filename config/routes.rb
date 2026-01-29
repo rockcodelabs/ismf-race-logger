@@ -9,7 +9,9 @@ Rails.application.routes.draw do
   namespace :admin, module: "web/controllers/admin" do
     root to: "dashboard#index"
     resources :users
-    resources :competitions
+    resources :competitions do
+      resources :races
+    end
   end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

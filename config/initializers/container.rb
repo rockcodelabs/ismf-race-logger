@@ -49,6 +49,14 @@ class AppContainer
     register :competition, memoize: true do
       CompetitionRepo.new
     end
+
+    register :race, memoize: true do
+      RaceRepo.new
+    end
+
+    register :race_type, memoize: true do
+      RaceTypeRepo.new
+    end
   end
 
   # ============================================================================
