@@ -290,26 +290,44 @@ body.touch-mode textarea {
   background: #15803d;
 }
 
-/* Shift key */
-.simple-keyboard .hg-button-shift {
-  background: #8e44ad;
+/* Hide key */
+.simple-keyboard .hg-button-hide {
+  background: #dc2626;
+  flex-grow: 2;
 }
 
-.simple-keyboard .hg-button-shift:active,
-.simple-keyboard .hg-button-shift.hg-activeButton {
-  background: #9b59b6;
-  border-color: #fff;
+.simple-keyboard .hg-button-hide:active {
+  background: #b91c1c;
+}
+
+/* Preview display */
+.keyboard-preview-button {
+  background: #1e293b !important;
+  color: #94a3b8 !important;
+  font-family: monospace;
+  font-size: 1rem !important;
+  text-align: left !important;
+  padding-left: 1rem !important;
+  flex-grow: 3 !important;
+  cursor: default !important;
+  border-color: #334155 !important;
+}
+
+.keyboard-preview-button:active {
+  transform: none !important;
+  background: #1e293b !important;
+  box-shadow: none !important;
 }
 
 /* Space bar - takes up more room */
 .simple-keyboard .hg-button-space {
-  flex-grow: 5;
+  flex-grow: 4;
   max-width: none;
 }
 
-/* .com button sizing */
-.simple-keyboard .hg-button-com {
-  max-width: 85px;
+/* Enter key sizing */
+.simple-keyboard .hg-button-enter {
+  flex-grow: 2;
 }
 
 /* ========================================
