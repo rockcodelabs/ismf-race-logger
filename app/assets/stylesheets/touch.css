@@ -5,7 +5,9 @@
 body.touch-mode {
   font-family: 'Poppins', system-ui, sans-serif;
   font-size: 18px;
-  overflow-x: hidden;
+  overflow: hidden;
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for mobile */
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: rgba(233, 69, 96, 0.3);
@@ -190,6 +192,39 @@ body.touch-mode textarea {
 }
 
 /* ========================================
+   TOUCH SCROLLABLE AREAS
+   ======================================== */
+
+/* Opt-in scrolling for specific content areas */
+.touch-scrollable {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollable with maximum height */
+.touch-scrollable-sm {
+  max-height: 200px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.touch-scrollable-md {
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.touch-scrollable-lg {
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ========================================
    VIRTUAL KEYBOARD (simple-keyboard)
    ======================================== */
 
@@ -356,21 +391,58 @@ body.touch-mode textarea {
    RESPONSIVE ADJUSTMENTS
    ======================================== */
 
-/* For 800×480 displays, ensure everything fits */
+/* For 800×480 displays, ensure everything fits without scrolling */
 @media (max-width: 800px) and (max-height: 480px) {
+  body.touch-mode {
+    overflow: hidden;
+    height: 480px;
+  }
+  
   .touch-btn {
-    min-height: 70px;
-    font-size: 1.25rem;
-    padding: 1rem 1.5rem;
+    min-height: 60px;
+    font-size: 1.125rem;
+    padding: 0.875rem 1.25rem;
   }
   
   .touch-input {
-    min-height: 60px;
-    font-size: 1.125rem;
+    min-height: 55px;
+    font-size: 1rem;
+    padding: 1rem 1.25rem;
+  }
+  
+  .touch-label {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .touch-logo {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .touch-logo svg {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .touch-spacing {
+    padding: 1rem;
+  }
+  
+  .touch-spacing-lg {
+    padding: 1.5rem;
+  }
+  
+  .simple-keyboard {
+    padding: 0.5rem;
   }
   
   .simple-keyboard .hg-button {
-    height: 50px;
-    font-size: 1.125rem;
+    height: 44px;
+    font-size: 1rem;
+  }
+  
+  .simple-keyboard .hg-row {
+    margin-bottom: 0.375rem;
   }
 }

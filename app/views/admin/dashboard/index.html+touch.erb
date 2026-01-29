@@ -1,52 +1,52 @@
 <% content_for :page_title, "Dashboard" %>
 
-<div class="min-h-screen touch-spacing">
-  <h1 class="text-4xl font-extrabold text-white mb-8 text-center">Dashboard</h1>
+<div class="h-screen touch-spacing overflow-hidden flex flex-col">
+  <h1 class="text-3xl font-extrabold text-white mb-4 text-center">Dashboard</h1>
 
   <!-- Stats Grid -->
-  <div class="grid grid-cols-2 gap-4 mb-8">
+  <div class="grid grid-cols-2 gap-3 mb-4 flex-shrink-0">
     <!-- Total Users Card -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-      <div class="flex items-center justify-center mb-3">
-        <div class="w-16 h-16 bg-ismf-blue rounded-xl flex items-center justify-center">
-          <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="bg-white rounded-2xl shadow-xl p-4">
+      <div class="flex items-center justify-center mb-2">
+        <div class="w-12 h-12 bg-ismf-blue rounded-xl flex items-center justify-center">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
         </div>
       </div>
       <div class="text-center">
-        <p class="text-lg font-bold text-ismf-gray mb-1">Total Users</p>
-        <p class="text-5xl font-extrabold text-ismf-navy"><%= @total_users %></p>
+        <p class="text-base font-bold text-ismf-gray mb-1">Total Users</p>
+        <p class="text-3xl font-extrabold text-ismf-navy"><%= @total_users %></p>
       </div>
     </div>
 
     <!-- Admin Users Card -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-      <div class="flex items-center justify-center mb-3">
-        <div class="w-16 h-16 bg-ismf-red rounded-xl flex items-center justify-center">
-          <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="bg-white rounded-2xl shadow-xl p-4">
+      <div class="flex items-center justify-center mb-2">
+        <div class="w-12 h-12 bg-ismf-red rounded-xl flex items-center justify-center">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
           </svg>
         </div>
       </div>
       <div class="text-center">
-        <p class="text-lg font-bold text-ismf-gray mb-1">Admins</p>
-        <p class="text-5xl font-extrabold text-ismf-navy"><%= @admin_users %></p>
+        <p class="text-base font-bold text-ismf-gray mb-1">Admins</p>
+        <p class="text-3xl font-extrabold text-ismf-navy"><%= @admin_users %></p>
       </div>
     </div>
   </div>
 
   <!-- Action Buttons -->
-  <div class="space-y-4 mb-8">
+  <div class="space-y-3 mb-4 flex-shrink-0">
     <%= link_to admin_users_path, class: "touch-btn touch-btn-primary w-full" do %>
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2.5rem; height: 2.5rem;">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2rem; height: 2rem;">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
       </svg>
       <span>View All Users</span>
     <% end %>
 
     <%= link_to new_admin_user_path, class: "touch-btn touch-btn-secondary w-full" do %>
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2.5rem; height: 2.5rem;">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2rem; height: 2rem;">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
       </svg>
       <span>Create New User</span>
@@ -54,24 +54,24 @@
   </div>
 
   <!-- Recent Users -->
-  <div class="bg-white rounded-2xl shadow-xl p-6">
-    <h2 class="text-2xl font-bold text-ismf-navy mb-6">Recent Users</h2>
+  <div class="bg-white rounded-2xl shadow-xl p-4 flex-1 flex flex-col min-h-0">
+    <h2 class="text-xl font-bold text-ismf-navy mb-3 flex-shrink-0">Recent Users</h2>
     
     <% if @recent_users.any? %>
-      <div class="space-y-4">
+      <div class="space-y-3 touch-scrollable flex-1">
         <% @recent_users.each do |user| %>
-          <%= link_to admin_user_path(user), class: "block bg-gray-50 rounded-xl p-4 hover:bg-gray-100 active:bg-gray-200 transition" do %>
+          <%= link_to admin_user_path(user), class: "block bg-gray-50 rounded-xl p-3 hover:bg-gray-100 active:bg-gray-200 transition" do %>
             <div class="flex items-center justify-between">
               <div class="flex-1">
-                <p class="text-xl font-bold text-ismf-navy"><%= user.display_name %></p>
-                <p class="text-base text-ismf-gray mt-1"><%= user.email_address %></p>
-                <p class="text-sm text-ismf-gray mt-1"><%= user.created_at.strftime("%b %d, %Y") %></p>
+                <p class="text-lg font-bold text-ismf-navy"><%= user.display_name %></p>
+                <p class="text-sm text-ismf-gray mt-0.5"><%= user.email_address %></p>
+                <p class="text-xs text-ismf-gray mt-0.5"><%= user.created_at.strftime("%b %d, %Y") %></p>
               </div>
               <div class="ml-4">
                 <% if user.admin? %>
-                  <span class="inline-flex items-center px-4 py-2 rounded-lg text-base font-bold text-white bg-ismf-red">Admin</span>
+                  <span class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold text-white bg-ismf-red">Admin</span>
                 <% else %>
-                  <span class="inline-flex items-center px-4 py-2 rounded-lg text-base font-bold text-white bg-ismf-blue">User</span>
+                  <span class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold text-white bg-ismf-blue">User</span>
                 <% end %>
               </div>
             </div>
@@ -79,11 +79,11 @@
         <% end %>
       </div>
     <% else %>
-      <div class="text-center py-12">
-        <svg class="mx-auto h-16 w-16 text-ismf-gray opacity-50 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="text-center py-8">
+        <svg class="mx-auto h-12 w-12 text-ismf-gray opacity-50 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
         </svg>
-        <p class="text-xl text-ismf-gray mb-6">No users yet</p>
+        <p class="text-lg text-ismf-gray mb-4">No users yet</p>
         <%= link_to new_admin_user_path, class: "touch-btn touch-btn-primary inline-flex" do %>
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2rem; height: 2rem;">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />

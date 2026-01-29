@@ -1,28 +1,27 @@
 <% content_for :page_title, "Sign In" %>
 
-<div class="min-h-screen flex flex-col items-center justify-center touch-spacing">
+<div class="h-screen flex flex-col items-center justify-center touch-spacing overflow-hidden">
   <!-- Large Logo -->
-  <div class="touch-logo mb-6">
+  <div class="touch-logo mb-4">
     <svg class="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
     </svg>
   </div>
   
   <!-- Title -->
-  <div class="text-center mb-8">
-    <h1 class="text-4xl font-extrabold text-white mb-2">ISMF Race Logger</h1>
-    <p class="text-xl text-white/70 font-semibold">Touch to Sign In</p>
+  <div class="text-center mb-4">
+    <h1 class="text-3xl font-extrabold text-white mb-1">ISMF Race Logger</h1>
+    <p class="text-lg text-white/70 font-semibold">Touch to Sign In</p>
   </div>
 
   <!-- Login Form Card -->
   <div class="w-full max-w-2xl bg-white rounded-3xl shadow-2xl touch-spacing-lg">
     <!-- Form -->
-    <%= form_with url: session_url, class: "space-y-8", id: "login-form" do |form| %>
+    <%= form_with url: session_url, class: "space-y-4", id: "login-form" do |form| %>
       <div>
         <label for="email_address" class="touch-label">Email</label>
         <%= form.email_field :email_address, 
             required: true, 
-            autofocus: true, 
             autocomplete: "username", 
             inputmode: "email",
             placeholder: "your@email.com", 
@@ -57,8 +56,8 @@
   </div>
   
   <!-- Footer -->
-  <div class="mt-8">
-    <p class="text-center text-white/40 text-lg font-medium">
+  <div class="mt-4">
+    <p class="text-center text-white/40 text-base font-medium">
       ISMF © <%= Date.current.year %>
     </p>
   </div>

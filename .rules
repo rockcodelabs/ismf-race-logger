@@ -336,8 +336,32 @@ Detection priority:
 - ✅ Use large touch targets (minimum 64px for critical buttons)
 - ✅ Test on 800×480 resolution (or with `?touch=1`)
 - ✅ Verify virtual keyboard doesn't overlap inputs
+- ✅ Use `h-screen` with `overflow-hidden` on main container (NOT `min-h-screen`)
+- ✅ Design content to fit within 480px height without scrolling
+- ✅ Use opt-in scrolling ONLY when explicitly needed (`.touch-scrollable` classes)
 - ✅ NO native keyboard should appear (disabled in kiosk config)
 - ❌ NO desktop toggle links (users are already in touch mode)
+- ❌ NO autofocus attributes (keyboard only shows when user explicitly taps input)
+- ❌ NO vertical scrolling by default (entire page must fit in viewport)
+
+### Scrolling Policy
+
+**Default: NO SCROLL**
+- All touch pages MUST fit within 800×480 viewport without scrolling
+- Use `h-screen overflow-hidden` on main containers
+- Reduce spacing, font sizes, and element heights to fit
+
+**Opt-in scrolling for specific areas:**
+- `.touch-scrollable` - Auto height with scroll
+- `.touch-scrollable-sm` - Max 200px height
+- `.touch-scrollable-md` - Max 300px height
+- `.touch-scrollable-lg` - Max 400px height
+
+**When to use scrollable areas:**
+- Long lists (users, incidents)
+- Modal content that may overflow
+- Data tables with many rows
+- ONLY when explicitly decided, never by default
 
 ### Documentation
 
