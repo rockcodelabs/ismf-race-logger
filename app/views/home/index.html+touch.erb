@@ -61,6 +61,9 @@
     <p class="text-white/40 text-sm font-medium">
       ISMF © <%= Date.current.year %>
     </p>
+    <% unless request.user_agent.to_s.downcase.include?("raspberry") || request.user_agent.to_s.downcase.include?("rpi") %>
+      <%= link_to "Switch to Desktop Mode", root_path(touch: 0), class: "block text-white/30 text-xs mt-2" %>
+    <% end %>
   </div>
   
 </div>
