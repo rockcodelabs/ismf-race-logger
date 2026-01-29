@@ -74,6 +74,26 @@
         <span class="text-ismf-red font-semibold">International Ski Mountaineering Federation</span>
       </p>
       
+      <!-- Go to Competition Button (if available) -->
+      <% if @closest_competition %>
+        <div class="mb-6">
+          <%= link_to admin_competition_path(@closest_competition.id), class: "inline-flex items-center gap-3 px-8 py-4 bg-ismf-red hover:bg-ismf-red/90 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all text-lg" do %>
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+            </svg>
+            <div class="text-left">
+              <div class="font-bold"><%= @closest_competition.display_name %></div>
+              <div class="text-sm opacity-90">
+                <%= @closest_competition.ongoing? ? "🟢 Live Now" : "Starts in #{@closest_competition.days_until_start} days" %>
+              </div>
+            </div>
+            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          <% end %>
+        </div>
+      <% end %>
+      
       <!-- CTA Buttons -->
       <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
         <% if Current.user %>

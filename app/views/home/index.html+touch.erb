@@ -20,52 +20,37 @@
     </p>
     
     <!-- Main Actions -->
-    <div class="w-full flex flex-col gap-3">
+    <div class="w-full flex flex-col gap-4">
       
       <!-- Go to Competition Button (if competition available) -->
       <% if @closest_competition %>
-        <%= link_to admin_competition_path(@closest_competition.id), class: "touch-btn touch-btn-primary min-h-[100px]" do %>
-          <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-8 h-8">
+        <%= link_to admin_competition_path(@closest_competition.id), class: "touch-btn touch-btn-primary min-h-[160px]" do %>
+          <div class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-12 h-12">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
             </svg>
           </div>
-          <div class="flex flex-col items-start">
-            <span class="text-lg font-bold"><%= @closest_competition.display_name %></span>
-            <span class="text-sm opacity-80">
+          <div class="flex flex-col items-start flex-1">
+            <span class="text-2xl font-extrabold"><%= @closest_competition.display_name %></span>
+            <span class="text-lg font-semibold opacity-90 mt-1">
               <%= @closest_competition.ongoing? ? "🟢 Live Now" : "#{@closest_competition.days_until_start} days" %>
             </span>
           </div>
+          <svg class="w-10 h-10 shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+          </svg>
         <% end %>
       <% end %>
       
       <% if Current.user %>
         <% if Current.user.admin? %>
-          <%= link_to admin_root_path, class: "touch-btn touch-btn-secondary min-h-[88px]" do %>
-            <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-8 h-8">
+          <%= link_to admin_root_path, class: "touch-btn touch-btn-secondary min-h-[120px]" do %>
+            <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-10 h-10">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
               </svg>
             </div>
-            <span class="text-xl font-bold">Admin Dashboard</span>
-          <% end %>
-          
-          <%= button_to session_path, method: :delete, class: "touch-btn touch-btn-primary min-h-[88px]" do %>
-            <div class="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-8 h-8">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </div>
-            <span class="text-xl font-bold">Sign Out</span>
-          <% end %>
-        <% else %>
-          <%= button_to session_path, method: :delete, class: "touch-btn touch-btn-primary min-h-[88px]" do %>
-            <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-8 h-8">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </div>
-            <span class="text-xl font-bold">Sign Out</span>
+            <span class="text-2xl font-bold">Dashboard</span>
           <% end %>
         <% end %>
       <% else %>
