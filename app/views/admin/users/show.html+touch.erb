@@ -7,7 +7,7 @@
       
       <!-- Avatar and Basic Info -->
       <div class="text-center mb-6">
-        <div class="w-24 h-24 mx-auto bg-gradient-to-br from-ismf-blue to-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+        <div class="w-24 h-24 mx-auto bg-linear-to-br from-ismf-blue to-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
           <span class="text-white font-extrabold text-4xl">
             <%= @user.name.first.upcase rescue @user.email_address.first.upcase %>
           </span>
@@ -62,7 +62,7 @@
     </div>
 
     <!-- Action Buttons -->
-    <div class="flex-shrink-0 pt-4 border-t-2 border-gray-100">
+    <div class="shrink-0 pt-4 border-t-2 border-gray-100">
       <div class="flex flex-col gap-3">
         <!-- Edit Button (Full Width) -->
         <%= link_to edit_admin_user_path(@user), class: "touch-btn touch-btn-primary w-full" do %>
@@ -80,7 +80,7 @@
                     data-touch-confirm-message-param="Delete <%= @user.display_name %>? This cannot be undone."
                     data-touch-confirm-url-param="<%= admin_user_path(@user) %>"
                     data-touch-confirm-method-param="delete"
-                    class="touch-btn !bg-gradient-to-r !from-red-500 !to-red-600 !text-white flex-1">
+                    class="touch-btn bg-linear-to-r! from-red-500! to-red-600! text-white! min-h-[88px]">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2rem; height: 2rem;">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>

@@ -2,7 +2,7 @@
 
 <div class="h-screen overflow-hidden flex flex-col" data-controller="touch-confirm">
   <!-- Add New User Button -->
-  <div class="flex-shrink-0 px-3 pt-3 pb-3">
+  <div class="shrink-0 px-3 pt-3 pb-3">
     <%= link_to new_admin_user_path, class: "touch-btn touch-btn-primary w-full min-h-[88px]" do %>
       <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-8 h-8">
@@ -14,27 +14,27 @@
   </div>
 
   <!-- Users List Container -->
-  <div class="bg-white rounded-2xl shadow-xl flex-1 flex flex-col min-h-0 mx-3 mb-3">
+  <div class="bg-white rounded-2xl shadow-xl flex-1 flex flex-col min-h-0">
     <% if @users.any? %>
       <!-- Users List -->
       <div class="flex flex-col gap-1.5 flex-1 px-3 pt-3 pb-3 overflow-y-auto touch-scrollable">
         <% @users.each do |user| %>
-          <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-ismf-blue active:border-ismf-red transition overflow-hidden min-h-[80px]">
+          <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-ismf-blue active:border-ismf-red transition overflow-hidden min-h-20">
             <div class="flex items-stretch h-full">
               
               <!-- User Info (Clickable Area) -->
               <%= link_to admin_user_path(user.id), class: "flex items-center gap-3 py-3 px-4 flex-1 min-w-0 hover:bg-gray-50 active:bg-gray-100" do %>
                 <!-- Avatar -->
-                <div class="flex-shrink-0 w-14 h-14 rounded-xl <%= user.admin? ? 'bg-ismf-red' : 'bg-ismf-blue' %> flex items-center justify-center shadow-sm">
+                <div class="shrink-0 w-14 h-14 rounded-xl <%= user.admin? ? 'bg-ismf-red' : 'bg-ismf-blue' %> flex items-center justify-center shadow-sm">
                   <span class="text-2xl font-bold text-white"><%= user.display_name[0].upcase %></span>
                 </div>
                 
                 <!-- User Details -->
                 <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2 mb-1">
-                    <p class="text-base font-extrabold text-ismf-navy truncate"><%= user.display_name %></p>
+                  <div class="flex items-center gap-2">
+                    <p class="text-base font-bold text-ismf-navy truncate"><%= user.display_name %></p>
                     <% if user.admin? %>
-                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-extrabold text-white bg-ismf-red flex-shrink-0">Admin</span>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-extrabold text-white bg-ismf-red shrink-0">Admin</span>
                     <% end %>
                   </div>
                   <p class="text-xs text-ismf-gray truncate"><%= user.email_address %></p>
@@ -43,7 +43,7 @@
               <% end %>
 
               <!-- Action Buttons -->
-              <div class="flex gap-1.5 py-2 pr-2 flex-shrink-0 items-stretch">
+              <div class="flex gap-1.5 py-2 pr-2 shrink-0 items-stretch">
                 <!-- Edit Button -->
                 <%= link_to edit_admin_user_path(user.id), 
                     class: "flex items-center justify-center w-20 bg-ismf-navy text-white rounded-lg text-xs font-bold hover:bg-ismf-blue active:bg-ismf-red transition shadow-sm",

@@ -32,7 +32,7 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="min-h-screen bg-gradient-to-br from-ismf-navy via-ismf-blue to-ismf-navy text-white antialiased touch-mode" data-controller="touch-detection">
+  <body class="min-h-screen bg-linear-to-br from-ismf-navy via-ismf-blue to-ismf-navy text-white antialiased touch-mode" data-controller="touch-detection">
     
 
     <!-- Touch Navigation (hidden on home page) -->
@@ -43,7 +43,7 @@
     <!-- Flash Messages (positioned to avoid ISMF logo button: 140x88px) -->
     <% if notice %>
       <div class="fixed top-24 left-4 right-4 z-40 bg-green-100 border-2 border-green-500 text-green-900 px-6 py-4 rounded-xl flex items-center gap-4 shadow-lg" data-controller="flash" data-flash-dismiss-after-value="5000">
-        <svg class="w-8 h-8 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-8 h-8 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <span class="text-xl font-semibold"><%= notice %></span>
@@ -52,7 +52,7 @@
     
     <% if alert %>
       <div class="fixed top-24 left-4 right-4 z-40 bg-red-100 border-2 border-red-500 text-red-900 px-6 py-4 rounded-xl flex items-center gap-4 shadow-lg" data-controller="flash" data-flash-dismiss-after-value="5000">
-        <svg class="w-8 h-8 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-8 h-8 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <span class="text-xl font-semibold"><%= alert %></span>
