@@ -66,8 +66,8 @@ export default class extends Controller {
       theme: "simple-keyboard",
       display: {
         "{bksp}": "⌫",
-        "{enter}": "↵ Enter",
-        "{hide}": "✕ Hide",
+        "{hide}": "↵ Enter",
+        "{enter}": "✕ Hide",
         "{space}": " ",
         "{preview}": ""
       },
@@ -88,10 +88,10 @@ export default class extends Controller {
     return {
       default: [
         "1 2 3 4 5 6 7 8 9 0 {bksp}",
-        "q w e r t y u i o p",
-        "a s d f g h j k l",
-        "z x c v b n m @ .",
-        "{preview} {space} {enter} {hide}"
+        "q w e r t y u i o p @",
+        "a s d f g h j k l .",
+        "z x c v b n m - _",
+        "{preview} {space} {hide} {enter}"
       ]
     }
   }
@@ -239,10 +239,10 @@ export default class extends Controller {
     // Play audio feedback
     this.playBeep()
     
-    // Handle special keys
-    if (button === "{enter}") {
+    // Handle special keys (swapped positions)
+    if (button === "{hide}") {
       this.handleEnter()
-    } else if (button === "{hide}") {
+    } else if (button === "{enter}") {
       this.handleHide()
     }
   }

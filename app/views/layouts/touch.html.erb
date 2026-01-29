@@ -34,6 +34,11 @@
 
   <body class="min-h-screen bg-gradient-to-br from-ismf-navy via-ismf-blue to-ismf-navy text-white antialiased touch-mode" data-controller="touch-detection">
     
+    <!-- ISMF Logo - Top Right (visible on all pages) -->
+    <div class="fixed top-6 right-6 z-50 bg-gradient-to-br from-ismf-navy to-ismf-blue rounded-2xl p-4 shadow-2xl border-2 border-ismf-red">
+      <%= image_tag "ismf_official_logo.png", alt: "ISMF", class: "h-12 w-auto" %>
+    </div>
+    
     <!-- Touch Navigation (hidden on home page) -->
     <% unless request.path == root_path %>
       <%= render "shared/touch_nav" %>

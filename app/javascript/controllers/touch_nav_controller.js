@@ -20,10 +20,14 @@ export default class extends Controller {
   connect() {
     console.log("🧭 Touch navigation controller connected")
     this.isOpen = false
+    // Ensure menu starts closed
+    this.closeMenu()
   }
 
   disconnect() {
-    // Cleanup if needed
+    console.log("🧭 Touch navigation controller disconnecting")
+    // Ensure menu is closed when controller is removed
+    this.closeMenu()
   }
 
   // Toggle menu open/closed
