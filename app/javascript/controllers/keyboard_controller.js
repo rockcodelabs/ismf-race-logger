@@ -66,8 +66,10 @@ export default class extends Controller {
       theme: "simple-keyboard",
       display: {
         "{bksp}": "⌫",
-        "{shift}": "⇧",
-        "{space}": " "
+        "{enter}": "↵ Enter",
+        "{hide}": "✕ Hide",
+        "{space}": " ",
+        "{preview}": ""
       },
       mergeDisplay: true,
       useTouchEvents: true,
@@ -88,21 +90,22 @@ export default class extends Controller {
         "1 2 3 4 5 6 7 8 9 0 {bksp}",
         "q w e r t y u i o p",
         "a s d f g h j k l",
-        "{shift} z x c v b n m {shift}",
-        ".com @ {space}"
-      ],
-      shift: [
-        "! @ # $ % ^ & * ( ) {bksp}",
-        "Q W E R T Y U I O P",
-        "A S D F G H J K L",
-        "{shift} Z X C V B N M {shift}",
-        ".com @ {space}"
+        "z x c v b n m @ .",
+        "{preview} {space} {enter} {hide}"
       ]
     }
   }
 
   setupPreviewDisplay() {
-    // No preview button in this layout
+    // Find the preview button after keyboard renders
+    setTimeout(() => {
+      const previewBtn = this.element.querySelector('[data-skbtn="{preview}"]')
+      if (previewBtn) {
+        previewBtn.classList.add('keyboard-preview-button')
+        previewBtn.style.pointerEvents = 'none'
+        previewBtn.style.userSelect = 'none'
+      }
+    }, 100)
   }
 
   createKeyboardHTML() {
@@ -213,7 +216,21 @@ export default class extends Controller {
   }
 
   updatePreview(value) {
-    // No preview in this simplified layout
+    const previewBtn = this.element.querySelector('[data-skbtn="{preview}"]')
+    if (previewBtn) {
+      // Show masked or actual value
+      let displayValue = value
+      if (this.currentInput && this.currentInput.type === 'password') {
+        displayValue = '•'.repeat(value.length)
+      }
+      
+      // Truncate if too long
+      if (displayValue.length > 30) {
+        displayValue = '...' + displayValue.slice(-27)
+      }
+      
+      previewBtn.textContent = displayValue || ' '
+    }
   }
 
   handleKeyPress(button) {
@@ -225,8 +242,8 @@ export default class extends Controller {
     // Handle special keys
     if (button === "{enter}") {
       this.handleEnter()
-    } else if (button === "{shift}") {
-      this.handleShift()
+    } else if (button === "{hide}") {
+      this.handleHide()
     }
   }
 
@@ -247,11 +264,16 @@ export default class extends Controller {
     }
   }
 
-  handleShift() {
-    const currentLayout = this.keyboard.options.layoutName
-    const newLayout = currentLayout === "default" ? "shift" : "default"
-    this.keyboard.setOptions({ layoutName: newLayout })
-    console.log("⇧ Shift toggled to:", newLayout)
+  handleHide() {
+    console.log("🚫 Hide button pressed")
+    
+    // Blur current input
+    if (this.currentInput) {
+      this.currentInput.blur()
+    }
+    
+    // Hide keyboard
+    this.hideKeyboard()
   }
 
   async playBeep() {
