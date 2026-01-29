@@ -9,4 +9,4 @@ pin "@hotwired/stimulus-loading", to: "stimulus-loading.js"
 pin_all_from "app/javascript/controllers", under: "controllers"
 
 # Virtual keyboard for touch displays
-pin "simple-keyboard" # @3.8.93
+pin "simple-keyboard", to: "https://ga.jspm.io/npm:simple-keyboard@3.8.93/build/index.js"

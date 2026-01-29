@@ -41,3 +41,7 @@
 cookies.txt
 cookies2.txt
 prod_cookies.txt
+
+# Ignore vendored JavaScript from importmap (using CDN instead)
+/vendor/javascript/*
+!/vendor/javascript/.keep
