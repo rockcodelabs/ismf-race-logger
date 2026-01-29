@@ -16,5 +16,20 @@ module Structs
     def active?
       status == "active"
     end
+
+    # =========================================================================
+    # Rails routing compatibility
+    # =========================================================================
+
+    # Returns the ID as a string for Rails URL helpers
+    # This enables using Data.define structs directly with path helpers like:
+    #   admin_{{resource}}_path({{resource}}_summary)
+    #   edit_admin_{{resource}}_path({{resource}}_summary)
+    #
+    # Note: Data.define structs don't inherit from DB::Struct, so this must
+    # be defined explicitly for each summary struct.
+    def to_param
+      id.to_s
+    end
   end
 end

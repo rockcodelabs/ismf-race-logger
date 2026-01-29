@@ -74,5 +74,20 @@ module Structs
     def referee?
       national_referee? || international_referee?
     end
+
+    # =========================================================================
+    # Rails routing compatibility
+    # =========================================================================
+
+    # Returns the ID as a string for Rails URL helpers
+    # This enables using Data.define structs directly with path helpers like:
+    #   admin_user_path(user_summary)
+    #   edit_admin_user_path(user_summary)
+    #
+    # Note: Data.define structs don't inherit from DB::Struct, so this must
+    # be defined explicitly for each summary struct.
+    def to_param
+      id.to_s
+    end
   end
 end

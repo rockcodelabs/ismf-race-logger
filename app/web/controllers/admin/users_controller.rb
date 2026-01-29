@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+
 module Web
   module Controllers
     module Admin
@@ -9,21 +10,23 @@ module Web
       # for write operations (forms need AR objects for validation errors).
       #
       # Pattern:
-      # - Index/Show: Use repos → structs (immutable, presentation-ready)
-      # - New/Create/Edit/Update: Use AR model (form_with needs AR for errors)
+      # - Index: Use repos → structs (immutable, presentation-ready)
+      # - Show/Edit: Use AR model (needs associations like sessions)
+      # - New/Create/Update: Use AR model (form_with needs AR for errors)
       #
       # Note: We use explicit container access instead of Import[] because
       # Rails controllers have their own initialization requirements.
       #
       class UsersController < BaseController
-        before_action :set_user, only: [ :show, :edit, :update, :destroy ]
+        before_action :set_user, only: [ :edit, :update, :destroy ]
 
         def index
           @users = user_repo.all
         end
 
         def show
-          # @user set by before_action (struct)
+          # Load AR model to access associations (sessions)
+          @user = User.find(params[:id])
         end
 
         def new

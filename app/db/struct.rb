@@ -23,5 +23,17 @@ module DB
 
     # Alias Types module for convenience in subclasses
     Types = IsmfRaceLogger::Types
+
+    # =========================================================================
+    # Rails routing compatibility
+    # =========================================================================
+
+    # Returns the ID as a string for Rails URL helpers
+    # This enables using structs directly with path helpers like:
+    #   admin_user_path(user_struct)
+    #   edit_admin_race_path(race_struct)
+    def to_param
+      id.to_s
+    end
   end
 end
