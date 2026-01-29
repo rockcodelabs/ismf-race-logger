@@ -310,14 +310,16 @@ end
 |--------|------|-------------|-------------|
 | id | bigint | PK | |
 | name | string | NOT NULL | Competition name |
-| place | string | NOT NULL | Location/venue |
+| city | string | NOT NULL | Main city name (e.g., "Cortina") |
+| place | string | NOT NULL | Location/venue details |
 | country | string(3) | NOT NULL | ISO 3166-1 alpha-3 |
-| description | text | | |
+| description | text | NOT NULL | Competition description (Action Text) |
 | start_date | date | NOT NULL | |
 | end_date | date | NOT NULL | |
-| webpage_url | string | | Official website |
+| webpage_url | string | NOT NULL | Official website |
 | created_at | datetime | NOT NULL | |
 | updated_at | datetime | NOT NULL | |
+</text>
 
 **Indexes:** `start_date`, `country`
 
@@ -327,9 +329,13 @@ A Competition (e.g., "World Cup Verbier 2024") contains multiple races. Each rac
 Example structure:
 - Competition: "World Cup Verbier 2024"
   - Race: "Sprint - Qualification" (race_type: sprint, stage_name: qualification)
-  - Race: "Sprint - Semi-final" (race_type: sprint, stage_name: semi-final)
+  - Race: "Sprint - Semi-final" (race_type: sprint, stage_name: semi_final)
   - Race: "Sprint - Final" (race_type: sprint, stage_name: final)
   - Race: "Vertical - Final" (race_type: vertical, stage_name: final)
+
+Display format: "{city} {year}" derived from city and start_date (e.g., "Cortina 2026")
+Logo fallback: If no logo uploaded, display city name as text.
+</text>
 
 #### Model
 
@@ -349,14 +355,19 @@ module Structs
   class Competition < Dry::Struct
     attribute :id, Types::Integer
     attribute :name, Types::String
+    attribute :city, Types::String
     attribute :place, Types::String
     attribute :country, Types::CountryCode
-    attribute :description, Types::String.optional
+    attribute :description, Types::String
     attribute :start_date, Types::Date
     attribute :end_date, Types::Date
-    attribute :webpage_url, Types::String.optional
+    attribute :webpage_url, Types::String
     attribute :created_at, Types::Time
     attribute :updated_at, Types::Time
+
+    def display_name
+      "#{city} #{start_date.year}"
+    end
 
     def date_range
       "#{start_date.strftime('%b %d')} - #{end_date.strftime('%b %d, %Y')}"
@@ -365,6 +376,15 @@ module Structs
     def ongoing?
       Date.current.between?(start_date, end_date)
     end
+
+    def upcoming?
+      start_date > Date.current
+    end
+
+    def past?
+      end_date < Date.current
+    end
+</text>
   end
 end
 ```
@@ -398,13 +418,15 @@ module Operations::Contracts
   class CreateCompetition < Dry::Validation::Contract
     params do
       required(:name).filled(:string)
+      required(:city).filled(:string)
       required(:place).filled(:string)
       required(:country).filled(Types::CountryCode)
+      required(:description).filled(:string)
       required(:start_date).filled(:date)
       required(:end_date).filled(:date)
-      optional(:description).maybe(:string)
-      optional(:webpage_url).maybe(:string)
+      required(:webpage_url).filled(:string)
     end
+</text>
 
     rule(:end_date, :start_date) do
       if values[:end_date] < values[:start_date]

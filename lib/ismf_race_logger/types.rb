@@ -36,11 +36,40 @@ module IsmfRaceLogger
       "no_action"
     )
 
+    # Race types
+    RaceTypeName = Strict::String.enum(
+      "individual",
+      "sprint",
+      "vertical",
+      "relay"
+    )
+
+    # Race stages
+    RaceStage = Strict::String.enum(
+      "qualification",
+      "semifinal",
+      "final"
+    )
+
     # Race statuses
-    RaceStatus = Strict::String.enum("upcoming", "active", "completed")
+    RaceStatus = Strict::String.enum("scheduled", "in_progress", "completed", "cancelled")
 
     # Bib number (1-9999)
     BibNumber = Coercible::Integer.constrained(gteq: 1, lteq: 9999)
+
+    # ISMF Member Countries (ISO 3166-1 alpha-3)
+    ISMF_COUNTRIES = %w[
+      AND ARG AUS AUT BEL BGR BIH CAN CHE CHN HRV CZE
+      ESP FIN FRA GBR DEU GRC HUN IND IRN ISR ITA JPN
+      KAZ KOR LIE LTU MDA MKD NLD NOR NZL POL PRT ROU
+      ZAF RUS SVN SRB CHE SVK SWE TUR UKR USA
+    ].freeze
+
+    # Country code (ISO 3166-1 alpha-3)
+    CountryCode = String.constrained(
+      format: /\A[A-Z]{3}\z/,
+      included_in: ISMF_COUNTRIES
+    )
 
     # Flexible DateTime type that accepts Time, DateTime, and ActiveSupport::TimeWithZone
     FlexibleDateTime = Nominal::Any.constructor { |value|

@@ -45,6 +45,10 @@ class AppContainer
     register :magic_link, memoize: true do
       MagicLinkRepo.new
     end
+
+    register :competition, memoize: true do
+      CompetitionRepo.new
+    end
   end
 
   # ============================================================================

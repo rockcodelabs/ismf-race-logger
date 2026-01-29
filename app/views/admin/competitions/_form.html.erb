@@ -1,0 +1,118 @@
+<%= form_with(model: [:admin, competition], class: "space-y-6") do |form| %>
+  <% if competition.errors.any? %>
+    <div class="flash-alert">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <div>
+        <h3 class="font-medium">Please fix the following errors:</h3>
+        <ul class="mt-1 text-sm list-disc list-inside">
+          <% competition.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+    <!-- Name -->
+    <div class="sm:col-span-2">
+      <%= form.label :name, class: "form-label" %>
+      <%= form.text_field :name, class: "form-input", placeholder: "World Cup Verbier 2024", required: true %>
+      <p class="mt-1 text-xs text-ismf-gray">Full competition name</p>
+    </div>
+
+    <!-- City -->
+    <div>
+      <%= form.label :city, class: "form-label" %>
+      <%= form.text_field :city, class: "form-input", placeholder: "Verbier", required: true %>
+      <p class="mt-1 text-xs text-ismf-gray">Main city name</p>
+    </div>
+
+    <!-- Country -->
+    <div>
+      <%= form.label :country, "Country Code", class: "form-label" %>
+      <%= form.select :country, 
+          options_for_select(
+            IsmfRaceLogger::Types::ISMF_COUNTRIES.map { |code| [ISO3166::Country.find_country_by_alpha3(code)&.iso_short_name || code, code] },
+            competition.country
+          ),
+          { prompt: "Select country..." },
+          { class: "form-input", required: true } %>
+      <p class="mt-1 text-xs text-ismf-gray">ISO 3166-1 alpha-3 code</p>
+    </div>
+
+    <!-- Place -->
+    <div class="sm:col-span-2">
+      <%= form.label :place, "Venue/Location", class: "form-label" %>
+      <%= form.text_field :place, class: "form-input", placeholder: "Swiss Alps", required: true %>
+      <p class="mt-1 text-xs text-ismf-gray">Detailed venue or location information</p>
+    </div>
+
+    <!-- Start Date -->
+    <div>
+      <%= form.label :start_date, class: "form-label" %>
+      <%= form.date_field :start_date, class: "form-input", required: true %>
+    </div>
+
+    <!-- End Date -->
+    <div>
+      <%= form.label :end_date, class: "form-label" %>
+      <%= form.date_field :end_date, class: "form-input", required: true %>
+    </div>
+
+    <!-- Webpage URL -->
+    <div class="sm:col-span-2">
+      <%= form.label :webpage_url, "Website URL", class: "form-label" %>
+      <%= form.url_field :webpage_url, class: "form-input", placeholder: "https://www.ismf-ski.org", required: true %>
+      <p class="mt-1 text-xs text-ismf-gray">Official competition website</p>
+    </div>
+
+    <!-- Description -->
+    <div class="sm:col-span-2">
+      <%= form.label :description, class: "form-label" %>
+      <%= form.text_area :description, rows: 6, class: "form-input", placeholder: "Enter competition description...", required: true %>
+      <p class="mt-1 text-xs text-ismf-gray">Detailed description of the competition</p>
+    </div>
+
+    <!-- Logo Upload -->
+    <div class="sm:col-span-2">
+      <%= form.label :logo, "Competition Logo (Optional)", class: "form-label" %>
+      
+      <% if competition.persisted? && competition.logo.attached? %>
+        <div class="mb-4 p-4 bg-gray-50 rounded-lg">
+          <div class="flex items-center gap-4">
+            <%= image_tag competition.logo, class: "w-24 h-24 object-contain rounded-lg bg-white p-2 border border-gray-200" %>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-ismf-navy">Current logo</p>
+              <p class="text-xs text-ismf-gray mt-1"><%= competition.logo.filename %></p>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <div class="flex items-center justify-center w-full">
+        <label for="competition_logo" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+          <div class="flex flex-col items-center justify-center pt-5 pb-6">
+            <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <p class="mb-2 text-sm text-gray-500">
+              <span class="font-semibold">Click to upload</span> or drag and drop
+            </p>
+            <p class="text-xs text-gray-500">PNG, JPG, GIF or SVG (max 5MB)</p>
+          </div>
+          <%= form.file_field :logo, accept: "image/*", class: "hidden", id: "competition_logo" %>
+        </label>
+      </div>
+      <p class="mt-2 text-xs text-ismf-gray">If no logo is uploaded, the city name will be displayed instead.</p>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
+    <%= link_to "Cancel", competition.persisted? ? admin_competition_path(competition) : admin_competitions_path, class: "btn-outline" %>
+    <%= form.submit competition.new_record? ? "Create Competition" : "Update Competition", class: "btn-primary cursor-pointer" %>
+  </div>
+<% end %>

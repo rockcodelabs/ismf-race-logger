@@ -57,6 +57,9 @@ gem "dry-monads", "~> 1.6"
 gem "dry-auto_inject", "~> 1.0"
 gem "dry-container", "~> 0.11"
 
+# Country data (ISO 3166-1)
+gem "countries", "~> 6.0"
+
 # Packwerk for architecture boundary enforcement
 gem "packwerk", "~> 3.2"
 
