@@ -80,7 +80,18 @@ module Web
       # Note: CSS uses @media (any-pointer: coarse) for automatic touch detection
       # This server-side detection handles initial page load and variant selection
       def touch_display?
-        # Allow explicit override via query parameter
+        # Detect if this is a physical touch display (Raspberry Pi)
+        ua = request.user_agent.to_s.downcase
+        is_physical_touch_display = ua.include?("raspberry") || ua.include?("rpi")
+        
+        # Physical touch displays MUST always stay in touch mode
+        if is_physical_touch_display
+          Rails.logger.info "TOUCH: Physical touch display detected (Raspberry Pi), forcing touch mode"
+          cookies[:touch_display] = { value: "1", expires: 1.year.from_now }
+          return true
+        end
+        
+        # For desktop/mobile: Allow explicit override via query parameter
         if params[:touch].present?
           touch_enabled = params[:touch] == "1"
           Rails.logger.info "TOUCH: Setting cookie to #{touch_enabled ? '1' : '0'} from params"
@@ -98,12 +109,10 @@ module Web
           return false
         end
         
-        # Detect Raspberry Pi or mobile devices from User-Agent
-        ua = request.user_agent.to_s.downcase
-        if ua.include?("raspberry") || ua.include?("rpi") || 
-           ua.include?("mobile") || ua.include?("android") ||
+        # Detect mobile devices from User-Agent
+        if ua.include?("mobile") || ua.include?("android") ||
            ua.include?("iphone") || ua.include?("ipad")
-          Rails.logger.info "TOUCH: Detected touch device from User-Agent, setting cookie"
+          Rails.logger.info "TOUCH: Detected mobile device from User-Agent, setting cookie"
           cookies[:touch_display] = { value: "1", expires: 1.year.from_now }
           return true
         end
