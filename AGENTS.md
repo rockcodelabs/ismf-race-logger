@@ -383,7 +383,7 @@ This project uses **GitHub Actions for automated deployment**:
 **Target Kiosk:**
 - Hostname: `pi5cam.local`
 - User: `rege`
-- Display: Raspberry Pi Touch Display 2 (800x480)
+- Display: Raspberry Pi Touch Display 2 (1280×720 landscape)
 - Compositor: Weston (Wayland, not X11)
 - Browser: Chromium in kiosk mode
 - Service: `kiosk.service` (systemd)

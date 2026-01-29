@@ -2,7 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 
 // Touch Detection controller for automatic device detection
 //
-// Automatically detects 800×480 screen (Raspberry Pi Touch Display 2)
+// Automatically detects 1280×720 screen (Raspberry Pi Touch Display 2 in landscape)
 // and sets a persistent cookie to enable touch mode.
 //
 // Usage:
@@ -11,7 +11,7 @@ import { Controller } from "@hotwired/stimulus"
 // Detection priority:
 //   1. URL parameter (?touch=1)
 //   2. Cookie (touch_display=1)
-//   3. Screen size detection (800×480)
+//   3. Screen size detection (1280×720 landscape)
 //   4. Default (desktop)
 //
 export default class extends Controller {
@@ -32,9 +32,9 @@ export default class extends Controller {
     
     console.log(`📏 Screen size: ${width}×${height}`)
     
-    // Detect 800×480 (Pi Touch Display 2)
-    // Also detect 480×800 (portrait mode)
-    const isTouch = (width === 800 && height === 480) || (width === 480 && height === 800)
+    // Detect 1280×720 (Pi Touch Display 2 in landscape mode)
+    // Native resolution: 720×1280 (portrait), rotated to 1280×720 (landscape)
+    const isTouch = (width === 1280 && height === 720)
     
     if (isTouch) {
       console.log("✅ Pi touch display detected! Setting cookie...")

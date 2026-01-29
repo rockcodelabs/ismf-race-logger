@@ -8,7 +8,7 @@ This directory contains Ansible playbooks for deploying the ISMF Race Logger to 
 
 The kiosk setup configures a Raspberry Pi 5 to:
 - Boot directly to a web browser in kiosk mode (no desktop)
-- Display the ISMF Race Logger at 800×480 resolution
+- Display the ISMF Race Logger at 1280×720 resolution (landscape)
 - Support touch input with the app's built-in virtual keyboard
 - Auto-start on boot and restart on failure
 - Rotate display 90° for portrait mode (configurable)

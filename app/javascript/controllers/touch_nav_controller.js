@@ -1,100 +1,77 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Touch Navigation controller for collapsible navigation bar
+// Touch Navigation controller for floating hamburger menu
 //
-// Handles navigation bar behavior on touch displays:
-// - Collapsible hamburger menu
-// - Auto-hide on scroll down
-// - Auto-show on scroll up
+// Features:
+// - Floating hamburger button (bottom-left)
+// - Slide-in menu from left (60% width)
+// - Toggle menu open/closed
+// - Close when clicking outside (right 40% area)
 //
 // Usage:
-//   <nav data-controller="touch-nav" data-touch-nav-target="navbar">
+//   <div data-controller="touch-nav">
 //     <button data-action="click->touch-nav#toggle">Menu</button>
-//   </nav>
+//     <div data-touch-nav-target="menu">...</div>
+//   </div>
 //
 export default class extends Controller {
-  static targets = ["navbar"]
+  static targets = ["menu", "hamburger"]
 
   connect() {
     console.log("🧭 Touch navigation controller connected")
-    
-    this.isExpanded = true
-    this.lastScrollY = window.scrollY
-    
-    this.setupScrollListener()
+    this.isOpen = false
   }
 
   disconnect() {
-    if (this.handleScroll) {
-      window.removeEventListener("scroll", this.handleScroll)
-    }
+    // Cleanup if needed
   }
 
-  setupScrollListener() {
-    this.handleScroll = this.handleScroll.bind(this)
-    window.addEventListener("scroll", this.handleScroll, { passive: true })
-  }
-
-  handleScroll() {
-    const currentScrollY = window.scrollY
-    
-    // Hide nav when scrolling down (after 100px)
-    if (currentScrollY > 100 && currentScrollY > this.lastScrollY) {
-      this.hideNav()
-    }
-    // Show nav when scrolling up
-    else if (currentScrollY < this.lastScrollY) {
-      this.showNav()
-    }
-    
-    this.lastScrollY = currentScrollY
-  }
-
-  // Action to toggle navigation visibility
+  // Toggle menu open/closed
   // Usage: data-action="click->touch-nav#toggle"
   toggle(event) {
-    if (event) {
-      event.preventDefault()
-    }
+    event.preventDefault()
+    event.stopPropagation()
     
-    this.isExpanded = !this.isExpanded
+    this.isOpen = !this.isOpen
     
-    if (this.isExpanded) {
-      this.showNav()
+    if (this.isOpen) {
+      this.openMenu()
     } else {
-      this.hideNav()
+      this.closeMenu()
     }
     
-    console.log("🔄 Nav toggled:", this.isExpanded ? "expanded" : "collapsed")
+    console.log("🔄 Menu toggled:", this.isOpen ? "open" : "closed")
   }
 
-  showNav() {
-    if (this.hasNavbarTarget) {
-      this.navbarTarget.classList.remove("nav-hidden")
-      this.isExpanded = true
+  openMenu() {
+    if (this.hasMenuTarget) {
+      this.menuTarget.classList.add("touch-menu-open")
+      this.isOpen = true
     }
   }
 
-  hideNav() {
-    if (this.hasNavbarTarget) {
-      this.navbarTarget.classList.add("nav-hidden")
-      this.isExpanded = false
+  closeMenu() {
+    if (this.hasMenuTarget) {
+      this.menuTarget.classList.remove("touch-menu-open")
+      this.isOpen = false
     }
   }
 
-  // Action to go back
+  // Close menu if clicking outside (on the visible content area)
+  // Usage: data-action="click->touch-nav#closeIfOutside"
+  closeIfOutside(event) {
+    // Check if click is on the menu panel itself (not the content inside)
+    if (event.target === this.menuTarget && this.isOpen) {
+      console.log("👆 Clicked outside menu, closing...")
+      this.closeMenu()
+    }
+  }
+
+  // Go back in browser history
   // Usage: data-action="click->touch-nav#goBack"
   goBack(event) {
     event.preventDefault()
     console.log("⬅️ Going back...")
     window.history.back()
-  }
-
-  // Action to go home
-  // Usage: data-action="click->touch-nav#goHome"
-  goHome(event) {
-    event.preventDefault()
-    console.log("🏠 Going home...")
-    window.location.href = "/"
   }
 }

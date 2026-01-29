@@ -295,7 +295,7 @@ Available templates:
 
 ## 15. Touch Display UI Requirements (MANDATORY)
 
-This project includes a **7" touch display kiosk mode** (Raspberry Pi Touch Display 2, 800×480).
+This project includes a **7" touch display kiosk mode** (Raspberry Pi Touch Display 2, 1280×720 landscape).
 
 ### Touch View File Convention
 
@@ -310,7 +310,8 @@ Touch views use `.touch.html.erb` suffix:
 Touch display implementation follows **Rails 8 conventions**:
 - **Stimulus controllers** for JavaScript behavior (keyboard, navigation, detection)
 - **simple-keyboard** library for virtual keyboard
-- **Cookie-based detection** with automatic 800×480 screen size detection
+- **Floating hamburger menu** for navigation (bottom-left, slide-in from left)
+- **Cookie-based detection** with automatic 1280×720 screen size detection
 - **Separated concerns** - CSS in assets, JS in controllers, minimal inline code
 
 ### Virtual Keyboard
@@ -327,14 +328,14 @@ The app uses **simple-keyboard** library with:
 Detection priority:
 1. **URL parameter** (`?touch=1` or `?touch=0`) - Manual override
 2. **Cookie** (`touch_display=1`) - Persists preference
-3. **Screen size** (800×480) - Auto-detected via Stimulus controller
+3. **Screen size** (1280×720) - Auto-detected via Stimulus controller
 4. **Default** - Desktop mode
 
 ### Key Requirements
 
 **When creating touch views:**
 - ✅ Use large touch targets (minimum 64px for critical buttons)
-- ✅ Test on 800×480 resolution (or with `?touch=1`)
+- ✅ Test on 1280×720 resolution (or with `?touch=1`)
 - ✅ Verify virtual keyboard doesn't overlap inputs
 - ✅ Use `h-screen` with `overflow-hidden` on main container (NOT `min-h-screen`)
 - ✅ Design content to fit within 480px height without scrolling
@@ -347,7 +348,7 @@ Detection priority:
 ### Scrolling Policy
 
 **Default: NO SCROLL**
-- All touch pages MUST fit within 800×480 viewport without scrolling
+- All touch pages MUST fit within 1280×720 viewport without scrolling
 - Use `h-screen overflow-hidden` on main containers
 - Reduce spacing, font sizes, and element heights to fit
 
@@ -365,12 +366,27 @@ Detection priority:
 
 ### Documentation
 
+### Navigation Pattern
+
+**Floating Hamburger Menu (Bottom-Left):**
+- Semi-transparent button (96px, 70% opacity)
+- Slides in from left (60% width, no overlay)
+- Minimal menu: Home, Back, Sign Out
+- Close by: tapping hamburger OR tapping visible content area (right 40%)
+- Hidden on home page only
+
+**Implementation:**
+- `app/views/shared/_touch_nav.html.erb` - Menu partial
+- `app/javascript/controllers/touch_nav_controller.js` - Toggle logic
+- `.touch-hamburger-btn` and `.touch-menu-*` styles in `touch.css`
+
 **Complete implementation guide:** `docs/TOUCH_SCREEN_IMPLEMENTATION.md`
 
 This document contains:
 - Architecture details and component structure
 - Stimulus controller implementations
 - CSS and layout patterns
+- Navigation patterns
 - Testing strategies
 - Troubleshooting guide
 - Deployment instructions
