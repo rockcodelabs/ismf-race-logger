@@ -1233,7 +1233,7 @@ end
 
 Created in ONE place only (cloud OR Pi, never both):
 
-- Competitions, Stages, Races
+- Competitions, Races (with stage_name field)
 - Race Locations, Race Types
 - Athletes, Teams, Race Participations
 

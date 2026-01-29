@@ -76,27 +76,23 @@ For each table, we define:
 │  └──────┬───────┘    │    │ end_date         │                  │                   │
 │         │            │    └────────┬─────────┘                  │                   │
 │         │            │             │                            │                   │
-│  ┌──────┴───────┐    │    ┌────────┴─────────┐         ┌────────┴─────────┐         │
-│  │   Session    │    │    │      Stage       │         │ RaceTypeLocation │         │
-│  │   MagicLink  │    │    ├──────────────────┤         │    Template      │         │
-│  └──────────────┘    │    │ id               │         └──────────────────┘         │
-│                      │    │ competition_id   │                                      │
-│                      │    │ name             │                                      │
-│                      │    │ position         │                                      │
-│                      │    └────────┬─────────┘                                      │
+│  ┌──────┴───────┐    │             │                   ┌────────┴─────────┐         │
+│  │   Session    │    │             │                   │ RaceTypeLocation │         │
+│  │   MagicLink  │    │             │                   │    Template      │         │
+│  └──────────────┘    │             │                   └──────────────────┘         │
 │                      │             │                                                │
 │                      │    ┌────────┴─────────┐                                      │
 │                      │    │      Race        │◄─────────────────────────────────┐   │
 │                      │    ├──────────────────┤                                  │   │
 │                      │    │ id               │         ┌──────────────────┐     │   │
-│                      │    │ stage_id         │         │   RaceLocation   │     │   │
+│                      │    │ competition_id   │         │   RaceLocation   │     │   │
 │                      │    │ race_type_id     │────────►├──────────────────┤     │   │
 │                      │    │ name             │         │ id               │     │   │
-│                      │    │ status           │         │ race_id          │     │   │
-│                      │    │ scheduled_at     │         │ name             │     │   │
-│                      │    └────────┬─────────┘         │ location_type    │     │   │
-│                      │             │                   │ has_camera       │     │   │
-│                      │             │                   └──────────────────┘     │   │
+│                      │    │ stage_name       │         │ race_id          │     │   │
+│                      │    │ status           │         │ name             │     │   │
+│                      │    │ scheduled_at     │         │ location_type    │     │   │
+│                      │    │ position         │         │ has_camera       │     │   │
+│                      │    └────────┬─────────┘         └──────────────────┘     │   │
 │                      │             │                                            │   │
 │         ┌────────────┼─────────────┼────────────────────────────────────────┐   │   │
 │         │            │             │                                        │   │   │
@@ -325,13 +321,22 @@ end
 
 **Indexes:** `start_date`, `country`
 
+**Domain Explanation:**
+A Competition (e.g., "World Cup Verbier 2024") contains multiple races. Each race represents a specific race type (sprint, vertical, relay) and stage (qualification, semi-final, final) combination. The race is the actual competitive event.
+
+Example structure:
+- Competition: "World Cup Verbier 2024"
+  - Race: "Sprint - Qualification" (race_type: sprint, stage_name: qualification)
+  - Race: "Sprint - Semi-final" (race_type: sprint, stage_name: semi-final)
+  - Race: "Sprint - Final" (race_type: sprint, stage_name: final)
+  - Race: "Vertical - Final" (race_type: vertical, stage_name: final)
+
 #### Model
 
 ```ruby
 # app/models/competition.rb
 class Competition < ApplicationRecord
-  has_many :stages, dependent: :destroy
-  has_many :races, through: :stages
+  has_many :races, dependent: :destroy
   has_one_attached :logo
 end
 ```
@@ -412,33 +417,6 @@ end
 
 ---
 
-### Table: stages
-
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| id | bigint | PK | |
-| competition_id | bigint | FK, NOT NULL | |
-| name | string | NOT NULL | e.g., "Qualification", "Finals" |
-| description | text | | |
-| date | date | | Stage date |
-| position | integer | NOT NULL, DEFAULT 0 | Sort order |
-| created_at | datetime | NOT NULL | |
-| updated_at | datetime | NOT NULL | |
-
-**Indexes:** `competition_id`, `[competition_id, position]` (unique)
-
-#### Model
-
-```ruby
-# app/models/stage.rb
-class Stage < ApplicationRecord
-  belongs_to :competition
-  has_many :races, dependent: :destroy
-end
-```
-
----
-
 ## Domain: Races
 
 ### Table: race_types
@@ -486,30 +464,35 @@ end
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | bigint | PK | |
-| stage_id | bigint | FK, NOT NULL | |
-| race_type_id | bigint | FK, NOT NULL | |
-| name | string | NOT NULL | |
+| competition_id | bigint | FK, NOT NULL | Parent competition |
+| race_type_id | bigint | FK, NOT NULL | Sprint, vertical, relay, etc. |
+| name | string | NOT NULL | Display name (e.g., "Sprint - Qualification") |
+| stage_name | string | NOT NULL | qualification, semi_final, final, etc. |
 | scheduled_at | datetime | | Start time |
-| position | integer | NOT NULL, DEFAULT 0 | Sort order |
-| status | enum | NOT NULL, DEFAULT scheduled | Race status |
+| position | integer | NOT NULL, DEFAULT 0 | Sort order within competition |
+| status | enum | NOT NULL, DEFAULT scheduled | scheduled, in_progress, completed, cancelled |
 | created_at | datetime | NOT NULL | |
 | updated_at | datetime | NOT NULL | |
 
-**Indexes:** `stage_id`, `race_type_id`, `status`, `[stage_id, position]` (unique)
+**Indexes:** `competition_id`, `race_type_id`, `status`, `[competition_id, position]` (unique)
+
+**Stage Names:** qualification, semi_final, final, heat_1, heat_2, etc.
 
 #### Model
 
 ```ruby
 # app/models/race.rb
 class Race < ApplicationRecord
-  belongs_to :stage
+  belongs_to :competition
   belongs_to :race_type
-  has_one :competition, through: :stage
   has_many :race_locations, dependent: :destroy
   has_many :race_participations, dependent: :destroy
   has_many :incidents, dependent: :destroy
   has_many :reports, dependent: :destroy
   has_many :teams, dependent: :destroy
+  
+  # Stage name is stored as string for flexibility
+  # Common values: "qualification", "semi_final", "final"
 end
 ```
 
@@ -520,9 +503,10 @@ end
 module Structs
   class Race < Dry::Struct
     attribute :id, Types::Integer
-    attribute :stage_id, Types::Integer
+    attribute :competition_id, Types::Integer
     attribute :race_type_id, Types::Integer
     attribute :name, Types::String
+    attribute :stage_name, Types::String
     attribute :scheduled_at, Types::Time.optional
     attribute :position, Types::Integer
     attribute :status, Types::RaceStatus
@@ -540,6 +524,10 @@ module Structs
     def can_report?
       status.in?(%w[scheduled in_progress])
     end
+    
+    def stage_display
+      stage_name.humanize
+    end
   end
 end
 ```
@@ -556,7 +544,11 @@ class RaceRepo < DB::Repo
   end
 
   def for_competition(competition_id)
-    joins(:stage).where(stages: { competition_id: competition_id })
+    where(competition_id: competition_id).order(:position)
+  end
+  
+  def by_race_type(competition_id, race_type_id)
+    where(competition_id: competition_id, race_type_id: race_type_id).order(:position)
   end
 
   def in_progress
@@ -1645,16 +1637,15 @@ add_index :athletes, :license_number, unique: true, where: "license_number IS NO
 3. `race_types` (no dependencies)
 4. `race_type_location_templates` (depends on race_types)
 5. `competitions` (no dependencies)
-6. `stages` (depends on competitions)
-7. `races` (depends on stages, race_types)
-8. `race_locations` (depends on races)
-9. `athletes` (no dependencies)
-10. `teams` (depends on races, athletes)
-11. `race_participations` (depends on races, athletes, teams)
-12. `incidents` (depends on races, race_locations, users)
-13. `reports` (depends on races, incidents, users, race_locations, race_participations, athletes)
-14. `rules` (no dependencies)
-15. `mso_imports` (depends on races, users)
+6. `races` (depends on competitions, race_types)
+7. `race_locations` (depends on races)
+8. `athletes` (no dependencies)
+9. `teams` (depends on races, athletes)
+10. `race_participations` (depends on races, athletes, teams)
+11. `incidents` (depends on races, race_locations, users)
+12. `reports` (depends on races, incidents, users, race_locations, race_participations, athletes)
+13. `rules` (no dependencies)
+14. `mso_imports` (depends on races, users)
 
 ---
 
@@ -1662,11 +1653,13 @@ add_index :athletes, :license_number, unique: true, where: "license_number IS NO
 
 This document defines the complete database schema for the ISMF Race Logger, mapped to our Hanami-hybrid architecture:
 
-| Tables | 15 |
+| Tables | 14 |
 |--------|-----|
 | Structs | 10+ |
 | Summaries | 5+ |
 | Repos | 10+ |
+
+**Key architectural change:** The `stages` table has been removed. Each `race` now belongs directly to a `competition` and includes a `stage_name` field (qualification, semi_final, final, etc.) to represent the stage within that race type.
 | Types/Enums | 12 |
 
 All validations, scopes, and business logic are in their proper Hanami layers - NOT in ActiveRecord models.
