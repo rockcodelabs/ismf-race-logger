@@ -56,11 +56,29 @@ module Web
             authorize @participation
 
             if @participation.destroy
-              redirect_to admin_competition_race_path(@competition, @race),
-                         notice: "Athlete removed from race successfully."
+              respond_to do |format|
+                format.turbo_stream do
+                  render turbo_stream: turbo_stream.remove("participation_#{@participation.id}")
+                end
+                format.html do
+                  redirect_to admin_competition_race_path(@competition, @race),
+                             notice: "Athlete removed from race successfully."
+                end
+              end
             else
-              redirect_to admin_competition_race_path(@competition, @race),
-                         alert: "Failed to remove athlete from race."
+              respond_to do |format|
+                format.turbo_stream do
+                  render turbo_stream: turbo_stream.replace(
+                    "participation_#{@participation.id}",
+                    partial: "admin/races/participation_error",
+                    locals: { participation: @participation }
+                  )
+                end
+                format.html do
+                  redirect_to admin_competition_race_path(@competition, @race),
+                             alert: "Failed to remove athlete from race."
+                end
+              end
             end
           end
 

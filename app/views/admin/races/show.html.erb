@@ -127,7 +127,7 @@
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
               <% @participations.each do |participation| %>
-                <tr class="hover:bg-gray-50">
+                <tr class="hover:bg-gray-50" data-controller="remove-row" id="participation_<%= participation.id %>">
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span class="inline-flex items-center justify-center px-3 py-1 text-sm font-bold text-gray-700 bg-gray-100 rounded-full">
                       <%= participation.bib_display %>
