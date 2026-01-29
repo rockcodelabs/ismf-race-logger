@@ -126,7 +126,7 @@ if Rails.env.development?
     password: "test",
     password_confirmation: "test",
     admin: true,
-    role: referee_manager_role
+    role: var_operator_role
   )
 
   if dev_user.save

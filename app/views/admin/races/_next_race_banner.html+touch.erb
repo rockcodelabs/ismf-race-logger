@@ -1,0 +1,32 @@
+<%# Reusable next race banner component for touch displays %>
+<%# Usage: render 'admin/races/next_race_banner', next_race: next_race, competition: @competition %>
+
+<% if next_race.present? %>
+  <%= link_to admin_competition_race_path(competition, next_race), class: "block" do %>
+    <div class="bg-yellow-400 rounded-xl p-4 shadow-lg">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 bg-yellow-900/20 rounded-full flex items-center justify-center">
+          <svg class="w-7 h-7 text-yellow-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="px-2 py-1 text-xs font-bold rounded bg-yellow-900 text-yellow-100 uppercase">
+              Next
+            </span>
+            <span class="text-sm font-bold text-yellow-900">
+              in <%= next_race.minutes_until_start %> min
+            </span>
+          </div>
+          <h3 class="text-base font-bold text-yellow-900 truncate">
+            <%= next_race.name %>
+          </h3>
+        </div>
+        <svg class="w-6 h-6 text-yellow-900 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </div>
+    </div>
+  <% end %>
+<% end %>

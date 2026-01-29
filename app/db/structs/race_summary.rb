@@ -25,7 +25,8 @@ module Structs
     :position,
     :scheduled_at,
     :status,
-    :race_type_name
+    :race_type_name,
+    :gender_category
   ) do
     # Display name is just the race name
     def display_name
@@ -66,6 +67,35 @@ module Structs
 
     def scheduled_today?
       scheduled_at.present? && scheduled_at.to_date == Date.current
+    end
+
+    # Check if race is upcoming (scheduled and in the future)
+    def upcoming?
+      scheduled? && scheduled_at.present? && scheduled_at > Time.current
+    end
+
+    # Calculate minutes until race starts
+    def minutes_until_start
+      return 0 unless scheduled_at.present?
+      return 0 unless upcoming?
+      ((scheduled_at - Time.current) / 60).to_i
+    end
+
+    # Stage display (just returns stage_name)
+    def stage_display
+      stage_name
+    end
+
+    # Gender category display
+    def gender_category_display
+      case gender_category
+      when "M" then "Men"
+      when "W" then "Women"
+      when "MM" then "Men's Team"
+      when "WW" then "Women's Team"
+      when "MW" then "Mixed Team"
+      else gender_category
+      end
     end
 
     # Badge styling for status

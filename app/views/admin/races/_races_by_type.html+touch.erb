@@ -1,0 +1,78 @@
+<%# Reusable races list component for touch displays %>
+<%# Usage: render 'admin/races/races_by_type', races_by_type: @races_by_type, competition: @competition %>
+
+<% if races_by_type.any? %>
+  <div class="space-y-3">
+    <% races_by_type.each do |race_type_name, races| %>
+      <div class="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200">
+        <!-- Race Type Header -->
+        <div class="bg-gray-50 px-3 py-2 border-b border-gray-200">
+          <h3 class="text-sm font-bold text-ismf-navy"><%= race_type_name&.titleize || 'Unknown' %></h3>
+          <p class="text-xs text-ismf-gray"><%= races.count %> race<%= 's' if races.count != 1 %></p>
+        </div>
+
+        <!-- Race Rows - Horizontal Layout -->
+        <div class="overflow-x-auto">
+          <div class="flex divide-x divide-gray-200">
+            <% races.sort_by(&:position).each do |race| %>
+              <%= link_to admin_competition_race_path(competition, race), class: "flex-1 min-w-[180px] px-3 py-3 active:bg-gray-100 transition border-b border-gray-100 last:border-b-0" do %>
+                <div class="text-center">
+                  <h4 class="text-sm font-bold text-ismf-navy mb-1">
+                    <%= race.stage_name %>
+                  </h4>
+                  <% if race.scheduled_at.present? %>
+                    <div class="flex items-center justify-center gap-1 text-xs text-ismf-gray mb-2">
+                      <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span><%= race.scheduled_at.strftime("%H:%M") %></span>
+                    </div>
+                  <% end %>
+                  <div class="flex justify-center">
+                    <% case race.status %>
+                    <% when 'in_progress' %>
+                      <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-green-100 text-green-800 border border-green-200">
+                        Live
+                      </span>
+                    <% when 'completed' %>
+                      <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-gray-100 text-gray-800 border border-gray-200">
+                        Done
+                      </span>
+                    <% when 'scheduled' %>
+                      <% if race.upcoming? && race.minutes_until_start <= 120 %>
+                        <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-yellow-100 text-yellow-800 border border-yellow-200">
+                          Next Up
+                        </span>
+                      <% else %>
+                        <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-gray-100 text-gray-800 border border-gray-200">
+                          Upcoming
+                        </span>
+                      <% end %>
+                    <% else %>
+                      <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-gray-100 text-gray-600 border border-gray-200">
+                        <%= race.status.humanize %>
+                      </span>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <!-- Empty State -->
+  <div class="flex flex-col items-center justify-center py-16 px-6 bg-white rounded-lg">
+    <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+      <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+    </div>
+    <h3 class="text-lg font-bold text-ismf-navy mb-2">No races yet</h3>
+    <p class="text-sm text-ismf-gray text-center">
+      Races will appear here when added.
+    </p>
+  </div>
+<% end %>

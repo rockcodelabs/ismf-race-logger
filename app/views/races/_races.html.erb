@@ -21,7 +21,8 @@
 
   <% if @races_by_type.any? %>
     <%# Find next race within 2 hours %>
-    <% next_race = @races_by_type.values.flatten.select { |r| r.upcoming? && r.minutes_until_start <= 120 }.min_by(&:scheduled_at) %>
+    <% upcoming_races = @races_by_type.values.flatten.select { |r| r.upcoming? && r.minutes_until_start <= 120 } %>
+    <% next_race = upcoming_races.min_by(&:scheduled_at) if upcoming_races.any? %>
     <% if next_race %>
       <div class="card border-2 border-yellow-400 bg-gradient-to-r from-yellow-50 to-amber-50">
         <div class="p-6">
@@ -114,75 +115,58 @@
           </div>
         </div>
 
-        <!-- Races table -->
-        <div class="table-container border-0 rounded-none">
-          <table class="table">
-            <thead>
-              <tr>
-                <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Race</th>
-                <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</th>
-                <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scheduled</th>
-                <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th class="text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 bg-white">
-              <% races.sort_by(&:position).each do |race| %>
-                <% race_part = parts_factory.wrap(race) %>
-                <tr id="<%= race_part.dom_id %>">
-                  <td>
-                    <div class="flex items-center gap-2">
-                      <%= race_part.status_dot %>
-                      <div>
-                        <div class="font-medium text-ismf-navy">
-                          <%= race.name %>
-                        </div>
-                        <div class="text-xs text-gray-500">
-                          Position: #<%= race.position + 1 %>
-                        </div>
-                      </div>
+        <!-- Race Rows - Horizontal Layout -->
+        <div class="overflow-x-auto">
+          <div class="flex divide-x divide-gray-200">
+            <% races.sort_by(&:position).each do |race| %>
+              <%= link_to admin_competition_race_path(race.competition_id, race), class: "flex-1 min-w-[180px] px-3 py-3 hover:bg-gray-50 transition border-b border-gray-100 last:border-b-0" do %>
+                <div class="text-center">
+                  <h4 class="text-sm font-bold text-ismf-navy mb-1">
+                    <%= race.stage_name %>
+                  </h4>
+                  <% if race.scheduled_at.present? %>
+                    <div class="flex items-center justify-center gap-1 text-xs text-ismf-gray mb-2">
+                      <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span><%= race.scheduled_at.strftime("%b %d, %H:%M") %></span>
                     </div>
-                  </td>
-                  <td class="text-ismf-gray">
-                    <%= race_part.stage_display_with_icon %>
-                  </td>
-                  <td class="text-ismf-gray">
-                    <% if race.scheduled_at.present? %>
-                      <div class="font-medium"><%= race.formatted_scheduled_time %></div>
-                      <div class="text-xs text-gray-500"><%= race.formatted_scheduled_date %></div>
+                  <% end %>
+                  <div class="flex justify-center">
+                    <% case race.status %>
+                    <% when 'in_progress' %>
+                      <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-green-100 text-green-800 border border-green-200">
+                        <span class="w-1.5 h-1.5 mr-1 bg-green-600 rounded-full animate-pulse"></span>
+                        Live
+                      </span>
+                    <% when 'completed' %>
+                      <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-gray-100 text-gray-800 border border-gray-200">
+                        Done
+                      </span>
+                    <% when 'scheduled' %>
+                      <% if race.upcoming? && race.minutes_until_start <= 120 %>
+                        <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-yellow-100 text-yellow-800 border border-yellow-200">
+                          Next Up
+                        </span>
+                      <% else %>
+                        <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-blue-100 text-blue-800 border border-blue-200">
+                          Upcoming
+                        </span>
+                      <% end %>
+                    <% when 'cancelled' %>
+                      <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-red-100 text-red-800 border border-red-200">
+                        Cancelled
+                      </span>
                     <% else %>
-                      <span class="text-gray-400 italic">Not scheduled</span>
+                      <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-gray-100 text-gray-600 border border-gray-200">
+                        <%= race.status.humanize %>
+                      </span>
                     <% end %>
-                  </td>
-                  <td>
-                    <%= race_part.status_badge %>
-                  </td>
-                  <td>
-                    <div class="flex items-center justify-end gap-1">
-                      <%= link_to admin_competition_race_path(race.competition_id, race), class: "inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-ismf-blue hover:bg-blue-50 transition-all", title: "View" do %>
-                        <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      <% end %>
-                      <% if race.can_edit? %>
-                        <%= link_to edit_admin_competition_race_path(race.competition_id, race), class: "inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-ismf-red hover:bg-red-50 transition-all", title: "Edit" do %>
-                          <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        <% end %>
-                      <% end %>
-                      <%= button_to admin_competition_race_path(race.competition_id, race), method: :delete, class: "inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all", title: "Delete", data: { turbo_confirm: "Are you sure you want to delete '#{race.name}'?" } do %>
-                        <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      <% end %>
-                    </div>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               <% end %>
-            </tbody>
-          </table>
+            <% end %>
+          </div>
         </div>
       </div>
     <% end %>

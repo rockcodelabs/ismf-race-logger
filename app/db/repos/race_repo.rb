@@ -218,7 +218,8 @@ class RaceRepo < DB::Repo
       position: record.position,
       scheduled_at: record.scheduled_at,
       status: record.status,
-      race_type_name: record.race_type&.name
+      race_type_name: record.race_type&.name,
+      gender_category: record.gender_category
     )
   end
 end

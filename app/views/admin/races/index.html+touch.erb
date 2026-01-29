@@ -1,0 +1,50 @@
+<% content_for :page_title, "#{@competition.name} - Races" %>
+
+<div class="h-screen overflow-hidden flex flex-col bg-gray-50">
+  <!-- Header -->
+  <div class="shrink-0 px-3 pt-3 pb-2 touch-content-with-nav bg-white shadow-sm">
+    <div class="flex items-center justify-between mb-2">
+      <div class="flex-1 min-w-0">
+        <h1 class="text-xl font-bold text-ismf-navy truncate">
+          Races
+        </h1>
+        <p class="text-sm text-ismf-gray truncate">
+          <%= @competition.name %>
+        </p>
+      </div>
+      <%= link_to new_admin_competition_race_path(@competition), class: "btn-primary text-sm py-2 px-3" do %>
+        <svg class="w-5 h-5 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        <span>New</span>
+      <% end %>
+    </div>
+
+    <!-- Competition Info Pills -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-1">
+      <span class="px-3 py-1 text-xs font-bold rounded-full <%= @competition.status_badge_class %> whitespace-nowrap">
+        <%= @competition.status.titleize %>
+      </span>
+      <span class="px-3 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-800 whitespace-nowrap">
+        <%= @competition.short_date_range %>
+      </span>
+      <span class="px-3 py-1 text-xs font-bold rounded-full bg-ismf-blue/10 text-ismf-blue whitespace-nowrap">
+        <%= @races.count %> race<%= 's' if @races.count != 1 %>
+      </span>
+    </div>
+  </div>
+
+  <!-- Next Race Banner -->
+  <% upcoming_races = @races.select { |r| r.upcoming? && r.minutes_until_start <= 120 } %>
+  <% next_race = upcoming_races.min_by(&:scheduled_at) if upcoming_races.any? %>
+  <div class="shrink-0 px-3 pt-2">
+    <%= render 'admin/races/next_race_banner', next_race: next_race, competition: @competition %>
+  </div>
+
+  <!-- Races List -->
+  <div class="flex-1 overflow-y-auto touch-scrollable">
+    <div class="px-3 py-3">
+      <%= render 'admin/races/races_by_type', races_by_type: @races_by_type, competition: @competition %>
+    </div>
+  </div>
+</div>
