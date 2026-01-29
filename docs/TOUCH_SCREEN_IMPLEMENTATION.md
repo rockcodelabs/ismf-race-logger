@@ -294,6 +294,150 @@ export default class extends Controller {
 
 ---
 
+## Layout Guidelines
+
+### No-Scroll Policy
+
+**All touch pages MUST fit within 800×480 viewport without scrolling.**
+
+#### Rules
+
+1. **Use `h-screen overflow-hidden`** on main container (NOT `min-h-screen`)
+2. **Design content to fit** within 480px height without scrolling
+3. **Scrolling is opt-in** only for specific content areas (lists, modals)
+4. **NO autofocus** attributes (keyboard only shows when user taps)
+
+#### Container Structure
+
+```erb
+<!-- ✅ CORRECT - No scroll by default -->
+<div class="h-screen touch-spacing overflow-hidden flex flex-col">
+  <h1 class="text-3xl font-extrabold text-white mb-4 text-center flex-shrink-0">
+    Page Title
+  </h1>
+  
+  <!-- Content goes here -->
+</div>
+
+<!-- ❌ WRONG - Will cause scrolling -->
+<div class="min-h-screen touch-spacing">
+  <!-- Content -->
+</div>
+```
+
+#### Opt-in Scrollable Areas
+
+Use these classes **only when explicitly needed**:
+
+```css
+.touch-scrollable       /* Auto height with scroll */
+.touch-scrollable-sm    /* Max 200px height */
+.touch-scrollable-md    /* Max 300px height */
+.touch-scrollable-lg    /* Max 400px height */
+```
+
+**When to use scrollable areas:**
+- Long lists (users, incidents, reports)
+- Modal content that may overflow
+- Data tables with many rows
+- Form containers with many fields
+
+**Example:**
+
+```erb
+<div class="h-screen touch-spacing overflow-hidden flex flex-col">
+  <h1 class="flex-shrink-0">Users</h1>
+  
+  <!-- Scrollable list -->
+  <div class="bg-white rounded-2xl p-4 flex-1 flex flex-col min-h-0">
+    <div class="space-y-3 touch-scrollable flex-1">
+      <% @users.each do |user| %>
+        <!-- User item -->
+      <% end %>
+    </div>
+  </div>
+</div>
+```
+
+### Spacing Guidelines for 480px Height
+
+**Reduce all spacing for touch pages:**
+
+| Element | Desktop | Touch (800×480) |
+|---------|---------|-----------------|
+| Page title | `text-4xl mb-8` | `text-3xl mb-4` |
+| Section spacing | `mb-8` | `mb-4` |
+| Card padding | `p-6` | `p-4` |
+| Logo size | `120px × 120px` | `80px × 80px` |
+| Button height | `80px` | `60px` |
+| Input height | `70px` | `55px` |
+| Form spacing | `space-y-8` | `space-y-4` |
+
+### Keyboard Considerations
+
+**The virtual keyboard takes ~250px when visible:**
+
+- 480px viewport height
+- 250px keyboard height
+- **230px remaining** for content when keyboard is active
+
+**Best practices:**
+- Keep forms minimal (2-4 fields visible)
+- Use scrollable form containers for long forms
+- Position critical buttons above keyboard area
+- Test with keyboard visible
+
+### Example Layouts
+
+#### Simple Page (Home, Sign-in)
+
+```erb
+<div class="h-screen flex flex-col items-center justify-center touch-spacing overflow-hidden">
+  <div class="touch-logo mb-4"></div>
+  <h1 class="text-3xl mb-4">Title</h1>
+  <div class="w-full max-w-2xl">
+    <!-- Content -->
+  </div>
+</div>
+```
+
+#### Dashboard with List
+
+```erb
+<div class="h-screen touch-spacing overflow-hidden flex flex-col">
+  <h1 class="text-3xl mb-4 flex-shrink-0">Dashboard</h1>
+  
+  <div class="grid grid-cols-2 gap-3 mb-4 flex-shrink-0">
+    <!-- Stats cards -->
+  </div>
+  
+  <div class="bg-white rounded-2xl p-4 flex-1 flex flex-col min-h-0">
+    <h2 class="text-xl mb-3 flex-shrink-0">Recent Items</h2>
+    <div class="touch-scrollable flex-1">
+      <!-- List items -->
+    </div>
+  </div>
+</div>
+```
+
+#### Form Page
+
+```erb
+<div class="h-screen touch-spacing overflow-hidden flex flex-col">
+  <h1 class="text-3xl mb-4 flex-shrink-0">Create User</h1>
+  
+  <div class="bg-white rounded-2xl p-4 flex-1 flex flex-col min-h-0">
+    <div class="touch-scrollable flex-1">
+      <%= form_with model: @user, class: "space-y-4" do |f| %>
+        <!-- Form fields -->
+      <% end %>
+    </div>
+  </div>
+</div>
+```
+
+---
+
 ## Implementation Plan
 
 ### Phase 1: Clean Up (Remove Old Code)
