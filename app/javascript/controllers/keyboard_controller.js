@@ -24,11 +24,24 @@ export default class extends Controller {
     this.audioContext = null
     this.audioResumed = false
     
+    // Ensure keyboard starts hidden
+    this.element.style.display = "none"
+    this.element.style.visibility = "hidden"
+    
     // Dynamically import simple-keyboard
     this.loadKeyboard()
+    
+    // Setup Turbo cleanup
+    this.handleTurboBeforeVisit = this.handleTurboBeforeVisit.bind(this)
+    document.addEventListener("turbo:before-visit", this.handleTurboBeforeVisit)
   }
 
   disconnect() {
+    console.log("🎹 Keyboard controller disconnecting")
+    
+    // Force hide keyboard immediately
+    this.forceHideKeyboard()
+    
     if (this.keyboard) {
       this.keyboard.destroy()
     }
@@ -42,6 +55,18 @@ export default class extends Controller {
     document.removeEventListener("focusin", this.handleFocusIn)
     document.removeEventListener("focusout", this.handleFocusOut)
     document.removeEventListener("focus", this.preventNativeKeyboard, true)
+    document.removeEventListener("turbo:before-visit", this.handleTurboBeforeVisit)
+  }
+
+  handleTurboBeforeVisit() {
+    console.log("🚫 Turbo navigation - hiding keyboard")
+    this.forceHideKeyboard()
+  }
+
+  forceHideKeyboard() {
+    this.element.style.display = "none"
+    this.element.style.visibility = "hidden"
+    this.currentInput = null
   }
 
   async loadKeyboard() {
@@ -79,6 +104,7 @@ export default class extends Controller {
     
     // Hide keyboard initially
     this.element.style.display = "none"
+    this.element.style.visibility = "hidden"
     
     // Setup preview display styling
     this.setupPreviewDisplay()
@@ -187,6 +213,7 @@ export default class extends Controller {
   showKeyboard(input) {
     this.currentInput = input
     this.element.style.display = "block"
+    this.element.style.visibility = "visible"
     
     // Set keyboard value to current input value
     this.keyboard.setInput(input.value)
@@ -199,6 +226,7 @@ export default class extends Controller {
 
   hideKeyboard() {
     this.element.style.display = "none"
+    this.element.style.visibility = "hidden"
     this.currentInput = null
     
     // Reset to default layout

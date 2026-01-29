@@ -360,6 +360,8 @@ body.touch-mode textarea {
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
+  display: none;
+  visibility: hidden;
 }
 
 /* Prevent pointer events on button content */
