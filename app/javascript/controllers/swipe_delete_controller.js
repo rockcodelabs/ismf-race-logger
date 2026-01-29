@@ -57,8 +57,11 @@ export default class extends Controller {
 
     // Record the starting position
     this.startX = event.touches[0].clientX
+    this.startY = event.touches[0].clientY
     this.currentX = this.startX
+    this.currentY = this.startY
     this.isDragging = true
+    this.isHorizontalSwipe = null // Will be determined on first move
     
     // Get current card position to track from there
     const currentTransform = this.cardTarget.style.transform
@@ -74,10 +77,31 @@ export default class extends Controller {
     if (!this.isDragging || this.isDeleting) return
 
     this.currentX = event.touches[0].clientX
+    this.currentY = event.touches[0].clientY
     const deltaX = this.currentX - this.startX
+    const deltaY = this.currentY - this.startY
     const totalX = this.startOffset + deltaX
 
-    // Prevent scrolling while swiping
+    // Determine swipe direction on first move beyond threshold (5px)
+    if (this.isHorizontalSwipe === null) {
+      const moveDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
+      
+      if (moveDistance > 5) {
+        // Determine if this is primarily horizontal or vertical movement
+        this.isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY)
+        
+        // If it's vertical, stop tracking immediately to allow scroll
+        if (!this.isHorizontalSwipe) {
+          this.isDragging = false
+          return
+        }
+      } else {
+        // Not enough movement yet, don't do anything
+        return
+      }
+    }
+
+    // Confirmed horizontal swipe - prevent default to stop scrolling
     event.preventDefault()
 
     // Allow movement in both directions
@@ -117,6 +141,8 @@ export default class extends Controller {
     if (!this.isDragging || this.isDeleting) return
 
     this.isDragging = false
+    this.isHorizontalSwipe = null // Reset for next interaction
+    
     const deltaX = this.currentX - this.startX
     const totalX = this.startOffset + deltaX
     
