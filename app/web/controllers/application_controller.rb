@@ -17,6 +17,9 @@ module Web
       # Explicitly set application layout
       layout "application"
 
+      # Make touch_display? available in views
+      helper_method :touch_display?
+
       # Set Turbo Native variant for template selection
       before_action :set_variant
       before_action :set_touch_layout
