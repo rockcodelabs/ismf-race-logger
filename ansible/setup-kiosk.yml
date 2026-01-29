@@ -69,7 +69,6 @@
           - unclutter
           - ca-certificates
           - seatd
-          - squeekboard
         state: present
         install_recommends: no
 
@@ -139,13 +138,7 @@
         mode: '0644'
       notify: restart kiosk
 
-    - name: Create squeekboard configuration directory
-      file:
-        path: /home/{{ kiosk_user }}/.local/share/squeekboard
-        state: directory
-        owner: "{{ kiosk_user }}"
-        group: "{{ kiosk_user }}"
-        mode: '0755'
+
 
     # ============================================================
     # Phase 7: Configure Kiosk Systemd Service
