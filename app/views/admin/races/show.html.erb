@@ -96,17 +96,17 @@
           </span>
         </div>
         <div class="flex items-center gap-3">
-          <% previous_races = race_repo.previous_races_same_category(@race.id) %>
-          <% if previous_races.any? %>
+          <% copyable_races = race_repo.copyable_races(@race.id) %>
+          <% if copyable_races.any? %>
             <%= form_with url: copy_admin_competition_race_participations_path(@competition, @race), method: :post, class: "flex items-center gap-2" do |f| %>
               <%= f.select :source_race_id, 
-                  options_from_collection_for_select(previous_races, :id, :name),
-                  { prompt: "Select source race..." },
-                  class: "rounded-lg border-gray-300 text-sm" %>
-              <%= f.submit "Copy Participants", class: "btn-secondary" %>
+                  options_from_collection_for_select(copyable_races, :id, :name),
+                  { prompt: "Copy from..." },
+                  class: "rounded-lg border-gray-300 text-sm min-w-[200px]" %>
+              <%= f.submit "Copy Participants", class: "btn-primary" %>
             <% end %>
           <% else %>
-            <span class="text-sm text-gray-500 italic">No previous <%= @race.gender_category_display.downcase %> races to copy from</span>
+            <span class="text-sm text-gray-500 italic">No previous races available to copy from</span>
           <% end %>
         </div>
       </div>

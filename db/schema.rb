@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_29_205335) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_29_211127) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -125,7 +125,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_29_205335) do
     t.string "stage_type", null: false
     t.string "status", default: "scheduled", null: false
     t.datetime "updated_at", null: false
-    t.index ["competition_id", "position"], name: "index_races_on_competition_id_and_position"
+    t.index ["competition_id", "position"], name: "index_races_on_competition_id_and_position", unique: true
     t.index ["competition_id"], name: "index_races_on_competition_id"
     t.index ["gender_category"], name: "index_races_on_gender_category"
     t.index ["race_type_id"], name: "index_races_on_race_type_id"

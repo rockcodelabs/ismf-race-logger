@@ -260,8 +260,12 @@ mixed_relay_type = RaceType.find_by(name: "Mixed Relay")
 
 puts "\nCreating races for each discipline..."
 
-# Helper to create race and participants
+# Helper to create race and participants with automatic position assignment
 def create_race_with_participants(competition, race_type, stage_name, stage_type, gender_category, athletes, start_bib, scheduled_time)
+  # Get next position for this competition
+  max_position = Race.where(competition_id: competition.id).maximum(:position) || -1
+  next_position = max_position + 1
+  
   race = Race.find_or_initialize_by(
     competition: competition,
     race_type: race_type,
@@ -273,7 +277,8 @@ def create_race_with_participants(competition, race_type, stage_name, stage_type
   race.assign_attributes(
     name: "#{race_type.name} #{stage_name} #{gender_category}",
     scheduled_at: scheduled_time,
-    status: "scheduled"
+    status: "scheduled",
+    position: next_position
   )
   
   if race.save
@@ -543,6 +548,9 @@ def create_relay_teams(race, male_athletes, female_athletes, start_bib, team_cou
 end
 
 # Qualification - 25 teams
+max_position = Race.where(competition_id: competition.id).maximum(:position) || -1
+next_position = max_position + 1
+
 mixed_relay_qual = Race.find_or_initialize_by(
   competition: competition,
   race_type: mixed_relay_type,
@@ -554,7 +562,8 @@ mixed_relay_qual = Race.find_or_initialize_by(
 mixed_relay_qual.assign_attributes(
   name: "Mixed Relay Qualification",
   scheduled_at: day4_base,
-  status: "scheduled"
+  status: "scheduled",
+  position: next_position
 )
 
 if mixed_relay_qual.save
@@ -568,6 +577,9 @@ end
 # Semifinals - 2 semifinals x 6 teams = 12 teams
 # Top 3 from each semifinal = 6 teams advance to final
 2.times do |semi_num|
+  max_position = Race.where(competition_id: competition.id).maximum(:position) || -1
+  next_position = max_position + 1
+  
   mixed_relay_semi = Race.find_or_initialize_by(
     competition: competition,
     race_type: mixed_relay_type,
@@ -579,7 +591,8 @@ end
   mixed_relay_semi.assign_attributes(
     name: "Mixed Relay Semifinal #{semi_num + 1}",
     scheduled_at: day4_base + 2.hours + (semi_num * 30).minutes,
-    status: "scheduled"
+    status: "scheduled",
+    position: next_position
   )
   
   if mixed_relay_semi.save
@@ -598,6 +611,9 @@ end
 end
 
 # Final - 6 teams
+max_position = Race.where(competition_id: competition.id).maximum(:position) || -1
+next_position = max_position + 1
+
 mixed_relay_final = Race.find_or_initialize_by(
   competition: competition,
   race_type: mixed_relay_type,
@@ -609,7 +625,8 @@ mixed_relay_final = Race.find_or_initialize_by(
 mixed_relay_final.assign_attributes(
   name: "Mixed Relay Final",
   scheduled_at: day4_base + 4.hours,
-  status: "scheduled"
+  status: "scheduled",
+  position: next_position
 )
 
 if mixed_relay_final.save

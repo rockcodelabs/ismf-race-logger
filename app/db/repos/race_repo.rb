@@ -144,8 +144,10 @@ class RaceRepo < DB::Repo
       .map { |r| build_struct(r) }
   end
 
-  # Find races with the same gender category and race type
-  # that occurred before the given race (by position)
+  # Find races that can be used as a source for copying participants
+  # Includes races with the same gender category and race type that occurred before
+  # the given race (by position). For heats, semifinals, and finals, also includes
+  # the qualification race.
   #
   # @param race_id [Integer] The current race ID
   # @return [Array<Structs::RaceSummary>]
@@ -160,6 +162,16 @@ class RaceRepo < DB::Repo
       .where("position < ?", race.position)
       .order(position: :desc)
       .map { |r| build_summary(r) }
+  end
+
+  # Find races that can be used as a source for copying participants
+  # This is an alias for previous_races_same_category for backward compatibility
+  # and better naming clarity when used in copy context.
+  #
+  # @param race_id [Integer] The current race ID
+  # @return [Array<Structs::RaceSummary>]
+  def copyable_races(race_id)
+    previous_races_same_category(race_id)
   end
 
   protected

@@ -25,4 +25,9 @@ class RaceParticipationPolicy < ApplicationPolicy
   def index?
     user.admin? || user.var_operator?
   end
+
+  # Only admins and VAR operators can copy participations from another race
+  def copy?
+    user.admin? || user.var_operator?
+  end
 end

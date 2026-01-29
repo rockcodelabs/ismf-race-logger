@@ -110,6 +110,46 @@
         </div>
 
         <% if @races_by_type.any? %>
+          <%# Find next race within 2 hours %>
+          <% next_race = @races_by_type.values.flatten.select { |r| r.upcoming? && r.minutes_until_start <= 120 }.min_by(&:scheduled_at) %>
+          <% if next_race %>
+            <!-- Next Race Banner -->
+            <div class="bg-gradient-to-r from-yellow-400 to-amber-400 rounded-xl p-4 mb-3 border-2 border-yellow-500 shadow-lg">
+              <div class="flex items-center gap-3 mb-2">
+                <div class="w-12 h-12 bg-white/30 rounded-full flex items-center justify-center animate-pulse">
+                  <svg class="w-7 h-7 text-yellow-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="px-2.5 py-1 text-xs font-black rounded-full bg-yellow-900 text-yellow-100 uppercase tracking-wider">
+                      Next Race
+                    </span>
+                    <span class="text-sm font-bold text-yellow-900">
+                      in <%= next_race.minutes_until_start %> min
+                    </span>
+                  </div>
+                  <h3 class="text-base font-black text-yellow-900 mb-1">
+                    <%= next_race.name %>
+                  </h3>
+                  <div class="flex items-center gap-2 text-xs text-yellow-900 font-medium">
+                    <span class="flex items-center gap-1">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <%= next_race.formatted_scheduled_time %>
+                    </span>
+                    <span>•</span>
+                    <span><%= next_race.stage_display %></span>
+                    <span>•</span>
+                    <span><%= next_race.gender_category_display %></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% end %>
+
           <!-- Race Cards -->
           <div class="space-y-2">
             <% @races_by_type.each do |race_type_name, races| %>

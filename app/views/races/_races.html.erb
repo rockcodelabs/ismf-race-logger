@@ -20,6 +20,62 @@
   </div>
 
   <% if @races_by_type.any? %>
+    <%# Find next race within 2 hours %>
+    <% next_race = @races_by_type.values.flatten.select { |r| r.upcoming? && r.minutes_until_start <= 120 }.min_by(&:scheduled_at) %>
+    <% if next_race %>
+      <div class="card border-2 border-yellow-400 bg-gradient-to-r from-yellow-50 to-amber-50">
+        <div class="p-6">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 bg-yellow-400 rounded-full flex items-center justify-center animate-pulse">
+                <svg class="w-8 h-8 text-yellow-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="px-3 py-1 text-xs font-bold rounded-full bg-yellow-400 text-yellow-900 uppercase tracking-wide">
+                    Next Race
+                  </span>
+                  <span class="text-sm font-medium text-yellow-800">
+                    in <%= next_race.minutes_until_start %> minutes
+                  </span>
+                </div>
+                <h3 class="text-xl font-bold text-ismf-navy mb-1">
+                  <%= next_race.name %>
+                </h3>
+                <div class="flex items-center gap-4 text-sm text-ismf-gray">
+                  <span class="flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <%= next_race.formatted_scheduled_time %>
+                  </span>
+                  <span class="flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                    <%= next_race.stage_display %>
+                  </span>
+                  <span class="flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <%= next_race.gender_category_display %>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <%= link_to admin_competition_race_path(next_race.competition_id, next_race), class: "btn-primary" do %>
+              <span>View Race</span>
+              <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
     <% @races_by_type.each do |race_type_name, races| %>
       <div class="card">
         <!-- Race type header -->
