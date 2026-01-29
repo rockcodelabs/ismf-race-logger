@@ -315,6 +315,11 @@ body:has(.touch-menu-open) .touch-hamburger-btn {
   padding: 3rem;
 }
 
+/* Content with navigation - adds left padding to avoid nav button overlap */
+.touch-content-with-nav {
+  padding-left: 140px; /* Width of nav button (115px) + gap (25px) */
+}
+
 /* ========================================
    TOUCH SCROLLABLE AREAS
    ======================================== */
