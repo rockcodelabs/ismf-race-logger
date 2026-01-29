@@ -29,6 +29,14 @@
           <span>Home</span>
         <% end %>
         
+        <%# Competitions Button %>
+        <%= link_to admin_competitions_path, class: "touch-menu-item" do %>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="touch-menu-icon">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+          </svg>
+          <span>Competitions</span>
+        <% end %>
+        
         <%# Back Button %>
         <button data-action="click->touch-nav#goBack" class="touch-menu-item">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="touch-menu-icon">

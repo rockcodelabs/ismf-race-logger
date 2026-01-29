@@ -1,0 +1,235 @@
+<% content_for :page_title, @competition.display_name %>
+
+<div class="h-screen overflow-hidden flex flex-col">
+  <!-- Header -->
+  <div class="shrink-0 px-3 pt-3 pb-2">
+    <div class="bg-white rounded-xl shadow-lg p-4">
+      <div class="flex items-start gap-3">
+        <!-- Status Badge -->
+        <span class="px-3 py-2 text-sm font-bold rounded-full shrink-0 <%= @competition.status_badge_class %>">
+          <%= @competition.status.titleize %>
+        </span>
+        
+        <!-- Title and Location -->
+        <div class="flex-1 min-w-0">
+          <h1 class="text-xl font-bold text-ismf-navy mb-1">
+            <%= @competition.display_name %>
+          </h1>
+          <p class="text-sm text-ismf-gray">
+            <%= @competition.country_flag_emoji %> <%= @competition.place %>, <%= @competition.country_name %>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Container -->
+  <div class="bg-white rounded-t-2xl shadow-xl flex-1 flex flex-col min-h-0">
+    <div class="flex-1 overflow-y-auto touch-scrollable px-3 pt-3 pb-3">
+      <!-- Competition Details Card -->
+      <div class="bg-gradient-to-br from-ismf-blue to-ismf-navy rounded-xl p-4 mb-3 text-white shadow-lg">
+        <div class="grid grid-cols-3 gap-3">
+          <!-- Dates -->
+          <div>
+            <div class="flex items-center gap-2 mb-1 opacity-80">
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span class="text-xs font-medium">Dates</span>
+            </div>
+            <p class="text-sm font-bold"><%= @competition.short_date_range %></p>
+            <p class="text-xs opacity-75 mt-0.5">
+              <%= @competition.duration_days %> day<%= 's' if @competition.duration_days != 1 %>
+            </p>
+          </div>
+
+          <!-- Location -->
+          <div>
+            <div class="flex items-center gap-2 mb-1 opacity-80">
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span class="text-xs font-medium">City</span>
+            </div>
+            <p class="text-sm font-bold truncate"><%= @competition.city %></p>
+            <p class="text-xs opacity-75 mt-0.5 truncate"><%= @competition.country_name %></p>
+          </div>
+
+          <!-- Timing -->
+          <div>
+            <div class="flex items-center gap-2 mb-1 opacity-80">
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="text-xs font-medium">Status</span>
+            </div>
+            <% if @competition.upcoming? %>
+              <p class="text-sm font-bold"><%= @competition.days_until_start %> days</p>
+              <p class="text-xs opacity-75 mt-0.5">Until start</p>
+            <% elsif @competition.ongoing? %>
+              <p class="text-sm font-bold">In progress</p>
+              <p class="text-xs opacity-75 mt-0.5">Live now</p>
+            <% elsif @competition.past? %>
+              <p class="text-sm font-bold"><%= @competition.days_since_end %> days ago</p>
+              <p class="text-xs opacity-75 mt-0.5">Completed</p>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <% if @competition.description.present? %>
+          <div class="mt-3 pt-3 border-t border-white/20">
+            <p class="text-sm opacity-90 line-clamp-2"><%= @competition.description %></p>
+          </div>
+        <% end %>
+
+        <!-- Website Link -->
+        <% if @competition.webpage_url.present? %>
+          <div class="mt-3 pt-3 border-t border-white/20">
+            <a href="<%= @competition.webpage_url %>" target="_blank" rel="noopener" class="flex items-center gap-2 text-sm font-medium hover:opacity-80 active:opacity-60 transition">
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+              </svg>
+              <span class="underline">Official Website</span>
+              <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Races Section -->
+      <div class="mb-3">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-lg font-bold text-ismf-navy">Races</h2>
+          <span class="text-sm font-medium text-ismf-gray bg-gray-100 px-3 py-1 rounded-full">
+            <%= @competition_record.races.count %> race<%= 's' if @competition_record.races.count != 1 %>
+          </span>
+        </div>
+
+        <% if @races_by_type.any? %>
+          <!-- Race Cards -->
+          <div class="space-y-2">
+            <% @races_by_type.each do |race_type, races| %>
+              <div class="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
+                <!-- Race Type Header -->
+                <div class="bg-gradient-to-r from-ismf-blue/10 to-ismf-navy/10 px-4 py-3 border-b border-gray-200">
+                  <div class="flex items-center gap-3">
+                    <!-- Icon -->
+                    <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-ismf-blue/20 shrink-0">
+                      <% case race_type&.name&.downcase %>
+                      <% when 'sprint' %>
+                        <svg class="w-5 h-5 text-ismf-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                      <% when 'vertical' %>
+                        <svg class="w-5 h-5 text-ismf-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                        </svg>
+                      <% when 'relay' %>
+                        <svg class="w-5 h-5 text-ismf-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                      <% else %>
+                        <svg class="w-5 h-5 text-ismf-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      <% end %>
+                    </div>
+                    
+                    <!-- Type Name -->
+                    <div class="flex-1">
+                      <h3 class="text-base font-bold text-ismf-navy"><%= race_type&.name&.titleize || 'Unknown Type' %></h3>
+                      <p class="text-xs text-ismf-gray"><%= races.count %> stage<%= 's' if races.count != 1 %></p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Race Stages -->
+                <div class="divide-y divide-gray-100">
+                  <% races.sort_by(&:position).each do |race| %>
+                    <div class="px-4 py-3 hover:bg-gray-50 active:bg-gray-100 transition">
+                      <div class="flex items-center justify-between gap-3">
+                        <!-- Stage Info -->
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-bold text-ismf-navy mb-0.5">
+                            <%= race.stage_name.humanize %>
+                          </p>
+                          <% if race.scheduled_at.present? %>
+                            <div class="flex items-center gap-1.5 text-xs text-ismf-gray">
+                              <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <%= race.scheduled_at.strftime("%b %d, %H:%M") %>
+                            </div>
+                          <% end %>
+                        </div>
+
+                        <!-- Status Badge -->
+                        <div class="shrink-0">
+                          <% case race.status %>
+                          <% when 'in_progress' %>
+                            <span class="inline-flex items-center px-2.5 py-1.5 text-xs font-bold rounded-lg bg-green-100 text-green-800 border border-green-200">
+                              <span class="w-1.5 h-1.5 mr-1.5 bg-green-600 rounded-full animate-pulse"></span>
+                              Active
+                            </span>
+                          <% when 'completed' %>
+                            <span class="inline-flex items-center px-2.5 py-1.5 text-xs font-bold rounded-lg bg-gray-100 text-gray-800 border border-gray-200">
+                              <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                              </svg>
+                              Done
+                            </span>
+                          <% when 'scheduled' %>
+                            <% if race.scheduled_at && race.scheduled_at > Time.current %>
+                              <% time_diff = ((race.scheduled_at - Time.current) / 1.hour).round %>
+                              <% if time_diff <= 2 %>
+                                <span class="inline-flex items-center px-2.5 py-1.5 text-xs font-bold rounded-lg bg-yellow-100 text-yellow-800 border border-yellow-200">
+                                  Next Up
+                                </span>
+                              <% else %>
+                                <span class="inline-flex items-center px-2.5 py-1.5 text-xs font-bold rounded-lg bg-blue-100 text-blue-800 border border-blue-200">
+                                  Upcoming
+                                </span>
+                              <% end %>
+                            <% else %>
+                              <span class="inline-flex items-center px-2.5 py-1.5 text-xs font-bold rounded-lg bg-blue-100 text-blue-800 border border-blue-200">
+                                Scheduled
+                              </span>
+                            <% end %>
+                          <% when 'cancelled' %>
+                            <span class="inline-flex items-center px-2.5 py-1.5 text-xs font-bold rounded-lg bg-red-100 text-red-800 border border-red-200">
+                              Cancelled
+                            </span>
+                          <% else %>
+                            <span class="inline-flex items-center px-2.5 py-1.5 text-xs font-bold rounded-lg bg-gray-100 text-gray-600 border border-gray-200">
+                              <%= race.status.humanize %>
+                            </span>
+                          <% end %>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <!-- No Races Empty State -->
+          <div class="bg-white rounded-xl border-2 border-dashed border-gray-300 py-8">
+            <div class="text-center">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              <p class="mt-2 text-sm font-medium text-ismf-navy">No races yet</p>
+              <p class="mt-1 text-xs text-ismf-gray">Races will appear here when added</p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
