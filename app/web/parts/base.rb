@@ -43,7 +43,7 @@ module Web
 
       # Access Rails view helpers
       def helpers
-        ApplicationController.helpers
+        Web::Controllers::ApplicationController.helpers
       end
     end
   end

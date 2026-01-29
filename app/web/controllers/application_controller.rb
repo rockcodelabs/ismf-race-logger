@@ -155,6 +155,12 @@ module Web
         flash[:alert] = "You are not authorized to perform this action."
         redirect_back(fallback_location: root_path)
       end
+
+      # Pundit expects a current_user method
+      # Our app uses Current.user, so we provide this compatibility method
+      def current_user
+        Current.user
+      end
     end
   end
 end

@@ -26,9 +26,9 @@ class BaseBroadcaster
 
   private
 
-  # Access the parts factory (injected as `parts_factory` by dry-auto_inject)
+  # Access the parts factory (injected as `factory` by dry-auto_inject)
   def parts_factory
-    @parts_factory ||= send(:"parts.factory")
+    @parts_factory ||= factory
   end
 
   # Wrap a struct in its part for rendering

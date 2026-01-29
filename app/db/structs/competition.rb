@@ -120,5 +120,24 @@ module Structs
     def days_since_end
       (Date.current - end_date).to_i
     end
+
+    # =========================================================================
+    # Rails form compatibility
+    # =========================================================================
+
+    # Required for form_with to work with structs
+    # Returns self to allow form helpers to access struct attributes
+    def to_model
+      self
+    end
+
+    # Required for form URL generation
+    def persisted?
+      id.present?
+    end
+
+    def new_record?
+      !persisted?
+    end
   end
 end

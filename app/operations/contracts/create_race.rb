@@ -80,12 +80,8 @@ module Operations
         end
       end
 
-      # Validate scheduled_at is in the future (optional check)
-      rule(:scheduled_at) do
-        if value.present? && value < Time.current
-          key.failure("should be in the future")
-        end
-      end
+      # Note: scheduled_at can be in the past (for historical data entry)
+      # or in the future (for upcoming races). No validation needed.
     end
   end
 end

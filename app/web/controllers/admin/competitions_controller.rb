@@ -40,11 +40,14 @@ module Web
         # GET /admin/competitions/:id
         # Displays competition details with associated races grouped by race_type
         def show
-          # Load full competition record for race associations
-          @competition_record = Competition.includes(races: :race_type).find(params[:id])
+          # Load full competition record for race count
+          @competition_record = Competition.find(params[:id])
           
-          # Group races by race_type for display
-          @races_by_type = @competition_record.races.group_by(&:race_type)
+          # Load races as structs from repo
+          races = race_repo.for_competition(@competition.id)
+          
+          # Group races by race_type_name for display
+          @races_by_type = races.group_by(&:race_type_name)
         end
 
         # GET /admin/competitions/new
@@ -122,6 +125,10 @@ module Web
 
         def competition_repo
           @competition_repo ||= AppContainer["repos.competition"]
+        end
+
+        def race_repo
+          @race_repo ||= AppContainer["repos.race"]
         end
       end
     end

@@ -89,6 +89,18 @@ RSpec.describe Operations::Races::Create do
         expect(result).to be_success
         expect(result.value!.scheduled_at).to be_nil
       end
+
+      it "broadcasts race creation" do
+        repo = RaceRepo.new
+        broadcaster = instance_double(RaceBroadcaster)
+        allow(AppContainer).to receive(:[]).with("repos.race").and_return(repo)
+        allow(AppContainer).to receive(:[]).with("broadcasters.race").and_return(broadcaster)
+        allow(broadcaster).to receive(:created)
+
+        result = operation.call(valid_params)
+
+        expect(broadcaster).to have_received(:created).with(result.value!)
+      end
     end
 
     context "with invalid params" do
@@ -328,8 +340,9 @@ RSpec.describe Operations::Races::Create do
         # Simulate unexpected error in the operation itself
         repo = instance_double(RaceRepo)
         allow(repo).to receive(:create).and_raise(StandardError.new("Unexpected error"))
+        broadcaster = instance_double(RaceBroadcaster)
         
-        operation_with_mock = described_class.new(race: repo)
+        operation_with_mock = described_class.new(race_repo: repo, race_broadcaster: broadcaster)
 
         params = {
           competition_id: competition.id,

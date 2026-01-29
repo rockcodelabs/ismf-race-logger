@@ -182,7 +182,9 @@ class RaceRepo < DB::Repo
       competition_id: record.competition_id,
       race_type_id: record.race_type_id,
       name: record.name,
+      stage_type: record.stage_type,
       stage_name: record.stage_name,
+      position: record.position,
       scheduled_at: record.scheduled_at,
       status: record.status,
       race_type_name: record.race_type&.name

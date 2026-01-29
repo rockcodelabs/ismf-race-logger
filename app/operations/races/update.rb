@@ -33,15 +33,16 @@ module Operations
     #
     class Update
       include Dry::Monads[:result]
-      include Import["repos.race"]
-      # Note: "repos.race" creates a method called `race` (final part after dot)
+      include Import[
+        race_repo: "repos.race"
+      ]
 
       # @param id [Integer] Race ID
       # @param params [Hash] Updated attributes
       # @return [Dry::Monads::Result] Success(Structs::Race) or Failure(errors)
       def call(id:, **params)
         # Find existing race
-        existing_race = race.find(id)
+        existing_race = race_repo.find(id)
         return Failure(not_found: "Race not found") unless existing_race
 
         # Check business rules
@@ -63,8 +64,8 @@ module Operations
           attrs[:stage_name] = compute_stage_name(stage_type, heat_number)
         end
 
-        # Update race via injected repo (method name is 'race' from "repos.race")
-        updated_race = race.update(id, attrs)
+        # Update race via injected repo
+        updated_race = race_repo.update(id, attrs)
 
         Success(updated_race)
       rescue ActiveRecord::RecordInvalid => e

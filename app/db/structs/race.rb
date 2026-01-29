@@ -178,5 +178,39 @@ module Structs
     def status_text
       status.titleize
     end
+
+    # =========================================================================
+    # Rails form compatibility
+    # =========================================================================
+
+    # Required for form_with to work with structs
+    # Returns self to allow form helpers to access struct attributes
+    def to_model
+      self
+    end
+
+    # Required for form URL generation
+    def persisted?
+      id.present?
+    end
+
+    def new_record?
+      !persisted?
+    end
+
+    # Required for Rails URL helpers (link_to, form_with, etc.)
+    def to_param
+      id.to_s
+    end
+
+    # Required for Pundit to find the correct policy
+    def model_name
+      ::Race.model_name
+    end
+
+    # Required for Pundit policy lookup
+    def policy_class
+      RacePolicy
+    end
   end
 end

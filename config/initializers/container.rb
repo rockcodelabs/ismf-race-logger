@@ -83,6 +83,10 @@ class AppContainer
     register :user, memoize: true do
       UserBroadcaster.new
     end
+
+    register :race, memoize: true do
+      RaceBroadcaster.new
+    end
   end
 
   # ============================================================================

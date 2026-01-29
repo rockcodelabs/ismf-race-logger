@@ -1,0 +1,50 @@
+<%# frozen_string_literal: true %>
+<%# Race row partial for admin race list - used for both initial render and Turbo Stream broadcasts %>
+<% race_part = parts_factory.wrap(race) %>
+<tr class="hover:bg-gray-50 transition-colors" id="<%= race_part.dom_id %>">
+  <td class="px-6 py-4">
+    <div class="flex items-center gap-2">
+      <%= race_part.status_dot %>
+      <div>
+        <div class="text-sm font-medium text-ismf-navy">
+          <%= race.name %>
+        </div>
+        <div class="text-xs text-gray-500">
+          Position: #<%= race.position + 1 %>
+        </div>
+      </div>
+    </div>
+  </td>
+  <td class="px-6 py-4">
+    <div class="text-sm text-ismf-gray">
+      <%= race_part.stage_display_with_icon %>
+    </div>
+  </td>
+  <td class="px-6 py-4">
+    <div class="text-sm text-ismf-gray">
+      <% if race.scheduled_at.present? %>
+        <div class="font-medium"><%= race.formatted_scheduled_time %></div>
+        <div class="text-xs text-gray-500"><%= race.formatted_scheduled_date %></div>
+      <% else %>
+        <span class="text-gray-400 italic">Not scheduled</span>
+      <% end %>
+    </div>
+  </td>
+  <td class="px-6 py-4">
+    <%= race_part.status_badge %>
+  </td>
+  <td class="px-6 py-4 text-right text-sm font-medium space-x-3">
+    <%= link_to "View", admin_competition_race_path(race.competition_id, race), 
+        class: "text-blue-600 hover:text-blue-900" %>
+    <% if race.can_edit? %>
+      <%= link_to "Edit", edit_admin_competition_race_path(race.competition_id, race), 
+          class: "text-indigo-600 hover:text-indigo-900" %>
+    <% end %>
+    <%= link_to "Delete", admin_competition_race_path(race.competition_id, race),
+        data: { 
+          turbo_method: :delete,
+          turbo_confirm: "Are you sure you want to delete '#{race.name}'?" 
+        },
+        class: "text-red-600 hover:text-red-900" %>
+  </td>
+</tr>

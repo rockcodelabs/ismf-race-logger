@@ -22,8 +22,7 @@ module Web
       class RacesController < BaseController
         before_action :set_competition
         before_action :set_race, only: [ :show, :edit, :update, :destroy ]
-        after_action :verify_authorized, except: :index
-        after_action :verify_policy_scoped, only: :index
+        after_action :verify_authorized
 
         # GET /admin/competitions/:competition_id/races
         # Displays races grouped by race_type, ordered by schedule
@@ -45,6 +44,8 @@ module Web
         # GET /admin/competitions/:competition_id/races/new
         def new
           authorize Race
+          # Simple hash for new form (Hanami pattern - no model needed)
+          @race = {}
           @race_types = race_type_repo.all
           @stage_types = stage_type_options
           @heat_numbers = (1..10).to_a
@@ -53,9 +54,15 @@ module Web
         # POST /admin/competitions/:competition_id/races
         def create
           authorize Race
+          
+          # Clean up params: convert empty strings to nil for optional fields
+          cleaned_params = race_params.to_h.symbolize_keys
+          cleaned_params[:heat_number] = nil if cleaned_params[:heat_number].blank?
+          cleaned_params[:scheduled_at] = nil if cleaned_params[:scheduled_at].blank?
+          
           result = Operations::Races::Create.new.call(
             competition_id: @competition.id,
-            **race_params.to_h.symbolize_keys
+            **cleaned_params
           )
 
           case result
@@ -75,7 +82,7 @@ module Web
         # GET /admin/competitions/:competition_id/races/:id/edit
         def edit
           authorize @race
-          
+          # @race is already a struct from set_race
           @race_types = race_type_repo.all
           @stage_types = stage_type_options
           @heat_numbers = (1..10).to_a
@@ -85,9 +92,14 @@ module Web
         def update
           authorize @race
           
+          # Clean up params: convert empty strings to nil for optional fields
+          cleaned_params = race_params.to_h.symbolize_keys
+          cleaned_params[:heat_number] = nil if cleaned_params[:heat_number].blank?
+          cleaned_params[:scheduled_at] = nil if cleaned_params[:scheduled_at].blank?
+          
           result = Operations::Races::Update.new.call(
             id: @race.id,
-            **race_params.to_h.symbolize_keys
+            **cleaned_params
           )
 
           case result

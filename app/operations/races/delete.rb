@@ -23,18 +23,19 @@ module Operations
     #
     class Delete
       include Dry::Monads[:result]
-      include Import["repos.race"]
-      # Note: "repos.race" creates a method called `race` (final part after dot)
+      include Import[
+        race_repo: "repos.race"
+      ]
 
       # @param id [Integer] Race ID
       # @return [Dry::Monads::Result] Success(true) or Failure(errors)
       def call(id:)
         # Find existing race
-        existing_race = race.find(id)
+        existing_race = race_repo.find(id)
         return Failure(not_found: "Race not found") unless existing_race
 
-        # Delete the race via injected repo (method name is 'race' from "repos.race")
-        race.delete(id)
+        # Delete the race via injected repo
+        race_repo.delete(id)
 
         Success(true)
       rescue ActiveRecord::RecordNotFound

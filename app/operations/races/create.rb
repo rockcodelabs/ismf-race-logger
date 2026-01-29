@@ -29,8 +29,9 @@ module Operations
     #
     class Create
       include Dry::Monads[:result]
-      include Import["repos.race"]
-      # Note: "repos.race" creates a method called `race` (final part after dot)
+      include Import[
+        race_repo: "repos.race"
+      ]
 
       # @param params [Hash] Input parameters
       # @return [Dry::Monads::Result] Success(Structs::Race) or Failure(errors)
@@ -47,8 +48,8 @@ module Operations
         attrs[:position] = compute_position(attrs[:competition_id], attrs[:race_type_id])
         attrs[:status] ||= "scheduled"
 
-        # Create race via injected repo (method name is 'race' from "repos.race")
-        created_race = race.create(attrs)
+        # Create race via injected repo
+        created_race = race_repo.create(attrs)
 
         Success(created_race)
       rescue ActiveRecord::RecordInvalid => e
