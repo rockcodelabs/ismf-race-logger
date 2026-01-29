@@ -387,7 +387,11 @@ This project uses **GitHub Actions for automated deployment**:
 - Compositor: Weston (Wayland, not X11)
 - Browser: Chromium in kiosk mode
 - Service: `kiosk.service` (systemd)
-- Virtual Keyboard: Web-based (embedded in touch sign-in page)
+- Virtual Keyboard: Web-based (simple-keyboard library)
+
+**Documentation:**
+- Kiosk Setup: `docs/KIOSK_DEPLOYMENT.md`
+- Touch Display: `docs/TOUCH_DISPLAY.md`
 
 **SSH Connection:**
 ```bash

@@ -1,6 +1,6 @@
 # Ansible Kiosk Deployment
 
-This directory contains Ansible playbooks for deploying the ISMF Race Logger to Raspberry Pi 5 kiosks with 7" touch displays.
+**Automated deployment of ISMF Race Logger in kiosk mode on Raspberry Pi**
 
 ---
 
@@ -11,7 +11,11 @@ The kiosk setup configures a Raspberry Pi 5 to:
 - Display the ISMF Race Logger at 1280×720 resolution (landscape)
 - Support touch input with the app's built-in virtual keyboard
 - Auto-start on boot and restart on failure
-- Rotate display 90° for portrait mode (configurable)
+- Rotate display 90° for landscape mode (configurable)
+
+**Complete Documentation:**
+- **Kiosk Deployment Guide:** [`docs/KIOSK_DEPLOYMENT.md`](../docs/KIOSK_DEPLOYMENT.md)
+- **Touch Display Guide:** [`docs/TOUCH_DISPLAY.md`](../docs/TOUCH_DISPLAY.md)
 
 **Key Components:**
 - **Weston**: Wayland compositor (lightweight, no X11)
