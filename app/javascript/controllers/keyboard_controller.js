@@ -1,34 +1,21 @@
 import { Controller } from "@hotwired/stimulus"
 
 // Keyboard controller for virtual on-screen keyboard
-//
 // Uses simple-keyboard library for touch-optimized input
-//
-// Usage:
-//   <div data-controller="keyboard"></div>
-//
-// Features:
-//   - Auto-show on input focus
-//   - Auto-hide on blur
-//   - Input preview (left of spacebar)
-//   - Password masking (bullets)
-//   - Audio feedback
-//   - Shift key toggle
-//   - Enter key submits forms
-//
 export default class extends Controller {
   connect() {
     console.log("🎹 Keyboard controller connected")
     
-    // Initialize audio context (will be resumed on first user interaction)
+    // Initialize state
+    this.currentInput = null
     this.audioContext = null
     this.audioResumed = false
+    this.hideTimeout = null
     
     // Ensure keyboard starts hidden
-    this.element.style.display = "none"
-    this.element.style.visibility = "hidden"
+    this.forceHideKeyboard()
     
-    // Dynamically import simple-keyboard
+    // Dynamically import and initialize keyboard
     this.loadKeyboard()
     
     // Setup Turbo cleanup
@@ -39,23 +26,28 @@ export default class extends Controller {
   disconnect() {
     console.log("🎹 Keyboard controller disconnecting")
     
+    // Clear any pending timeouts
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout)
+    }
+    
     // Force hide keyboard immediately
     this.forceHideKeyboard()
     
+    // Cleanup keyboard instance
     if (this.keyboard) {
       this.keyboard.destroy()
+      this.keyboard = null
     }
     
     // Close audio context
     if (this.audioContext) {
       this.audioContext.close()
+      this.audioContext = null
     }
     
-    // Remove event listeners
-    document.removeEventListener("focusin", this.handleFocusIn)
-    document.removeEventListener("focusout", this.handleFocusOut)
-    document.removeEventListener("focus", this.preventNativeKeyboard, true)
-    document.removeEventListener("turbo:before-visit", this.handleTurboBeforeVisit)
+    // Remove all event listeners
+    this.removeEventListeners()
   }
 
   handleTurboBeforeVisit() {
@@ -67,17 +59,19 @@ export default class extends Controller {
     this.element.style.display = "none"
     this.element.style.visibility = "hidden"
     this.currentInput = null
+    
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout)
+      this.hideTimeout = null
+    }
   }
 
   async loadKeyboard() {
     try {
-      // Import simple-keyboard - use named export SimpleKeyboard
       const { SimpleKeyboard } = await import("simple-keyboard")
-      
       this.initKeyboard(SimpleKeyboard)
       this.setupInputListeners()
-      
-      console.log("✅ Keyboard loaded successfully")
+      console.log("✅ Keyboard loaded")
     } catch (error) {
       console.error("❌ Failed to load keyboard:", error)
     }
@@ -123,54 +117,44 @@ export default class extends Controller {
   }
 
   setupPreviewDisplay() {
-    // Find the preview button after keyboard renders
-    setTimeout(() => {
+    // Use requestAnimationFrame for better performance than setTimeout
+    requestAnimationFrame(() => {
       const previewBtn = this.element.querySelector('[data-skbtn="{preview}"]')
       if (previewBtn) {
         previewBtn.classList.add('keyboard-preview-button')
-        previewBtn.style.pointerEvents = 'none'
-        previewBtn.style.userSelect = 'none'
       }
-    }, 100)
-  }
-
-  createKeyboardHTML() {
-    // CSS is loaded from assets/stylesheets/simple-keyboard.css
-    // No need to dynamically load it
+    })
   }
 
   setupInputListeners() {
-    // Prevent keyboard element from being focusable
     this.element.setAttribute("tabindex", "-1")
     
-    // Prevent native mobile/kiosk keyboard
+    // Bind event handlers
     this.preventNativeKeyboard = this.preventNativeKeyboard.bind(this)
-    document.addEventListener("focus", this.preventNativeKeyboard, true)
-
-    // Show keyboard on focus
     this.handleFocusIn = this.handleFocusIn.bind(this)
-    document.addEventListener("focusin", this.handleFocusIn)
-
-    // Hide keyboard on blur
     this.handleFocusOut = this.handleFocusOut.bind(this)
-    document.addEventListener("focusout", this.handleFocusOut)
+    
+    // Add event listeners
+    document.addEventListener("focus", this.preventNativeKeyboard, true)
+    document.addEventListener("focusin", this.handleFocusIn, { passive: true })
+    document.addEventListener("focusout", this.handleFocusOut, { passive: true })
+  }
+
+  removeEventListeners() {
+    document.removeEventListener("focusin", this.handleFocusIn)
+    document.removeEventListener("focusout", this.handleFocusOut)
+    document.removeEventListener("focus", this.preventNativeKeyboard, true)
+    document.removeEventListener("turbo:before-visit", this.handleTurboBeforeVisit)
   }
 
   preventNativeKeyboard(event) {
-    if (this.isTextInput(event.target)) {
-      // Skip if inside keyboard
-      if (event.target.closest('[data-controller="keyboard"]')) {
-        return
-      }
-      
-      console.log("🛡️ Preventing native keyboard for:", event.target.id || event.target.name)
-      
-      // Set input to readonly briefly to prevent native keyboard
-      event.target.setAttribute("readonly", "readonly")
-      setTimeout(() => {
-        event.target.removeAttribute("readonly")
-        event.target.focus()
-      }, 10)
+    const target = event.target
+    if (this.isTextInput(target) && !target.closest('[data-controller="keyboard"]')) {
+      // Briefly set readonly to prevent native keyboard
+      target.setAttribute("readonly", "readonly")
+      requestAnimationFrame(() => {
+        target.removeAttribute("readonly")
+      })
     }
   }
 
@@ -181,29 +165,22 @@ export default class extends Controller {
   }
 
   handleFocusOut(event) {
-    // Only hide if clicking outside both input and keyboard
-    setTimeout(() => {
+    // Clear existing timeout
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout)
+    }
+    
+    // Debounce hide to check if focus moved to keyboard or another input
+    this.hideTimeout = setTimeout(() => {
       const activeElement = document.activeElement
       
-      // Keep keyboard open if:
-      // - Still focused on a text input
-      // - Clicking on keyboard element
-      if (this.isTextInput(activeElement)) {
-        return
-      }
-      
-      // Check if click is on keyboard
-      const clickedElement = document.elementFromPoint(
-        event.clientX || window.innerWidth / 2,
-        event.clientY || window.innerHeight - 100
-      )
-      
-      if (clickedElement && this.element.contains(clickedElement)) {
+      // Keep keyboard open if still focused on input or clicked on keyboard
+      if (this.isTextInput(activeElement) || this.element.contains(activeElement)) {
         return
       }
       
       this.hideKeyboard()
-    }, 200)
+    }, 150)
   }
 
   isTextInput(element) {
@@ -211,63 +188,60 @@ export default class extends Controller {
   }
 
   showKeyboard(input) {
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout)
+      this.hideTimeout = null
+    }
+    
     this.currentInput = input
     this.element.style.display = "block"
     this.element.style.visibility = "visible"
     
     // Set keyboard value to current input value
     this.keyboard.setInput(input.value)
-    
-    // Update preview
     this.updatePreview(input.value)
-    
-    console.log("⌨️ Keyboard shown for:", input.id || input.name)
   }
 
   hideKeyboard() {
-    this.element.style.display = "none"
-    this.element.style.visibility = "hidden"
-    this.currentInput = null
+    this.forceHideKeyboard()
     
     // Reset to default layout
-    this.keyboard.setOptions({ layoutName: "default" })
-    
-    console.log("🚫 Keyboard hidden")
+    if (this.keyboard) {
+      this.keyboard.setOptions({ layoutName: "default" })
+    }
   }
 
   handleChange(input) {
-    if (this.currentInput) {
-      this.currentInput.value = input
-      this.currentInput.dispatchEvent(new Event("input", { bubbles: true }))
-      this.updatePreview(input)
-    }
+    if (!this.currentInput) return
+    
+    this.currentInput.value = input
+    this.currentInput.dispatchEvent(new Event("input", { bubbles: true }))
+    this.updatePreview(input)
   }
 
   updatePreview(value) {
     const previewBtn = this.element.querySelector('[data-skbtn="{preview}"]')
-    if (previewBtn) {
-      // Show masked or actual value
-      let displayValue = value
-      if (this.currentInput && this.currentInput.type === 'password') {
-        displayValue = '•'.repeat(value.length)
-      }
-      
-      // Truncate if too long
-      if (displayValue.length > 30) {
-        displayValue = '...' + displayValue.slice(-27)
-      }
-      
-      previewBtn.textContent = displayValue || ' '
+    if (!previewBtn) return
+    
+    // Show masked or actual value
+    let displayValue = value
+    if (this.currentInput?.type === 'password') {
+      displayValue = '•'.repeat(value.length)
     }
+    
+    // Truncate if too long
+    if (displayValue.length > 30) {
+      displayValue = '...' + displayValue.slice(-27)
+    }
+    
+    previewBtn.textContent = displayValue || ' '
   }
 
   handleKeyPress(button) {
-    console.log("🔑 Key pressed:", button)
-    
     // Play audio feedback
     this.playBeep()
     
-    // Handle special keys (swapped positions)
+    // Handle special keys (positions swapped in layout)
     if (button === "{hide}") {
       this.handleEnter()
     } else if (button === "{enter}") {
@@ -293,12 +267,8 @@ export default class extends Controller {
   }
 
   handleHide() {
-    console.log("🚫 Hide button pressed")
-    
     // Blur current input
-    if (this.currentInput) {
-      this.currentInput.blur()
-    }
+    this.currentInput?.blur()
     
     // Hide keyboard
     this.hideKeyboard()
@@ -306,35 +276,35 @@ export default class extends Controller {
 
   async playBeep() {
     try {
-      // Create audio context once
+      // Initialize audio context lazily
       if (!this.audioContext) {
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)()
       }
       
-      // Resume audio context on first user interaction
-      if (!this.audioResumed && this.audioContext.state === 'suspended') {
+      // Resume audio context if suspended
+      if (this.audioContext.state === 'suspended') {
         await this.audioContext.resume()
         this.audioResumed = true
       }
       
-      // Only play if context is running
-      if (this.audioContext.state === 'running') {
-        const oscillator = this.audioContext.createOscillator()
-        const gainNode = this.audioContext.createGain()
-        
-        oscillator.connect(gainNode)
-        gainNode.connect(this.audioContext.destination)
-        
-        oscillator.frequency.value = 800
-        oscillator.type = "sine"
-        gainNode.gain.setValueAtTime(0.08, this.audioContext.currentTime)
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.05)
-        
-        oscillator.start()
-        oscillator.stop(this.audioContext.currentTime + 0.05)
-      }
+      // Only play if running
+      if (this.audioContext.state !== 'running') return
+      
+      const oscillator = this.audioContext.createOscillator()
+      const gainNode = this.audioContext.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(this.audioContext.destination)
+      
+      oscillator.frequency.value = 800
+      oscillator.type = "sine"
+      gainNode.gain.setValueAtTime(0.08, this.audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.05)
+      
+      oscillator.start()
+      oscillator.stop(this.audioContext.currentTime + 0.05)
     } catch (e) {
-      // Silently fail if audio not available
+      // Silently fail
     }
   }
 }
