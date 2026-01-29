@@ -35,6 +35,7 @@ module Operations
         # All fields are optional for updates
         optional(:name).filled(:string)
         optional(:stage_type).filled(:string)
+        optional(:gender_category).filled(:string)
         optional(:heat_number).maybe(:integer)
         optional(:scheduled_at).maybe(:time)
         optional(:position).filled(:integer)
@@ -55,6 +56,16 @@ module Operations
           valid_stages = %w[Qualification Heat Quarterfinal Semifinal Final]
           unless valid_stages.include?(value)
             key.failure("must be one of: #{valid_stages.join(', ')}")
+          end
+        end
+      end
+
+      # Validate gender_category is one of the allowed values
+      rule(:gender_category) do
+        if value.present?
+          valid_categories = %w[M W MM WW MW]
+          unless valid_categories.include?(value)
+            key.failure("must be one of: M (Men), W (Women), MM (Men's Team), WW (Women's Team), MW (Mixed Team)")
           end
         end
       end

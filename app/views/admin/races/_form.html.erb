@@ -48,6 +48,32 @@
       <% end %>
     </div>
 
+    <!-- Gender Category -->
+    <div class="sm:col-span-2">
+      <%= form.label :gender_category, "Gender Category", class: "form-label" %>
+      <%= form.select :gender_category,
+          options_for_select(
+            [
+              ["Men", "M"],
+              ["Women", "W"],
+              ["Men's Team", "MM"],
+              ["Women's Team", "WW"],
+              ["Mixed Team", "MW"]
+            ],
+            race.respond_to?(:gender_category) ? race.gender_category : "M"
+          ),
+          { prompt: "Select gender category..." },
+          { class: "form-input", required: true } %>
+      <% if @errors.is_a?(Hash) && @errors[:gender_category].present? %>
+        <% messages = @errors[:gender_category].is_a?(Array) ? @errors[:gender_category] : [@errors[:gender_category]] %>
+        <% messages.each do |error| %>
+          <p class="mt-1 text-sm text-red-600"><%= error %></p>
+        <% end %>
+      <% else %>
+        <p class="mt-1 text-xs text-ismf-gray">Select the gender category for this race</p>
+      <% end %>
+    </div>
+
     <!-- Race Name -->
     <div class="sm:col-span-2">
       <%= form.label :name, "Race Name", class: "form-label" %>

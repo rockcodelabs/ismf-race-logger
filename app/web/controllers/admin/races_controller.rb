@@ -152,6 +152,7 @@ module Web
           params.require(:race).permit(
             :race_type_id,
             :name,
+            :gender_category,
             :stage_type,
             :heat_number,
             :scheduled_at,
@@ -176,6 +177,7 @@ module Web
         def race_repo
           @race_repo ||= AppContainer["repos.race"]
         end
+        helper_method :race_repo
 
         def race_type_repo
           @race_type_repo ||= AppContainer["repos.race_type"]

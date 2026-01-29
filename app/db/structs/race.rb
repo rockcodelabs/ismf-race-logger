@@ -35,6 +35,7 @@ module Structs
     attribute :stage_name, Types::String
     attribute :position, Types::Integer
     attribute :status, Types::RaceStatus
+    attribute :gender_category, Types::GenderCategory
     attribute :created_at, Types::Time
     attribute :updated_at, Types::Time
 
@@ -154,6 +155,29 @@ module Structs
     def formatted_scheduled_date
       return "Not scheduled" unless scheduled_at.present?
       scheduled_at.strftime("%b %d, %Y")
+    end
+
+    # =========================================================================
+    # Gender category helpers
+    # =========================================================================
+
+    def gender_category_display
+      case gender_category
+      when "M" then "Men"
+      when "W" then "Women"
+      when "MM" then "Men's Team"
+      when "WW" then "Women's Team"
+      when "MW" then "Mixed Team"
+      else gender_category
+      end
+    end
+
+    def team_race?
+      %w[MM WW MW].include?(gender_category)
+    end
+
+    def individual_race?
+      %w[M W].include?(gender_category)
     end
 
     # =========================================================================

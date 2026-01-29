@@ -144,6 +144,24 @@ class RaceRepo < DB::Repo
       .map { |r| build_struct(r) }
   end
 
+  # Find races with the same gender category and race type
+  # that occurred before the given race (by position)
+  #
+  # @param race_id [Integer] The current race ID
+  # @return [Array<Structs::RaceSummary>]
+  def previous_races_same_category(race_id)
+    race = base_scope.find_by(id: race_id)
+    return [] unless race
+
+    base_scope
+      .where(competition_id: race.competition_id)
+      .where(race_type_id: race.race_type_id)
+      .where(gender_category: race.gender_category)
+      .where("position < ?", race.position)
+      .order(position: :desc)
+      .map { |r| build_summary(r) }
+  end
+
   protected
 
   # Override base scope to include associations
@@ -166,6 +184,7 @@ class RaceRepo < DB::Repo
       scheduled_at: record.scheduled_at,
       position: record.position,
       status: record.status,
+      gender_category: record.gender_category,
       created_at: record.created_at,
       updated_at: record.updated_at,
       race_type_name: record.race_type&.name,

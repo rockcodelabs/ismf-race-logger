@@ -10,7 +10,13 @@ Rails.application.routes.draw do
     root to: "dashboard#index"
     resources :users
     resources :competitions do
-      resources :races
+      resources :races do
+        resources :participations, only: [:destroy], controller: "races/participations" do
+          collection do
+            post :copy
+          end
+        end
+      end
     end
     
     # Athlete import routes (nested under races)

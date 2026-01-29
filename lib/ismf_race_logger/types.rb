@@ -39,6 +39,15 @@ module IsmfRaceLogger
     # Gender types
     Gender = Strict::String.enum("M", "F")
 
+    # Gender categories for races
+    GenderCategory = Strict::String.enum(
+      "M",   # Men
+      "W",   # Women
+      "MM",  # Men's Team (2 men)
+      "WW",  # Women's Team (2 women)
+      "MW"   # Mixed Team (1 man + 1 woman)
+    )
+
     # Team types
     TeamType = Strict::String.enum("pair", "relay_team")
 
