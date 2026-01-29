@@ -324,6 +324,13 @@ body:has(.touch-menu-open) .touch-hamburger-btn {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  /* Hide scrollbar for touch displays */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.touch-scrollable::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 /* Scrollable with maximum height */
@@ -332,6 +339,12 @@ body:has(.touch-menu-open) .touch-hamburger-btn {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.touch-scrollable-sm::-webkit-scrollbar {
+  display: none;
 }
 
 .touch-scrollable-md {
@@ -339,6 +352,12 @@ body:has(.touch-menu-open) .touch-hamburger-btn {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.touch-scrollable-md::-webkit-scrollbar {
+  display: none;
 }
 
 .touch-scrollable-lg {
@@ -346,6 +365,12 @@ body:has(.touch-menu-open) .touch-hamburger-btn {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.touch-scrollable-lg::-webkit-scrollbar {
+  display: none;
 }
 
 /* ========================================

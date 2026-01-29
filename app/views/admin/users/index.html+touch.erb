@@ -22,9 +22,9 @@
 
     <% if @users.any? %>
       <!-- Users List -->
-      <div class="flex flex-col gap-1.5 flex-1 px-3 pb-3">
+      <div class="flex flex-col gap-1.5 flex-1 px-3 pb-3 overflow-y-auto touch-scrollable">
         <% @users.each do |user| %>
-          <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-ismf-blue active:border-ismf-red transition overflow-hidden flex-1 min-h-[80px]">
+          <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-ismf-blue active:border-ismf-red transition overflow-hidden min-h-[80px]">
             <div class="flex items-stretch h-full">
               
               <!-- User Info (Clickable Area) -->
