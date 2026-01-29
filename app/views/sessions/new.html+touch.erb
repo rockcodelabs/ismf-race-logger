@@ -33,8 +33,8 @@
       </div>
     <% end %>
 
-    <!-- Form (add bottom padding for virtual keyboard) -->
-    <%= form_with url: session_url, class: "space-y-8 pb-96", id: "login-form" do |form| %>
+    <!-- Form -->
+    <%= form_with url: session_url, class: "space-y-8", id: "login-form" do |form| %>
       <div>
         <label for="email_address" class="touch-label">Email</label>
         <%= form.email_field :email_address, 

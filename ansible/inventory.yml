@@ -32,11 +32,11 @@ all:
         chromium_flags:
           - --kiosk
           - --ozone-platform=wayland
-          - --enable-features=UseOzonePlatform,VirtualKeyboard
+          - --enable-features=UseOzonePlatform
           - --noerrdialogs
           - --disable-infobars
           - --disable-session-crashed-bubble
-          - --disable-features=TranslateUI
+          - --disable-features=TranslateUI,VirtualKeyboard
           - --disable-sync
           - --disable-translate
           - --disable-background-timer-throttling
@@ -48,4 +48,4 @@ all:
           - --no-first-run
           - --incognito
           - --touch-events=enabled
-          - --enable-virtual-keyboard
+          - --disable-touch-keyboard
