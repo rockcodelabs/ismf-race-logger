@@ -117,19 +117,19 @@ body.touch-mode textarea {
 }
 
 /* ========================================
-   TOUCH NAVIGATION (Floating Hamburger Menu)
+   TOUCH NAVIGATION (Horizontal Top Bar)
    ======================================== */
 
-/* Floating Hamburger Button */
+/* Floating Hamburger Button (Top-Left) */
 .touch-hamburger-btn {
   position: fixed;
-  bottom: 1rem;
+  top: 1rem;
   left: 1rem;
-  z-index: 9999;
-  width: 96px;
-  height: 96px;
-  border-radius: 1.5rem;
-  background: rgba(26, 26, 46, 0.7);
+  z-index: 10001;
+  width: 80px;
+  height: 80px;
+  border-radius: 1rem;
+  background: rgba(26, 26, 46, 0.85);
   backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
@@ -143,18 +143,17 @@ body.touch-mode textarea {
 
 .touch-hamburger-btn:active {
   transform: scale(0.95);
-  background: rgba(26, 26, 46, 0.85);
+  background: rgba(26, 26, 46, 0.95);
   border-color: rgba(233, 69, 96, 0.8);
 }
 
-/* Slide-in Menu Panel */
+/* Horizontal Menu Panel - Slides down from top */
 .touch-menu-panel {
   position: fixed;
   top: 0;
   left: 0;
-  bottom: 0;
-  width: 100%;
-  z-index: 9998;
+  right: 0;
+  z-index: 10000;
   pointer-events: none;
   transition: none;
 }
@@ -163,51 +162,59 @@ body.touch-mode textarea {
   pointer-events: auto;
 }
 
-/* Menu Content Container */
+/* Horizontal Menu Content Container */
 .touch-menu-content {
   position: absolute;
   top: 0;
   left: 0;
-  bottom: 0;
-  width: 60%;
+  right: 0;
   background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
-  transform: translateX(-100%);
+  border-bottom: 4px solid rgba(233, 69, 96, 0.8);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  transform: translateY(-100%);
   transition: transform 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  padding: 2rem;
+  padding: 1.5rem;
+  padding-left: 7rem; /* Space for hamburger button */
 }
 
 .touch-menu-panel.touch-menu-open .touch-menu-content {
-  transform: translateX(0);
+  transform: translateY(0);
 }
 
-/* Menu Items Container */
+/* Horizontal Menu Items Container */
 .touch-menu-items {
   display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  margin-top: 3rem;
+  flex-direction: row;
+  gap: 1rem;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
 }
 
-/* Individual Menu Item */
+/* Individual Menu Item - Horizontal Button */
 .touch-menu-item {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding: 1.5rem 2rem;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border: 2px solid rgba(233, 69, 96, 0.3);
-  border-radius: 1rem;
+  border-radius: 0.75rem;
   color: white;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
   text-decoration: none;
   transition: all 0.15s ease;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  flex: 1;
+  min-width: 140px;
+  max-width: 200px;
+  height: 80px;
+  min-height: 80px;
 }
 
 .touch-menu-item:hover,
@@ -217,15 +224,16 @@ body.touch-mode textarea {
 }
 
 .touch-menu-item:active {
-  transform: scale(0.97);
-  background: rgba(233, 69, 96, 0.3);
-  border-color: rgba(233, 69, 96, 0.7);
+  transform: scale(0.96);
+  background: rgba(233, 69, 96, 0.4);
+  border-color: rgba(233, 69, 96, 0.9);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3) inset;
 }
 
 /* Menu Item Icon */
 .touch-menu-icon {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 1.75rem;
+  height: 1.75rem;
   flex-shrink: 0;
 }
 
@@ -518,37 +526,40 @@ body.touch-mode textarea {
   
   /* Hamburger button adjustments */
   .touch-hamburger-btn {
-    width: 80px;
-    height: 80px;
-    bottom: 0.75rem;
+    width: 64px;
+    height: 64px;
+    top: 0.75rem;
     left: 0.75rem;
   }
   
   .touch-hamburger-btn svg {
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2rem;
+    height: 2rem;
   }
   
-  /* Menu adjustments */
+  /* Horizontal menu adjustments */
   .touch-menu-content {
-    width: 65%;
-    padding: 1.5rem;
+    padding: 1rem;
+    padding-left: 5.5rem; /* Space for smaller hamburger */
   }
   
   .touch-menu-items {
-    gap: 1rem;
-    margin-top: 2rem;
+    gap: 0.75rem;
   }
   
   .touch-menu-item {
-    padding: 1rem 1.5rem;
-    font-size: 1.25rem;
-    gap: 1rem;
+    padding: 0.75rem 1.25rem;
+    font-size: 1.125rem;
+    gap: 0.5rem;
+    min-width: 120px;
+    max-width: 180px;
+    height: 64px;
+    min-height: 64px;
   }
   
   .touch-menu-icon {
-    width: 2rem;
-    height: 2rem;
+    width: 1.5rem;
+    height: 1.5rem;
   }
   
   .simple-keyboard {

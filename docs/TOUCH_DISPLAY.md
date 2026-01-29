@@ -637,72 +637,134 @@ body.touch-mode {
 
 ### Navigation
 
-**Floating hamburger menu (bottom-left):**
+**Floating hamburger menu (top-left) with horizontal navigation bar:**
 
 ```erb
 <!-- app/views/shared/_touch_nav.html.erb -->
 <% unless current_page?(root_path) %>
   <div data-controller="touch-nav">
-    <!-- Hamburger button -->
+    <!-- Hamburger button (top-left) -->
     <button data-action="touch-nav#toggle" 
             class="touch-hamburger-btn">
       <svg><!-- Icon --></svg>
     </button>
     
-    <!-- Slide-in menu (60% width) -->
+    <!-- Horizontal navigation bar (slides down from top) -->
     <div data-touch-nav-target="menu" 
-         class="touch-menu-overlay">
+         class="touch-menu-panel">
       <div class="touch-menu-content">
-        <%= link_to "Home", root_path, class: "touch-menu-item" %>
-        <%= link_to "Back", :back, class: "touch-menu-item" %>
-        <%= button_to "Sign Out", session_path, method: :delete, class: "touch-menu-item" %>
+        <nav class="touch-menu-items">
+          <%= link_to root_path, class: "touch-menu-item" do %>
+            <svg class="touch-menu-icon"><!-- Home icon --></svg>
+            <span>Home</span>
+          <% end %>
+          <button data-action="click->touch-nav#goBack" class="touch-menu-item">
+            <svg class="touch-menu-icon"><!-- Back icon --></svg>
+            <span>Back</span>
+          </button>
+          <%= button_to session_path, method: :delete, class: "touch-menu-item" do %>
+            <svg class="touch-menu-icon"><!-- Sign Out icon --></svg>
+            <span>Sign Out</span>
+          <% end %>
+        </nav>
       </div>
     </div>
   </div>
 <% end %>
 ```
 
-**Hamburger button CSS:**
+**Hamburger button and horizontal navigation CSS:**
 
 ```css
+/* Hamburger button (top-left corner) */
 .touch-hamburger-btn {
   position: fixed;
-  bottom: 24px;
-  left: 24px;
-  width: 96px;
-  height: 96px;
-  background: rgba(0, 0, 0, 0.7);
-  border-radius: 50%;
-  z-index: 1000;
+  top: 1rem;
+  left: 1rem;
+  z-index: 10001;
+  width: 80px;
+  height: 80px;
+  border-radius: 1rem;
+  background: rgba(26, 26, 46, 0.85);
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
+  transition: all 0.2s ease;
+  border: 3px solid rgba(233, 69, 96, 0.6);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
 }
 
-.touch-menu-overlay {
+/* Horizontal menu panel - slides down from top */
+.touch-menu-panel {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 999;
-  transform: translateX(-100%);
-  transition: transform 0.3s ease;
+  right: 0;
+  z-index: 10000;
+  pointer-events: none;
+  transition: none;
 }
 
-.touch-menu-overlay.active {
-  transform: translateX(0);
+.touch-menu-panel.touch-menu-open {
+  pointer-events: auto;
 }
 
+/* Horizontal menu content container */
 .touch-menu-content {
-  width: 60%;
-  height: 100%;
-  background: white;
-  padding: 2rem;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+  border-bottom: 4px solid rgba(233, 69, 96, 0.8);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  transform: translateY(-100%);
+  transition: transform 0.3s ease;
+  padding: 1.5rem;
+  padding-left: 7rem; /* Space for hamburger button */
+}
+
+.touch-menu-panel.touch-menu-open .touch-menu-content {
+  transform: translateY(0);
+}
+
+/* Horizontal menu items container */
+.touch-menu-items {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 1rem;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+/* Individual menu item - horizontal button */
+.touch-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(233, 69, 96, 0.3);
+  border-radius: 0.75rem;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+}
+
+.touch-menu-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
 }
 ```
 
@@ -884,8 +946,8 @@ document.querySelector('.simple-keyboard')
 
 **Navigation**
 - [ ] Hamburger menu works
-- [ ] Menu slides in from left
-- [ ] Menu closes when tapping outside
+- [ ] Menu slides down from top
+- [ ] Menu closes when tapping hamburger button again
 - [ ] Back button works
 - [ ] Sign Out works
 - [ ] Home button works

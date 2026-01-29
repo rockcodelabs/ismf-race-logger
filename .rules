@@ -310,7 +310,7 @@ Touch views use `.touch.html.erb` suffix:
 Touch display implementation follows **Rails 8 conventions**:
 - **Stimulus controllers** for JavaScript behavior (keyboard, navigation, detection)
 - **simple-keyboard** library for virtual keyboard
-- **Floating hamburger menu** for navigation (bottom-left, slide-in from left)
+- **Floating hamburger menu** for navigation (top-left, horizontal slide-down bar)
 - **Cookie-based detection** with automatic 1280×720 screen size detection
 - **Separated concerns** - CSS in assets, JS in controllers, minimal inline code
 
@@ -368,11 +368,11 @@ Detection priority:
 
 ### Navigation Pattern
 
-**Floating Hamburger Menu (Bottom-Left):**
-- Semi-transparent button (96px, 70% opacity)
-- Slides in from left (60% width, no overlay)
-- Minimal menu: Home, Back, Sign Out
-- Close by: tapping hamburger OR tapping visible content area (right 40%)
+**Floating Hamburger Menu (Top-Left):**
+- Semi-transparent button (80px, 85% opacity)
+- Slides down from top (full width horizontal bar)
+- Minimal menu: Home, Back, Sign Out (displayed horizontally inline)
+- Close by: tapping hamburger button again
 - Hidden on home page only
 
 **Implementation:**

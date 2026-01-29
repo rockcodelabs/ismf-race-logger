@@ -1,8 +1,8 @@
 <% content_for :page_title, "Sign In" %>
 
-<div class="h-screen flex flex-col items-center justify-center touch-spacing overflow-hidden">
-  <!-- Large Logo -->
-  <div class="touch-logo mb-4">
+<div class="h-screen flex flex-col items-center justify-center touch-spacing overflow-hidden relative">
+  <!-- Logo - Top Right -->
+  <div class="touch-logo absolute top-8 right-8">
     <svg class="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
     </svg>
@@ -53,12 +53,5 @@
         <% end %>
       </div>
     <% end %>
-  </div>
-  
-  <!-- Footer -->
-  <div class="mt-4">
-    <p class="text-center text-white/40 text-base font-medium">
-      ISMF © <%= Date.current.year %>
-    </p>
   </div>
 </div>

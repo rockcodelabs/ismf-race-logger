@@ -1,18 +1,4 @@
-<%# Touch Navigation - Floating Hamburger Menu
-    
-    Usage:
-      <%= render "shared/touch_nav" %>
-    
-    Features:
-      - Floating hamburger button (bottom-left, 96px, semi-transparent)
-      - Slide-in menu from left (60% width)
-      - Minimal navigation: Home, Back, Sign Out
-      - Close by tapping hamburger or visible content area
-    
-    Requirements:
-      - Requires touch_nav_controller.js (Stimulus)
-      - Requires touch.css styles
-%>
+<%# Touch Navigation - Horizontal Top Bar with hamburger toggle %>
 
 <div data-controller="touch-nav">
   
@@ -22,20 +8,19 @@
     data-touch-nav-target="hamburger"
     class="touch-hamburger-btn"
     aria-label="Toggle Menu">
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 3rem; height: 3rem;">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2.5rem; height: 2.5rem;">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16" />
     </svg>
   </button>
 
-  <%# Slide-in Menu Panel %>
+  <%# Horizontal Navigation Bar %>
   <div 
     data-touch-nav-target="menu"
-    data-action="click->touch-nav#closeIfOutside"
     class="touch-menu-panel">
     
     <div class="touch-menu-content">
       
-      <%# Menu Items %>
+      <%# Horizontal Menu Items %>
       <nav class="touch-menu-items">
         
         <%# Home Button %>

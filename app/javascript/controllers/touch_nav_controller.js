@@ -1,12 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Touch Navigation controller for floating hamburger menu
+// Touch Navigation controller for horizontal top navigation bar
 //
 // Features:
-// - Floating hamburger button (bottom-left)
-// - Slide-in menu from left (60% width)
+// - Floating hamburger button (top-left)
+// - Horizontal menu bar that slides down from top
 // - Toggle menu open/closed
-// - Close when clicking outside (right 40% area)
+// - Menu items displayed horizontally in a row
 //
 // Usage:
 //   <div data-controller="touch-nav">
