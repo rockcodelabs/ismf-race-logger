@@ -54,9 +54,6 @@ ssh:
 volumes:
   - "ismf_race_logger_storage:/rails/storage"
 
-# Asset bridging
-asset_path: /rails/public/assets
-
 # Builder configuration
 builder:
   arch: arm64
