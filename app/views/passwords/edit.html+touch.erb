@@ -1,0 +1,60 @@
+<% content_for :page_title, "Update Password" %>
+
+<div class="h-screen flex flex-col items-center justify-center touch-spacing overflow-hidden">
+  
+  <!-- Title -->
+  <div class="text-center mb-6">
+    <h1 class="text-3xl font-extrabold text-white mb-2">Update Password</h1>
+    <p class="text-lg text-white/80 font-semibold">Enter your new password</p>
+  </div>
+
+  <!-- Update Form Card -->
+  <div class="w-full max-w-2xl bg-white rounded-3xl shadow-2xl touch-spacing-lg">
+    <%= form_with url: password_path(params[:token]), method: :put, class: "space-y-4" do |form| %>
+      
+      <% if flash[:alert] %>
+        <div class="bg-red-50 border-2 border-red-200 rounded-xl p-4">
+          <div class="flex items-start gap-3">
+            <svg class="w-6 h-6 text-red-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p class="text-base font-semibold text-red-800"><%= flash[:alert] %></p>
+          </div>
+        </div>
+      <% end %>
+
+      <div>
+        <label for="password" class="touch-label">New Password</label>
+        <%= form.password_field :password, 
+            required: true, 
+            autocomplete: "new-password",
+            placeholder: "Enter new password",
+            maxlength: 72,
+            class: "touch-input",
+            id: "password" %>
+      </div>
+
+      <div>
+        <label for="password_confirmation" class="touch-label">Confirm Password</label>
+        <%= form.password_field :password_confirmation, 
+            required: true, 
+            autocomplete: "new-password",
+            placeholder: "Confirm new password",
+            maxlength: 72,
+            class: "touch-input",
+            id: "password_confirmation" %>
+      </div>
+
+      <div class="flex flex-col gap-4 pt-2">
+        <%= form.submit "Update Password", class: "touch-btn touch-btn-primary cursor-pointer" %>
+        
+        <%= link_to new_session_path, class: "touch-btn touch-btn-secondary" do %>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2rem; height: 2rem;">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>Back to Sign In</span>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>
