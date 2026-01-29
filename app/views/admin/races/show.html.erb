@@ -154,10 +154,14 @@
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <%= button_to admin_competition_race_participation_path(@competition, @race, participation.id), 
                         method: :delete, 
-                        class: "text-red-600 hover:text-red-900",
-                        data: { confirm: "Remove #{participation.athlete&.display_name || 'this athlete'} from the race?" },
+                        class: "inline-flex items-center justify-center text-red-600 hover:text-red-900 transition-all",
+                        data: { 
+                          controller: "confirm-delete",
+                          action: "confirm-delete#confirm",
+                          confirm_delete_name_value: participation.athlete&.display_name || 'athlete'
+                        },
                         form: { class: "inline" } do %>
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     <% end %>
