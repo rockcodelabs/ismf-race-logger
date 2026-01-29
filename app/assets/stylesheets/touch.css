@@ -128,35 +128,48 @@ body.touch-mode textarea {
 }
 
 /* ========================================
-   TOUCH NAVIGATION (Horizontal Top Bar)
+   TOUCH NAVIGATION (Horizontal Top Bar with ISMF Logo Button)
    ======================================== */
 
-/* Floating Hamburger Button (Top-Left) */
+/* ISMF Logo Button (Top-Left) - Serves as menu toggle */
 .touch-hamburger-btn {
   position: fixed;
   top: 1rem;
   left: 1rem;
   z-index: 10001;
-  width: 80px;
-  height: 80px;
-  border-radius: 1rem;
-  background: rgba(26, 26, 46, 0.85);
+  width: 115px;
+  height: 115px;
+  border-radius: 1.5rem;
+  background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
   backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  transition: transform var(--touch-transition), background var(--touch-transition);
-  border: 3px solid rgba(233, 69, 96, 0.6);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  padding: 0.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 4px solid rgba(233, 69, 96, 0.8);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(233, 69, 96, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
   cursor: pointer;
-  will-change: transform;
+  will-change: transform, width, height;
 }
 
 .touch-hamburger-btn:active {
-  transform: scale(0.95);
-  background: rgba(26, 26, 46, 0.95);
-  border-color: rgba(233, 69, 96, 0.8);
+  transform: scale(0.97);
+  background: linear-gradient(135deg, #0f3460 0%, #082441 100%);
+  border-color: rgba(233, 69, 96, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(233, 69, 96, 0.4) inset;
+}
+
+/* Logo button when nav is open - align with nav bar items */
+body:has(.touch-menu-open) .touch-hamburger-btn {
+  width: 88px;
+  height: 88px;
+  padding: 0.375rem;
+  border-radius: 0.875rem;
+  border-width: 3px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(233, 69, 96, 0.25);
+  top: 1.5rem;
+  left: 1.5rem;
 }
 
 /* Horizontal Menu Panel - Slides down from top */
@@ -187,7 +200,7 @@ body.touch-mode textarea {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
   transform: translateY(-100%);
   transition: transform 0.3s ease;
-  padding: 1.5rem 1.5rem 1.5rem 7rem;
+  padding: 1.5rem 1.5rem 1.5rem 10.5rem; /* Space for ISMF logo button */
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -573,23 +586,30 @@ body.touch-mode textarea {
     padding: 1.5rem;
   }
   
-  /* Hamburger button adjustments */
+  /* Logo button adjustments */
   .touch-hamburger-btn {
-    width: 64px;
-    height: 64px;
+    width: 90px;
+    height: 90px;
     top: 0.75rem;
     left: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 1.25rem;
   }
   
-  .touch-hamburger-btn svg {
-    width: 2rem;
-    height: 2rem;
+  /* Logo button when nav is open - align with nav bar items */
+  body:has(.touch-menu-open) .touch-hamburger-btn {
+    width: 72px;
+    height: 72px;
+    padding: 0.25rem;
+    border-radius: 0.75rem;
+    top: 1rem;
+    left: 1rem;
   }
   
   /* Horizontal menu adjustments */
   .touch-menu-content {
     padding: 1rem;
-    padding-left: 5.5rem; /* Space for smaller hamburger */
+    padding-left: 8.5rem; /* Space for smaller ISMF logo button */
     gap: 0.75rem;
   }
   

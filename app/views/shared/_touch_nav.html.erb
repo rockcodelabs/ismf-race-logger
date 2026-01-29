@@ -2,15 +2,13 @@
 
 <div data-controller="touch-nav">
   
-  <%# Floating Hamburger Button %>
+  <%# ISMF Logo Button %>
   <button 
     data-action="click->touch-nav#toggle" 
     data-touch-nav-target="hamburger"
     class="touch-hamburger-btn"
     aria-label="Toggle Menu">
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2.5rem; height: 2.5rem;">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
+    <%= image_tag "ismf_official_logo.png", alt: "ISMF Menu", class: "w-full h-full object-contain" %>
   </button>
 
   <%# Horizontal Navigation Bar %>
