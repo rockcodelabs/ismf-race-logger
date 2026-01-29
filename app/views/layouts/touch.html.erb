@@ -28,10 +28,11 @@
 
     <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "touch", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="min-h-screen bg-gradient-to-br from-ismf-navy via-ismf-blue to-ismf-navy text-white antialiased">
+  <body class="min-h-screen bg-gradient-to-br from-ismf-navy via-ismf-blue to-ismf-navy text-white antialiased touch-mode" data-controller="touch-detection">
     
     <!-- Flash Messages -->
     <% if notice %>
@@ -53,5 +54,8 @@
     <% end %>
 
     <%= yield %>
+    
+    <!-- Virtual Keyboard -->
+    <div data-controller="keyboard"></div>
   </body>
 </html>
