@@ -1,0 +1,67 @@
+<%# Touch Navigation Bar Partial
+    
+    Usage:
+      <%= render "shared/touch_nav" %>
+    
+    Features:
+      - Collapsible hamburger menu
+      - Home button
+      - Back button (browser history)
+      - Page title display
+      - Sign out button (if user authenticated)
+      - Auto-hide on scroll down
+      - Auto-show on scroll up
+    
+    Requirements:
+      - Must set page_title in view: <% content_for :page_title, "Your Title" %>
+      - Requires touch_nav_controller.js (Stimulus)
+      - Requires touch.css styles
+%>
+
+<nav data-controller="touch-nav" data-touch-nav-target="navbar" class="fixed top-0 left-0 right-0 z-40 bg-ismf-navy/95 backdrop-blur-sm border-b-2 border-ismf-red shadow-lg transition-transform duration-300">
+  <div class="flex items-center justify-between px-6 py-4 gap-4">
+    
+    <%# Hamburger Menu %>
+    <button data-action="click->touch-nav#toggle" class="touch-nav-btn" aria-label="Toggle Menu">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2rem; height: 2rem;">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+    
+    <%# Home Button %>
+    <%= link_to root_path, class: "touch-nav-btn", title: "Home", "aria-label": "Home" do %>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2rem; height: 2rem;">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+    <% end %>
+    
+    <%# Back Button %>
+    <button data-action="click->touch-nav#goBack" class="touch-nav-btn" title="Back" aria-label="Go Back">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2rem; height: 2rem;">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+    </button>
+    
+    <%# Page Title (centered, flexible width) %>
+    <div class="flex-1 text-center">
+      <h1 class="text-xl font-bold text-white truncate px-2">
+        <%= content_for?(:page_title) ? yield(:page_title) : "ISMF" %>
+      </h1>
+    </div>
+    
+    <%# Sign Out Button (if authenticated) %>
+    <% if Current.user %>
+      <%= button_to session_path, method: :delete, class: "touch-nav-btn", title: "Sign Out", "aria-label": "Sign Out" do %>
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 2rem; height: 2rem;">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+      <% end %>
+    <% else %>
+      <%# Empty placeholder to maintain button alignment %>
+      <div class="w-16 h-16"></div>
+    <% end %>
+  </div>
+</nav>
+
+<%# Spacer for fixed navbar (prevents content from hiding under nav) %>
+<div class="h-20"></div>

@@ -34,6 +34,11 @@
 
   <body class="min-h-screen bg-gradient-to-br from-ismf-navy via-ismf-blue to-ismf-navy text-white antialiased touch-mode" data-controller="touch-detection">
     
+    <!-- Touch Navigation (hidden on home page) -->
+    <% unless request.path == root_path %>
+      <%= render "shared/touch_nav" %>
+    <% end %>
+    
     <!-- Flash Messages -->
     <% if notice %>
       <div class="fixed top-4 left-4 right-4 z-50 bg-green-100 border-2 border-green-500 text-green-900 px-6 py-4 rounded-xl flex items-center gap-4 shadow-lg" data-controller="flash" data-flash-dismiss-after-value="5000">
