@@ -60,7 +60,10 @@
 
     <%= yield %>
     
+    <!-- Emergency Reload (tap 4 corners in sequence) -->
+    <div data-controller="emergency-reload"></div>
+    
     <!-- Virtual Keyboard -->
-    <div data-controller="keyboard"></div>
+    <div class="simple-keyboard" data-controller="keyboard"></div>
   </body>
 </html>

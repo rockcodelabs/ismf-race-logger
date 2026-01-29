@@ -193,8 +193,9 @@ body.touch-mode textarea {
    VIRTUAL KEYBOARD (simple-keyboard)
    ======================================== */
 
+/* Virtual keyboard container */
 .simple-keyboard {
-  position: fixed !important;
+  position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
@@ -204,10 +205,38 @@ body.touch-mode textarea {
   border-top: 4px solid #e94560;
   box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.6);
   max-width: 100vw;
+  box-sizing: border-box;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
 }
 
-/* Keyboard buttons */
+/* Prevent pointer events on button content */
+.simple-keyboard .hg-button span,
+.simple-keyboard .hg-button span svg {
+  pointer-events: none;
+}
+
+/* Keyboard rows layout */
+.simple-keyboard .hg-row {
+  display: flex;
+  margin-bottom: 0.5rem;
+}
+
+.simple-keyboard .hg-row:last-child {
+  margin-bottom: 0;
+}
+
+/* Button spacing within rows */
+.simple-keyboard .hg-row .hg-button:not(:last-child) {
+  margin-right: 5px;
+}
+
+/* Base button styles */
 .simple-keyboard .hg-button {
+  display: inline-block;
+  flex-grow: 1;
   height: 56px;
   font-size: 1.25rem;
   font-weight: 700;
@@ -218,64 +247,69 @@ body.touch-mode textarea {
   transition: all 0.1s ease;
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
+/* Standard button width */
+.simple-keyboard .hg-button.hg-standardBtn {
+  width: 20px;
+  min-width: 20px;
+  box-sizing: border-box;
+}
+
+/* Button elements should inherit font size */
+.simple-keyboard button.hg-button {
+  border-width: 0;
+  font-size: inherit;
+}
+
+/* Button active state */
 .simple-keyboard .hg-button:active {
   transform: scale(0.95);
   background: #4a5f7f;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3) inset;
 }
 
-/* Special keys */
+/* Backspace key */
 .simple-keyboard .hg-button-bksp {
-  background: #e67e22 !important;
+  background: #e67e22;
 }
 
 .simple-keyboard .hg-button-bksp:active {
-  background: #d35400 !important;
+  background: #d35400;
 }
 
+/* Enter key */
 .simple-keyboard .hg-button-enter {
-  background: #16a34a !important;
+  background: #16a34a;
 }
 
 .simple-keyboard .hg-button-enter:active {
-  background: #15803d !important;
+  background: #15803d;
 }
 
+/* Shift key */
 .simple-keyboard .hg-button-shift {
-  background: #8e44ad !important;
+  background: #8e44ad;
 }
 
 .simple-keyboard .hg-button-shift:active,
-.simple-keyboard .hg-button-shift.active {
-  background: #9b59b6 !important;
-  border-color: #fff !important;
+.simple-keyboard .hg-button-shift.hg-activeButton {
+  background: #9b59b6;
+  border-color: #fff;
 }
 
-/* Keyboard preview button (left of spacebar) */
-.keyboard-preview-button {
-  background: rgba(16, 185, 129, 0.2) !important;
-  border: 2px solid rgba(16, 185, 129, 0.5) !important;
-  color: #10b981 !important;
-  font-family: monospace !important;
-  font-size: 1rem !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-  pointer-events: none !important;
-  cursor: default !important;
-  min-width: 120px !important;
-  font-weight: normal !important;
+/* Space bar - takes up more room */
+.simple-keyboard .hg-button-space {
+  flex-grow: 5;
+  max-width: none;
 }
 
-/* Keyboard rows spacing */
-.simple-keyboard .hg-row {
-  margin-bottom: 0.5rem;
-}
-
-.simple-keyboard .hg-row:last-child {
-  margin-bottom: 0;
+/* .com button sizing */
+.simple-keyboard .hg-button-com {
+  max-width: 85px;
 }
 
 /* ========================================

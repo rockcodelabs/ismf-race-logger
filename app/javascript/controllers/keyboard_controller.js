@@ -20,6 +20,10 @@ export default class extends Controller {
   connect() {
     console.log("🎹 Keyboard controller connected")
     
+    // Initialize audio context (will be resumed on first user interaction)
+    this.audioContext = null
+    this.audioResumed = false
+    
     // Dynamically import simple-keyboard
     this.loadKeyboard()
   }
@@ -27,6 +31,11 @@ export default class extends Controller {
   disconnect() {
     if (this.keyboard) {
       this.keyboard.destroy()
+    }
+    
+    // Close audio context
+    if (this.audioContext) {
+      this.audioContext.close()
     }
     
     // Remove event listeners
@@ -37,12 +46,11 @@ export default class extends Controller {
 
   async loadKeyboard() {
     try {
-      // Import simple-keyboard
-      const Keyboard = (await import("simple-keyboard")).default
+      // Import simple-keyboard - use named export SimpleKeyboard
+      const { SimpleKeyboard } = await import("simple-keyboard")
       
-      this.initKeyboard(Keyboard)
+      this.initKeyboard(SimpleKeyboard)
       this.setupInputListeners()
-      this.createKeyboardHTML()
       
       console.log("✅ Keyboard loaded successfully")
     } catch (error) {
@@ -55,21 +63,16 @@ export default class extends Controller {
       onChange: input => this.handleChange(input),
       onKeyPress: button => this.handleKeyPress(button),
       layout: this.getLayout(),
-      theme: "simple-keyboard touch-keyboard-theme",
+      theme: "simple-keyboard",
       display: {
-        "{bksp}": "⌫ DEL",
-        "{enter}": "↵ ENTER",
+        "{bksp}": "⌫",
         "{shift}": "⇧",
-        "{space}": "SPACE",
-        "{preview}": "Type here..."
+        "{space}": " "
       },
-      buttonTheme: [
-        {
-          class: "keyboard-preview-button",
-          buttons: "{preview}"
-        }
-      ],
-      mergeDisplay: true
+      mergeDisplay: true,
+      useTouchEvents: true,
+      stopMouseDownPropagation: true,
+      useButtonTag: true
     })
     
     // Hide keyboard initially
@@ -86,44 +89,31 @@ export default class extends Controller {
         "q w e r t y u i o p",
         "a s d f g h j k l",
         "{shift} z x c v b n m {shift}",
-        "{preview} @ . {space} _ {enter}"
+        ".com @ {space}"
       ],
       shift: [
         "! @ # $ % ^ & * ( ) {bksp}",
         "Q W E R T Y U I O P",
         "A S D F G H J K L",
         "{shift} Z X C V B N M {shift}",
-        "{preview} @ . {space} _ {enter}"
+        ".com @ {space}"
       ]
     }
   }
 
   setupPreviewDisplay() {
-    setTimeout(() => {
-      const previewBtn = this.element.querySelector('.keyboard-preview-button')
-      if (previewBtn) {
-        previewBtn.style.pointerEvents = 'none'
-        previewBtn.style.cursor = 'default'
-        previewBtn.style.fontFamily = 'monospace'
-        previewBtn.style.overflow = 'hidden'
-        previewBtn.style.textOverflow = 'ellipsis'
-        previewBtn.style.whiteSpace = 'nowrap'
-      }
-    }, 100)
+    // No preview button in this layout
   }
 
   createKeyboardHTML() {
-    // Add simple-keyboard CSS dynamically
-    if (!document.getElementById('simple-keyboard-css')) {
-      const link = document.createElement('link')
-      link.id = 'simple-keyboard-css'
-      link.rel = 'stylesheet'
-      link.href = 'https://cdn.jsdelivr.net/npm/simple-keyboard@3.8.93/build/css/index.min.css'
-      document.head.appendChild(link)
-    }
+    // CSS is loaded from assets/stylesheets/simple-keyboard.css
+    // No need to dynamically load it
   }
 
   setupInputListeners() {
+    // Prevent keyboard element from being focusable
+    this.element.setAttribute("tabindex", "-1")
+    
     // Prevent native mobile/kiosk keyboard
     this.preventNativeKeyboard = this.preventNativeKeyboard.bind(this)
     document.addEventListener("focus", this.preventNativeKeyboard, true)
@@ -146,11 +136,12 @@ export default class extends Controller {
       
       console.log("🛡️ Preventing native keyboard for:", event.target.id || event.target.name)
       
-      // Temporarily set readonly to block native keyboard
+      // Set input to readonly briefly to prevent native keyboard
       event.target.setAttribute("readonly", "readonly")
       setTimeout(() => {
         event.target.removeAttribute("readonly")
-      }, 100)
+        event.target.focus()
+      }, 10)
     }
   }
 
@@ -161,12 +152,29 @@ export default class extends Controller {
   }
 
   handleFocusOut(event) {
-    // Delay to check if focus moved to keyboard
+    // Only hide if clicking outside both input and keyboard
     setTimeout(() => {
-      if (!this.element.contains(document.activeElement)) {
-        this.hideKeyboard()
+      const activeElement = document.activeElement
+      
+      // Keep keyboard open if:
+      // - Still focused on a text input
+      // - Clicking on keyboard element
+      if (this.isTextInput(activeElement)) {
+        return
       }
-    }, 100)
+      
+      // Check if click is on keyboard
+      const clickedElement = document.elementFromPoint(
+        event.clientX || window.innerWidth / 2,
+        event.clientY || window.innerHeight - 100
+      )
+      
+      if (clickedElement && this.element.contains(clickedElement)) {
+        return
+      }
+      
+      this.hideKeyboard()
+    }, 200)
   }
 
   isTextInput(element) {
@@ -182,11 +190,6 @@ export default class extends Controller {
     
     // Update preview
     this.updatePreview(input.value)
-    
-    // Scroll input into view
-    setTimeout(() => {
-      input.scrollIntoView({ behavior: "smooth", block: "center" })
-    }, 100)
     
     console.log("⌨️ Keyboard shown for:", input.id || input.name)
   }
@@ -210,20 +213,7 @@ export default class extends Controller {
   }
 
   updatePreview(value) {
-    const previewBtn = this.element.querySelector('.keyboard-preview-button')
-    if (previewBtn) {
-      if (value && value.length > 0) {
-        // Show actual text or bullets for password
-        if (this.currentInput && this.currentInput.type === 'password') {
-          previewBtn.textContent = '•'.repeat(Math.min(value.length, 20))
-        } else {
-          // Truncate long text
-          previewBtn.textContent = value.length > 20 ? value.slice(-20) : value
-        }
-      } else {
-        previewBtn.textContent = 'Type here...'
-      }
-    }
+    // No preview in this simplified layout
   }
 
   handleKeyPress(button) {
@@ -264,22 +254,35 @@ export default class extends Controller {
     console.log("⇧ Shift toggled to:", newLayout)
   }
 
-  playBeep() {
+  async playBeep() {
     try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
-      const oscillator = audioContext.createOscillator()
-      const gainNode = audioContext.createGain()
+      // Create audio context once
+      if (!this.audioContext) {
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)()
+      }
       
-      oscillator.connect(gainNode)
-      gainNode.connect(audioContext.destination)
+      // Resume audio context on first user interaction
+      if (!this.audioResumed && this.audioContext.state === 'suspended') {
+        await this.audioContext.resume()
+        this.audioResumed = true
+      }
       
-      oscillator.frequency.value = 800
-      oscillator.type = "sine"
-      gainNode.gain.setValueAtTime(0.08, audioContext.currentTime)
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05)
-      
-      oscillator.start()
-      oscillator.stop(audioContext.currentTime + 0.05)
+      // Only play if context is running
+      if (this.audioContext.state === 'running') {
+        const oscillator = this.audioContext.createOscillator()
+        const gainNode = this.audioContext.createGain()
+        
+        oscillator.connect(gainNode)
+        gainNode.connect(this.audioContext.destination)
+        
+        oscillator.frequency.value = 800
+        oscillator.type = "sine"
+        gainNode.gain.setValueAtTime(0.08, this.audioContext.currentTime)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.05)
+        
+        oscillator.start()
+        oscillator.stop(this.audioContext.currentTime + 0.05)
+      }
     } catch (e) {
       // Silently fail if audio not available
     }
