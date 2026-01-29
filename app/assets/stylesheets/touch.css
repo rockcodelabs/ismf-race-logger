@@ -1,6 +1,22 @@
 /* Touch Display Styles */
 /* Optimized for 1280×720 Raspberry Pi Touch Display 2 (landscape mode) */
 
+/* Animations */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 /* CSS Custom Properties */
 :root {
   --touch-primary: #e94560;

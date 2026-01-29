@@ -1,8 +1,33 @@
 <% content_for :page_title, @race.name %>
 
 <div class="h-screen overflow-hidden flex flex-col bg-gray-50">
+  <!-- Competition Info Bar -->
+  <div class="shrink-0 px-3 pt-3 touch-content-with-nav">
+    <%= link_to admin_competition_path(@competition), class: "block bg-white rounded-xl shadow-sm p-3 mb-2 active:bg-gray-50 transition" do %>
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Competition</span>
+          </div>
+          <h2 class="text-base font-bold text-ismf-navy truncate">
+            <%= @competition.display_name %>
+          </h2>
+          <p class="text-xs text-ismf-gray truncate">
+            <%= @competition.country_flag_emoji %> <%= @competition.place %> • <%= @competition.short_date_range %>
+          </p>
+        </div>
+        <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </div>
+    <% end %>
+  </div>
+
   <!-- Header -->
-  <div class="shrink-0 px-3 pt-3 pb-2 touch-content-with-nav bg-white shadow-sm">
+  <div class="shrink-0 px-3 pb-2 bg-white shadow-sm">
     <div class="mb-2">
       <h1 class="text-xl font-bold text-ismf-navy truncate">
         <%= @race.name %>
@@ -11,17 +36,17 @@
     
     <!-- Race Info Pills -->
     <div class="flex items-center gap-2 overflow-x-auto pb-1">
-      <span class="px-3 py-1 text-xs font-bold rounded-full bg-ismf-blue/10 text-ismf-blue whitespace-nowrap">
+      <span class="px-3 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-800 whitespace-nowrap">
         <%= @race.race_type_name %>
       </span>
-      <span class="px-3 py-1 text-xs font-bold rounded-full bg-purple-100 text-purple-800 whitespace-nowrap">
+      <span class="px-3 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-800 whitespace-nowrap">
         <%= @race.stage_name %>
       </span>
       <span class="px-3 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-800 whitespace-nowrap">
         <%= @race.gender_category_display %>
       </span>
       <% if @race.scheduled_at.present? %>
-        <span class="px-3 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800 whitespace-nowrap">
+        <span class="px-3 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-800 whitespace-nowrap">
           <%= @race.formatted_scheduled_time %>
         </span>
       <% end %>

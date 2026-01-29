@@ -35,11 +35,21 @@ export default class extends Controller {
     this.isDragging = false
     this.isOpen = false
     this.isDeleting = false
+    this.undoTimeout = null
+    this.deletedData = null
   }
 
   disconnect() {
-    // Clean up any ongoing animations
+    // Clean up any ongoing animations and undo timeout
+    this.clearUndoTimeout()
     this.reset()
+  }
+
+  clearUndoTimeout() {
+    if (this.undoTimeout) {
+      clearTimeout(this.undoTimeout)
+      this.undoTimeout = null
+    }
   }
 
   touchStart(event) {
@@ -183,11 +193,45 @@ export default class extends Controller {
     // Wait for animation to complete
     await new Promise(resolve => setTimeout(resolve, 400))
 
+    // Store element height before collapsing
+    const originalHeight = this.element.offsetHeight
+
+    // Store data for undo - store parent reference and element reference
+    const parent = this.element.parentElement
+    const siblings = Array.from(parent.children)
+    const index = siblings.indexOf(this.element)
+    
+    this.deletedData = {
+      element: this.element, // Store the actual element, not a clone
+      parent: parent,
+      index: index,
+      originalHeight: originalHeight,
+      url: this.urlValue,
+      name: this.nameValue
+    }
+
+    // Show undo button in the row first
+    this.showUndoButton()
+    
+    // Hide element with collapse animation but don't remove from DOM yet
+    this.hideElement()
+
+    // Set timeout to perform actual deletion
+    this.undoTimeout = setTimeout(() => {
+      this.performDelete()
+      this.hideUndoButton()
+    }, 5000)
+  }
+
+  async performDelete() {
+    // Store name for toast before clearing deletedData
+    const deletedName = this.deletedData.name
+    
     // Send DELETE request via Turbo
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
       
-      const response = await fetch(this.urlValue, {
+      const response = await fetch(this.deletedData.url, {
         method: "DELETE",
         headers: {
           "X-CSRF-Token": csrfToken,
@@ -196,54 +240,190 @@ export default class extends Controller {
       })
 
       if (response.ok) {
-        // Always use manual removal to ensure animation completes first
+        // Successfully deleted - now remove from DOM
         this.removeElement()
-      } else {
-        // Error - reset the card
-        this.cardTarget.style.transform = "translateX(0)"
-        this.isDeleting = false
         
-        // Show error message
-        alert(`Failed to delete ${this.nameValue}`)
+        // Show toast notification after hard delete
+        this.showDeletedToast(deletedName)
+      } else {
+        console.error("Delete failed on server")
+        // Optionally restore element on error
+        this.undo()
+        return
       }
     } catch (error) {
       console.error("Delete failed:", error)
+      // Optionally restore element on error
+      this.undo()
+      return
+    }
+
+    // Clear stored data
+    this.deletedData = null
+    this.hideUndoButton()
+  }
+
+  undo() {
+    // Cancel the deletion
+    this.clearUndoTimeout()
+    
+    if (!this.deletedData) return
+
+    // Hide undo button
+    this.hideUndoButton()
+
+    // Restore the element's visual state
+    const element = this.deletedData.element
+    const originalHeight = this.deletedData.originalHeight
+    
+    // Reverse the collapse animation
+    element.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+    element.style.overflow = 'hidden'
+    
+    requestAnimationFrame(() => {
+      // Expand back to original height
+      element.style.height = `${originalHeight}px`
+      element.style.opacity = '1'
+      element.style.paddingTop = ''
+      element.style.paddingBottom = ''
+      element.style.marginTop = ''
+      element.style.marginBottom = ''
       
-      // Reset on error
-      this.cardTarget.style.transform = "translateX(0)"
-      this.isDeleting = false
+      // Reset card position
+      const card = element.querySelector('[data-swipe-delete-target="card"]')
+      if (card) {
+        card.style.transform = 'translateX(0)'
+        card.style.transition = ''
+      }
       
-      alert(`Error deleting ${this.nameValue}`)
+      // After animation completes, remove all inline styles
+      setTimeout(() => {
+        element.style.height = ''
+        element.style.overflow = ''
+        element.style.transition = ''
+      }, 300)
+    })
+    
+    // Reset state
+    this.isDeleting = false
+    this.isOpen = false
+    
+    // Clear stored data
+    this.deletedData = null
+    
+    // Haptic feedback
+    if (navigator.vibrate) {
+      navigator.vibrate(50)
     }
   }
 
-  removeElement() {
+  showUndoButton() {
     const element = this.element
-    const originalHeight = element.offsetHeight
+    const originalHeight = this.deletedData.originalHeight
+    
+    // Create undo button container that maintains height
+    const undoContainer = document.createElement('div')
+    undoContainer.className = 'bg-gray-900 flex items-center justify-center'
+    undoContainer.style.height = `${Math.max(originalHeight, 80)}px`
+    undoContainer.dataset.undoContainer = 'true'
+    
+    undoContainer.innerHTML = `
+      <button class="px-8 py-4 bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700 text-gray-900 text-xl font-bold rounded-xl shadow-lg transition flex items-center gap-3">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+        </svg>
+        <span>Undo Delete</span>
+      </button>
+    `
+    
+    // Replace element content with undo container
+    element.style.overflow = 'visible'
+    const originalContent = element.innerHTML
+    element.dataset.originalContent = originalContent
+    element.innerHTML = ''
+    element.appendChild(undoContainer)
+    
+    // Bind click event
+    const button = undoContainer.querySelector('button')
+    button.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      this.undo()
+    })
+  }
 
-    // Collapse animation
-    element.style.height = `${originalHeight}px`
-    element.style.overflow = "hidden"
-    element.style.transition = "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+  hideUndoButton() {
+    const undoContainer = this.element.querySelector('[data-undo-container]')
+    if (undoContainer) {
+      // Restore original content
+      const originalContent = this.element.dataset.originalContent
+      if (originalContent) {
+        this.element.innerHTML = originalContent
+        delete this.element.dataset.originalContent
+      }
+    }
+  }
 
+  showDeletedToast(name) {
+    // Remove any existing toast
+    const existingToast = document.getElementById('deleted-toast')
+    if (existingToast) {
+      existingToast.remove()
+    }
+
+    // Create toast element
+    const toast = document.createElement('div')
+    toast.id = 'deleted-toast'
+    toast.className = 'fixed top-3 right-6 bg-gray-900 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 z-50'
+    toast.style.opacity = '0'
+    toast.style.transform = 'translateX(20px)'
+    toast.innerHTML = `
+      <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+      </svg>
+      <span class="text-lg font-bold">${name} deleted</span>
+    `
+
+    // Add to DOM
+    document.body.appendChild(toast)
+
+    // Animate in
     requestAnimationFrame(() => {
-      element.style.height = "0"
-      element.style.opacity = "0"
-      element.style.paddingTop = "0"
-      element.style.paddingBottom = "0"
-      element.style.marginTop = "0"
-      element.style.marginBottom = "0"
+      toast.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+      toast.style.opacity = '1'
+      toast.style.transform = 'translateX(0)'
     })
 
-    // Remove from DOM after collapse animation
+    // Auto-hide after 3 seconds
     setTimeout(() => {
-      // Use Turbo to remove if possible (for proper cleanup)
-      const turboFrameId = element.id
-      if (turboFrameId) {
-        // Mark as deleted to prevent Turbo conflicts
-        element.dataset.deleted = "true"
+      if (toast.parentElement) {
+        toast.style.opacity = '0'
+        toast.style.transform = 'translateX(20px)'
+        setTimeout(() => toast.remove(), 300)
       }
-      element.remove()
-    }, 300)
+    }, 3000)
+  }
+
+  hideElement() {
+    const element = this.element
+    const undoContainer = element.querySelector('[data-undo-container]')
+    
+    if (!undoContainer) return
+
+    // Collapse the undo container smoothly
+    const currentHeight = undoContainer.offsetHeight
+    undoContainer.style.height = `${currentHeight}px`
+    undoContainer.style.transition = "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+
+    requestAnimationFrame(() => {
+      undoContainer.style.height = "80px"
+    })
+  }
+
+  removeElement() {
+    // Actually remove from DOM (called after timeout if not undone)
+    if (this.deletedData && this.deletedData.element) {
+      this.deletedData.element.remove()
+    }
   }
 }
