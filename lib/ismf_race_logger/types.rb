@@ -83,6 +83,36 @@ module IsmfRaceLogger
     # Bib number (1-9999)
     BibNumber = Coercible::Integer.constrained(gteq: 1, lteq: 9999)
 
+    # Course segments for race locations
+    CourseSegment = Strict::String.enum(
+      "uphill1",
+      "uphill2",
+      "uphill3",
+      "transition_1to2",
+      "transition_2to1",
+      "descent",
+      "footpart",
+      "start_area",
+      "finish_area"
+    )
+
+    # Segment positions within a course segment
+    SegmentPosition = Strict::String.enum(
+      "start",
+      "middle",
+      "top",
+      "bottom",
+      "end",
+      "full"
+    )
+
+    # Color codes for visual indicators
+    ColorCode = Strict::String.enum(
+      "green",
+      "red",
+      "yellow"
+    )
+
     # ISMF Member Countries (ISO 3166-1 alpha-3)
     ISMF_COUNTRIES = %w[
       AND ARG AUS AUT BEL BGR BIH CAN CHE CHN HRV CZE

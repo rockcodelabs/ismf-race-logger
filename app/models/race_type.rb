@@ -20,4 +20,5 @@
 #
 class RaceType < ApplicationRecord
   has_many :races, dependent: :restrict_with_error
+  has_many :location_templates, class_name: "RaceTypeLocationTemplate", dependent: :destroy
 end

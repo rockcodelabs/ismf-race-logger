@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_29_220332) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_30_194536) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -98,6 +98,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_29_220332) do
     t.index ["penalty_number"], name: "index_penalties_on_penalty_number", unique: true
   end
 
+  create_table "race_locations", force: :cascade do |t|
+    t.string "color_code"
+    t.string "course_segment", null: false
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.integer "display_order", null: false
+    t.boolean "is_standard", default: false, null: false
+    t.string "name", null: false
+    t.bigint "race_id", null: false
+    t.string "segment_position", null: false
+    t.datetime "updated_at", null: false
+    t.index ["race_id", "display_order"], name: "index_race_locations_on_race_and_order"
+    t.index ["race_id", "name"], name: "index_race_locations_on_race_and_name"
+    t.index ["race_id"], name: "index_race_locations_on_race_id"
+  end
+
   create_table "race_participations", force: :cascade do |t|
     t.boolean "active_in_heat", default: true
     t.bigint "athlete_id", null: false
@@ -118,6 +134,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_29_220332) do
     t.index ["race_id"], name: "index_race_participations_on_race_id"
     t.index ["status"], name: "index_race_participations_on_status"
     t.index ["team_id"], name: "index_race_participations_on_team_id"
+  end
+
+  create_table "race_type_location_templates", force: :cascade do |t|
+    t.string "color_code"
+    t.string "course_segment", null: false
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.integer "display_order", null: false
+    t.boolean "is_standard", default: false, null: false
+    t.string "name", null: false
+    t.bigint "race_type_id", null: false
+    t.string "segment_position", null: false
+    t.datetime "updated_at", null: false
+    t.index ["race_type_id", "display_order"], name: "index_race_type_location_templates_on_type_and_order"
+    t.index ["race_type_id", "name"], name: "index_race_type_location_templates_on_type_and_name"
+    t.index ["race_type_id"], name: "index_race_type_location_templates_on_race_type_id"
   end
 
   create_table "race_types", force: :cascade do |t|
@@ -195,9 +227,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_29_220332) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "magic_links", "users"
+  add_foreign_key "race_locations", "races"
   add_foreign_key "race_participations", "athletes"
   add_foreign_key "race_participations", "races"
   add_foreign_key "race_participations", "teams"
+  add_foreign_key "race_type_location_templates", "race_types"
   add_foreign_key "races", "competitions"
   add_foreign_key "races", "race_types"
   add_foreign_key "sessions", "users"
