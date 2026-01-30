@@ -60,6 +60,12 @@ module Operations
                           @race_location_repo.max_display_order(race_id) + 10
                         end
 
+        # Normalize empty strings to nil for optional fields
+        color_code = params[:color_code].presence
+        description = params[:description].presence
+
+
+
         # Create the location
         location = RaceLocation.create!(
           race_id: race_id,
@@ -68,8 +74,8 @@ module Operations
           segment_position: params[:segment_position] || "middle",
           display_order: display_order,
           is_standard: false, # Custom locations are never standard
-          color_code: params[:color_code],
-          description: params[:description]
+          color_code: color_code,
+          description: description
         )
 
         # Return struct from repo

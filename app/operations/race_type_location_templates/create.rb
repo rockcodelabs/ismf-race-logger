@@ -61,6 +61,12 @@ module Operations
                           calculate_next_order(race_type_id)
                         end
 
+        # Normalize empty strings to nil for optional fields
+        color_code = params[:color_code].presence
+        description = params[:description].presence
+
+
+
         # Create the template
         template = RaceTypeLocationTemplate.create!(
           race_type_id: race_type_id,
@@ -69,8 +75,8 @@ module Operations
           segment_position: params[:segment_position] || "middle",
           display_order: display_order,
           is_standard: params[:is_standard] || false,
-          color_code: params[:color_code],
-          description: params[:description]
+          color_code: color_code,
+          description: description
         )
 
         # Return struct from repo

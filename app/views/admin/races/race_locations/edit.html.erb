@@ -1,0 +1,136 @@
+<%# frozen_string_literal: true %>
+
+<% content_for :title, "Edit Location - #{@race.name}" %>
+
+<div class="container mx-auto px-4 py-8">
+  <!-- Header with breadcrumbs -->
+  <nav class="flex mb-4 text-sm" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+      <li class="inline-flex items-center">
+        <%= link_to admin_root_path, class: "text-ismf-gray hover:text-ismf-red" do %>
+          <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+          </svg>
+          Dashboard
+        <% end %>
+      </li>
+      <li>
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+          </svg>
+          <%= link_to @competition.name, admin_competition_path(@competition), class: "ml-1 text-ismf-gray hover:text-ismf-red" %>
+        </div>
+      </li>
+      <li>
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+          </svg>
+          <%= link_to "Races", admin_competition_races_path(@competition), class: "ml-1 text-ismf-gray hover:text-ismf-red" %>
+        </div>
+      </li>
+      <li>
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+          </svg>
+          <%= link_to @race.name, admin_competition_race_path(@competition, @race), class: "ml-1 text-ismf-gray hover:text-ismf-red" %>
+        </div>
+      </li>
+      <li>
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+          </svg>
+          <%= link_to "Locations", admin_race_race_locations_path(@race), class: "ml-1 text-ismf-gray hover:text-ismf-red" %>
+        </div>
+      </li>
+      <li aria-current="page">
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+          </svg>
+          <span class="ml-1 text-ismf-gray font-medium">Edit <%= @location.name %></span>
+        </div>
+      </li>
+    </ol>
+  </nav>
+
+  <!-- Race context banner -->
+  <div class="bg-ismf-blue rounded-lg shadow-lg p-6 mb-6 text-white">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-2xl font-bold"><%= @race.name %></h2>
+        <div class="mt-2 flex items-center space-x-4 text-white/80">
+          <span class="flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+            </svg>
+            <%= @race.race_type_name %>
+          </span>
+          <span class="flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <%= @race.status.titleize %>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page header -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-ismf-navy">Edit Location</h1>
+    <p class="mt-1 text-sm text-ismf-gray">
+      Update details for <strong><%= @location.name %></strong>.
+    </p>
+  </div>
+
+  <!-- Form card -->
+  <div class="card">
+    <div class="card-body">
+    <%= render "form",
+               location: @location,
+               race: @race,
+               course_segments: @course_segments,
+               segment_positions: @segment_positions,
+               color_codes: @color_codes %>
+    </div>
+  </div>
+
+  <!-- Danger zone -->
+  <% if @location %>
+    <div class="mt-6 card border-red-200">
+      <div class="card-body bg-red-50">
+        <div class="flex items-start">
+          <div class="shrink-0">
+            <div class="w-12 h-12 bg-ismf-red rounded-lg flex items-center justify-center">
+              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+            </div>
+          </div>
+          <div class="ml-4 flex-1">
+            <h3 class="text-lg font-bold text-ismf-navy">Danger Zone</h3>
+            <div class="mt-2 text-sm text-ismf-gray">
+              <p>Deleting this location is permanent and cannot be undone.</p>
+            </div>
+            <div class="mt-4">
+              <%= button_to admin_race_race_location_path(@race, @location),
+                            method: :delete,
+                            data: { turbo_confirm: "Are you sure you want to delete '#{@location.name}'? This action cannot be undone." },
+                            class: "inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-ismf-red hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ismf-red" do %>
+              <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+              Delete Location
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

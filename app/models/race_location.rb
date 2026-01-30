@@ -11,6 +11,8 @@
 #
 class RaceLocation < ApplicationRecord
   belongs_to :race
+  before_validation :normalize_optional_fields
+
   # has_many :reports, dependent: :nullify  # TODO: Uncomment when Report model is created
   # has_many :incidents, dependent: :nullify  # TODO: Uncomment when Incident model is created
 
@@ -22,4 +24,11 @@ class RaceLocation < ApplicationRecord
   scope :ordered, -> { order(:display_order) }
   scope :standard, -> { where(is_standard: true) }
   scope :custom, -> { where(is_standard: false) }
+
+  private
+
+  def normalize_optional_fields
+    self.color_code = nil if color_code.blank?
+    self.description = nil if description.blank?
+  end
 end

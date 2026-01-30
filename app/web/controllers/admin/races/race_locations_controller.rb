@@ -25,6 +25,7 @@ module Web
         #
         class RaceLocationsController < Admin::BaseController
           before_action :set_race
+          before_action :set_competition
           before_action :set_race_location, only: [:edit, :update, :destroy]
           after_action :verify_authorized
 
@@ -60,11 +61,20 @@ module Web
               redirect_to admin_race_race_locations_path(@race),
                          notice: "Location '#{location.name}' was successfully added."
             in Dry::Monads::Failure([error_type, message])
+              @location = location_params.to_h
               @course_segments = course_segment_options
               @segment_positions = segment_position_options
               @color_codes = color_code_options
               @errors = { error_type => [message] }
               flash.now[:alert] = message
+              render :new, status: :unprocessable_entity
+            else
+              @location = location_params.to_h
+              @course_segments = course_segment_options
+              @segment_positions = segment_position_options
+              @color_codes = color_code_options
+              @errors = { general: ["An unexpected error occurred"] }
+              flash.now[:alert] = "Failed to create location"
               render :new, status: :unprocessable_entity
             end
           end
@@ -138,10 +148,14 @@ module Web
           def set_race
             @race = race_repo.find(params[:race_id])
             unless @race
-              redirect_to admin_races_path, alert: "Race not found."
+              redirect_to admin_root_path, alert: "Race not found."
             end
           rescue ActiveRecord::RecordNotFound
-            redirect_to admin_races_path, alert: "Race not found."
+            redirect_to admin_root_path, alert: "Race not found."
+          end
+
+          def set_competition
+            @competition = competition_repo.find(@race.competition_id) if @race
           end
 
           def set_race_location
@@ -203,6 +217,10 @@ module Web
 
           def race_location_repo
             @race_location_repo ||= RaceLocationRepo.new
+          end
+
+          def competition_repo
+            @competition_repo ||= AppContainer["repos.competition"]
           end
         end
       end

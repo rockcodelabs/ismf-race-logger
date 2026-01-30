@@ -1,0 +1,282 @@
+<%# frozen_string_literal: true %>
+
+<% content_for :title, "Race Locations - #{@race.name}" %>
+
+<div class="container mx-auto px-4 py-8">
+  <!-- Header with breadcrumbs -->
+  <nav class="flex mb-4 text-sm" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+      <li class="inline-flex items-center">
+        <%= link_to admin_root_path, class: "text-ismf-gray hover:text-ismf-red" do %>
+          <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+          </svg>
+          Dashboard
+        <% end %>
+      </li>
+      <li>
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+          </svg>
+          <%= link_to @competition.name, admin_competition_path(@competition), class: "ml-1 text-ismf-gray hover:text-ismf-red" %>
+        </div>
+      </li>
+      <li>
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+          </svg>
+          <%= link_to "Races", admin_competition_races_path(@competition), class: "ml-1 text-ismf-gray hover:text-ismf-red" %>
+        </div>
+      </li>
+      <li>
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+          </svg>
+          <%= link_to @race.name, admin_competition_race_path(@competition, @race), class: "ml-1 text-ismf-gray hover:text-ismf-red" %>
+        </div>
+      </li>
+      <li aria-current="page">
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+          </svg>
+          <span class="ml-1 text-ismf-gray font-medium">Locations</span>
+        </div>
+      </li>
+    </ol>
+  </nav>
+
+  <!-- Race context banner -->
+  <div class="bg-ismf-blue rounded-lg shadow-lg p-6 mb-6 text-white">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-2xl font-bold"><%= @race.name %></h2>
+        <div class="mt-2 flex items-center space-x-4 text-white/80">
+          <span class="flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+            </svg>
+            <%= @race.race_type_name %>
+          </span>
+          <span class="flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <%= @race.status.titleize %>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-3xl font-bold text-ismf-navy">Race Locations</h1>
+      <p class="mt-1 text-sm text-ismf-gray">
+        Manage camera/observer positions for this race. Locations appear in order during race operations.
+      </p>
+    </div>
+    <%= link_to new_admin_race_race_location_path(@race),
+                class: "btn-primary" do %>
+      <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+      </svg>
+      Add Location
+    <% end %>
+  </div>
+
+  <!-- Stats cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="card">
+      <div class="card-body">
+        <div class="flex items-center">
+          <div class="shrink-0">
+            <div class="w-12 h-12 bg-ismf-blue rounded-lg flex items-center justify-center">
+              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+            </div>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-ismf-gray truncate">Total Locations</dt>
+              <dd class="text-3xl font-bold text-ismf-navy"><%= @locations.count %></dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="flex items-center">
+          <div class="shrink-0">
+            <div class="w-12 h-12 bg-fop-success rounded-lg flex items-center justify-center">
+              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-ismf-gray truncate">Standard Locations</dt>
+              <dd class="text-3xl font-bold text-ismf-navy"><%= @standard_count %></dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="flex items-center">
+          <div class="shrink-0">
+            <div class="w-12 h-12 bg-ismf-red rounded-lg flex items-center justify-center">
+              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              </svg>
+            </div>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-ismf-gray truncate">Custom Locations</dt>
+              <dd class="text-3xl font-bold text-ismf-navy"><%= @custom_count %></dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <% if @locations.any? %>
+    <!-- Locations table -->
+    <div class="card">
+      <div class="table-container border-0 rounded-none">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Order</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Segment</th>
+              <th>Position</th>
+              <th>Color</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 bg-white" id="locations-list">
+          <% @locations.each do |location| %>
+            <tr data-location-id="<%= location.id %>">
+              <td class="text-ismf-gray">
+                <div class="flex items-center space-x-2">
+                  <span class="font-mono"><%= location.display_order %></span>
+                  <!-- Drag handle for reordering (future feature) -->
+                  <svg class="h-4 w-4 text-gray-400 cursor-move" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path>
+                  </svg>
+                </div>
+              </td>
+              <td class="font-medium text-ismf-navy">
+                <%= location.name %>
+              </td>
+              <td>
+                <% if location.is_standard %>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <svg class="-ml-0.5 mr-1.5 h-2 w-2 text-green-400" fill="currentColor" viewBox="0 0 8 8">
+                      <circle cx="4" cy="4" r="3" />
+                    </svg>
+                    Standard
+                  </span>
+                <% else %>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <svg class="-ml-0.5 mr-1.5 h-2 w-2 text-blue-400" fill="currentColor" viewBox="0 0 8 8">
+                      <circle cx="4" cy="4" r="3" />
+                    </svg>
+                    Custom
+                  </span>
+                <% end %>
+              </td>
+              <td class="text-ismf-gray">
+                <%= location.course_segment.humanize %>
+              </td>
+              <td class="text-ismf-gray">
+                <%= location.segment_position.humanize %>
+              </td>
+              <td>
+                <% if location.color_code.present? %>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= color_badge_class(location.color_code) %>">
+                    <%= location.color_code.humanize %>
+                  </span>
+                <% else %>
+                  <span class="text-sm text-gray-400">None</span>
+                <% end %>
+              </td>
+              <td class="text-right">
+                <div class="flex items-center justify-end space-x-2">
+                  <%= link_to edit_admin_race_race_location_path(@race, location),
+                              class: "text-ismf-blue hover:text-ismf-navy" do %>
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                  <% end %>
+                  <%= button_to admin_race_race_location_path(@race, location),
+                                method: :delete,
+                                data: { turbo_confirm: "Are you sure you want to delete '#{location.name}'?" },
+                                class: "text-ismf-red hover:text-red-800" do %>
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                  <% end %>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Reorder instructions -->
+    <div class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div class="flex">
+        <div class="shrink-0">
+          <svg class="h-5 w-5 text-ismf-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-ismf-navy">Location Order</h3>
+          <p class="mt-1 text-sm text-ismf-gray">
+            The <strong>display_order</strong> determines how locations appear on the touch display during race operations.
+            Lower numbers appear first. Edit locations to adjust ordering.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  <% else %>
+    <!-- Empty state -->
+    <div class="text-center py-12 bg-white rounded-lg shadow">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+      </svg>
+      <h3 class="mt-2 text-sm font-medium text-ismf-navy">No locations</h3>
+      <p class="mt-1 text-sm text-ismf-gray">Get started by creating a location for this race.</p>
+      <div class="mt-6">
+        <%= link_to new_admin_race_race_location_path(@race),
+                    class: "btn-primary" do %>
+          <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          Create First Location
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>

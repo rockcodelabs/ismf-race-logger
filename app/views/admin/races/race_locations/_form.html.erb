@@ -1,45 +1,44 @@
 <%# frozen_string_literal: true %>
 
 <%
-  # Form partial for creating/editing race type location templates
+  # Form partial for creating/editing race locations
   # Used by both new.html.erb and edit.html.erb
   # 
   # Local variables:
-  # - template: Hash (new) or Structs::RaceTypeLocationTemplate (edit)
-  # - race_type: Structs::RaceType
+  # - location: Hash (new) or Structs::RaceLocation (edit)
+  # - race: Structs::Race
   # - course_segments: Array of [label, value] pairs
   # - segment_positions: Array of [label, value] pairs
   # - color_codes: Array of [label, value] pairs
   # - errors: Hash of field errors (optional)
   
-  is_edit = template.respond_to?(:id)
-  form_url = is_edit ? admin_race_type_location_template_path(@race_type, template) : admin_race_type_location_templates_path(@race_type)
+  is_edit = location.respond_to?(:id)
+  form_url = is_edit ? admin_race_race_location_path(race, location) : admin_race_race_locations_path(race)
   form_method = is_edit ? :patch : :post
   
   # Extract values for form fields
-  name_value = is_edit ? template.name : (template[:name] || '')
-  course_segment_value = is_edit ? template.course_segment : (template[:course_segment] || '')
-  segment_position_value = is_edit ? template.segment_position : (template[:segment_position] || '')
-  display_order_value = is_edit ? template.display_order : (template[:display_order] || 0)
-  is_standard_value = is_edit ? template.is_standard : (template[:is_standard] || false)
-  color_code_value = is_edit ? template.color_code : (template[:color_code] || '')
-  description_value = is_edit ? template.description : (template[:description] || '')
+  name_value = is_edit ? location.name : (location[:name] || '')
+  course_segment_value = is_edit ? location.course_segment : (location[:course_segment] || '')
+  segment_position_value = is_edit ? location.segment_position : (location[:segment_position] || '')
+  display_order_value = is_edit ? location.display_order : (location[:display_order] || 0)
+  color_code_value = is_edit ? location.color_code : (location[:color_code] || '')
+  description_value = is_edit ? location.description : (location[:description] || '')
 %>
 
-<%= form_with url: form_url, method: form_method, scope: :race_type_location_template, local: true, data: { turbo: false }, class: "space-y-6" do |form| %>
+<%= form_with url: form_url, method: form_method, scope: :race_location, local: true, data: { turbo: false }, class: "space-y-6" do |form| %>
   
   <!-- Error summary -->
   <% if defined?(@errors) && @errors.present? %>
     <div class="rounded-md bg-red-50 border border-red-200 p-4">
       <div class="flex">
-        <div class="flex-shrink-0">
-          <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="shrink-0">
+          <svg class="h-5 w-5 text-ismf-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
         <div class="ml-3">
-          <h3 class="text-sm font-medium text-red-800">There were errors with your submission</h3>
-          <div class="mt-2 text-sm text-red-700">
+          <h3 class="text-sm font-medium text-ismf-navy">There were errors with your submission</h3>
+          <div class="mt-2 text-sm text-ismf-gray">
             <ul class="list-disc pl-5 space-y-1">
               <% @errors.each do |field, messages| %>
                 <% Array(messages).each do |message| %>
@@ -60,55 +59,55 @@
       
       <!-- Name -->
       <div>
-        <%= form.label :name, "Location Name", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= form.label :name, "Location Name", class: "form-label" %>
         <%= form.text_field :name, 
             value: name_value,
             placeholder: "e.g., Start, Top 1, Camera Gate 3",
-            class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+            class: "form-input",
             required: true %>
-        <p class="mt-1 text-sm text-gray-500">
+        <p class="mt-1 text-sm text-ismf-gray">
           Display name shown to operators and in reports.
         </p>
       </div>
 
       <!-- Course Segment -->
       <div>
-        <%= form.label :course_segment, "Course Segment", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= form.label :course_segment, "Course Segment", class: "form-label" %>
         <%= form.select :course_segment,
             course_segments,
             { selected: course_segment_value },
-            { class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm", required: true } %>
-        <p class="mt-1 text-sm text-gray-500">
+            { class: "form-input", required: true } %>
+        <p class="mt-1 text-sm text-ismf-gray">
           Which part of the race course this location is in.
         </p>
       </div>
 
       <!-- Segment Position -->
       <div>
-        <%= form.label :segment_position, "Position in Segment", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= form.label :segment_position, "Position in Segment", class: "form-label" %>
         <%= form.select :segment_position,
             segment_positions,
             { selected: segment_position_value },
-            { class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm", required: true } %>
-        <p class="mt-1 text-sm text-gray-500">
+            { class: "form-input", required: true } %>
+        <p class="mt-1 text-sm text-ismf-gray">
           Where in the segment: start, middle, top, bottom, end, or full.
         </p>
       </div>
 
       <!-- Color Code -->
       <div>
-        <%= form.label :color_code, "Visual Color Code", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= form.label :color_code, "Visual Color Code", class: "form-label" %>
         <%= form.select :color_code,
             color_codes,
             { selected: color_code_value },
-            { class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" } %>
-        <p class="mt-1 text-sm text-gray-500">
+            { class: "form-input" } %>
+        <p class="mt-1 text-sm text-ismf-gray">
           Color coding for touch display: Green (uphill), Red (descent), Yellow (footpart).
         </p>
         
         <!-- Color preview -->
         <div class="mt-2 flex items-center space-x-2" id="color-preview">
-          <span class="text-sm text-gray-500">Preview:</span>
+          <span class="text-sm text-ismf-gray">Preview:</span>
           <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium" id="color-badge">
             <span id="color-text">None</span>
           </span>
@@ -122,47 +121,62 @@
       
       <!-- Display Order -->
       <div>
-        <%= form.label :display_order, "Display Order", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= form.label :display_order, "Display Order", class: "form-label" %>
         <%= form.number_field :display_order,
             value: display_order_value,
             min: 0,
             step: 1,
-            class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+            class: "form-input",
             required: true %>
-        <p class="mt-1 text-sm text-gray-500">
+        <p class="mt-1 text-sm text-ismf-gray">
           Order in which this location appears during the race. Lower numbers = earlier.
         </p>
       </div>
 
-      <!-- Is Standard -->
-      <div class="flex items-start">
-        <div class="flex items-center h-5">
-          <%= form.check_box :is_standard,
-              { checked: is_standard_value },
-              class: "focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded" %>
-        </div>
-        <div class="ml-3 text-sm">
-          <%= form.label :is_standard, class: "font-medium text-gray-700" do %>
-            Standard Location
-          <% end %>
-          <p class="text-gray-500">
-            Standard locations (Start, Finish, Tops, Transitions) are common to all races.
-            Custom locations (Gates, Cameras) may vary per race.
-          </p>
-        </div>
-      </div>
-
       <!-- Description -->
       <div>
-        <%= form.label :description, "Description / Notes", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= form.label :description, "Description / Notes", class: "form-label" %>
         <%= form.text_area :description,
             value: description_value,
             rows: 4,
             placeholder: "Optional: Add context about this location (e.g., 'First camera position after transition')",
-            class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" %>
-        <p class="mt-1 text-sm text-gray-500">
+            class: "form-input" %>
+        <p class="mt-1 text-sm text-ismf-gray">
           Internal notes (not shown to operators).
         </p>
+      </div>
+
+      <!-- Location Type Info -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex">
+          <div class="shrink-0">
+            <svg class="h-5 w-5 text-ismf-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-ismf-navy">Location Type</h3>
+            <div class="mt-1 text-sm text-ismf-gray">
+              <% if is_edit && location.is_standard %>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <svg class="-ml-0.5 mr-1.5 h-2 w-2 text-green-400" fill="currentColor" viewBox="0 0 8 8">
+                    <circle cx="4" cy="4" r="3" />
+                  </svg>
+                  Standard Location
+                </span>
+                <p class="mt-1">This is a standard location (auto-populated from race type template).</p>
+              <% else %>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  <svg class="-ml-0.5 mr-1.5 h-2 w-2 text-blue-400" fill="currentColor" viewBox="0 0 8 8">
+                    <circle cx="4" cy="4" r="3" />
+                  </svg>
+                  Custom Location
+                </span>
+                <p class="mt-1">This is a custom location specific to this race.</p>
+              <% end %>
+            </div>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -171,18 +185,18 @@
   <!-- Help section -->
   <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
     <div class="flex">
-      <div class="flex-shrink-0">
-        <svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="shrink-0">
+        <svg class="h-5 w-5 text-ismf-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
       </div>
       <div class="ml-3">
-        <h3 class="text-sm font-medium text-blue-800">Template Tips</h3>
-        <div class="mt-2 text-sm text-blue-700">
+        <h3 class="text-sm font-medium text-ismf-navy">Location Tips</h3>
+        <div class="mt-2 text-sm text-ismf-gray">
           <ul class="list-disc pl-5 space-y-1">
             <li><strong>Display Order:</strong> Start=0, Finish=999. Use increments of 10 (10, 20, 30) to leave room for insertions.</li>
             <li><strong>Color Codes:</strong> Help operators quickly identify location type on 7" touch displays.</li>
-            <li><strong>Standard vs Custom:</strong> Standard locations (Start/Finish) rarely change. Custom locations (gates/cameras) vary per event.</li>
+            <li><strong>Race-Specific:</strong> These locations are only for this race. Changes won't affect other races or templates.</li>
           </ul>
         </div>
       </div>
@@ -192,11 +206,11 @@
   <!-- Form actions -->
   <div class="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
     <%= link_to "Cancel", 
-                admin_race_type_location_templates_path(@race_type),
-                class: "inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
+                admin_race_race_locations_path(race),
+                class: "btn-outline" %>
     
-    <%= form.submit is_edit ? "Update Template" : "Create Template",
-                     class: "inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
+    <%= form.submit is_edit ? "Update Location" : "Create Location",
+                     class: "btn-primary" %>
   </div>
 
 <% end %>
@@ -204,7 +218,7 @@
 <!-- Color preview JavaScript -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    const colorSelect = document.querySelector('select[name="race_type_location_template[color_code]"]');
+    const colorSelect = document.querySelector('select[name="race_location[color_code]"]');
     const colorBadge = document.getElementById('color-badge');
     const colorText = document.getElementById('color-text');
     

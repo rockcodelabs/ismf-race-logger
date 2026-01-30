@@ -10,6 +10,8 @@
 #
 class RaceTypeLocationTemplate < ApplicationRecord
   belongs_to :race_type
+  before_validation :normalize_optional_fields
+
 
   validates :name, presence: true
   validates :course_segment, presence: true
@@ -19,4 +21,11 @@ class RaceTypeLocationTemplate < ApplicationRecord
   scope :ordered, -> { order(:display_order) }
   scope :standard, -> { where(is_standard: true) }
   scope :custom, -> { where(is_standard: false) }
+
+  private
+
+  def normalize_optional_fields
+    self.color_code = nil if color_code.blank?
+    self.description = nil if description.blank?
+  end
 end
