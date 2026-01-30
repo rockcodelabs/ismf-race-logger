@@ -10,12 +10,31 @@ Rails.application.routes.draw do
     root to: "dashboard#index"
     resources :users
     resources :penalties, only: [:index]
+    
+    # Race type location templates
+    resources :race_types, only: [] do
+      resources :location_templates, controller: "race_types/location_templates" do
+        collection do
+          post :reorder
+        end
+      end
+    end
+    
     resources :competitions do
       resources :races do
         resources :participations, only: [:destroy], controller: "races/participations" do
           collection do
             post :copy
           end
+        end
+      end
+    end
+    
+    # Race locations (nested under races)
+    resources :races, only: [] do
+      resources :race_locations, controller: "races/race_locations" do
+        collection do
+          post :reorder
         end
       end
     end

@@ -69,6 +69,14 @@ class AppContainer
     register :penalty, memoize: true do
       PenaltyRepo.new
     end
+
+    register :race_type_location_template, memoize: true do
+      RaceTypeLocationTemplateRepo.new
+    end
+
+    register :race_location, memoize: true do
+      RaceLocationRepo.new
+    end
   end
 
   # ============================================================================
