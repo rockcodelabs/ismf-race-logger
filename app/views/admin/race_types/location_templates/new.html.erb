@@ -7,7 +7,7 @@
   <nav class="flex mb-4 text-sm" aria-label="Breadcrumb">
     <ol class="inline-flex items-center space-x-1 md:space-x-3">
       <li class="inline-flex items-center">
-        <%= link_to admin_root_path, class: "text-gray-700 hover:text-blue-600" do %>
+        <%= link_to admin_root_path, class: "text-ismf-gray hover:text-ismf-red" do %>
           <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
             <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
           </svg>
@@ -19,7 +19,7 @@
           <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
           </svg>
-          <span class="ml-1 text-gray-500">Race Types</span>
+          <span class="ml-1 text-ismf-gray">Race Types</span>
         </div>
       </li>
       <li>
@@ -27,7 +27,7 @@
           <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
           </svg>
-          <span class="ml-1 text-gray-700"><%= @race_type.name %></span>
+          <span class="ml-1 text-ismf-navy"><%= @race_type.name %></span>
         </div>
       </li>
       <li>
@@ -35,7 +35,7 @@
           <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
           </svg>
-          <%= link_to "Location Templates", admin_race_type_location_templates_path(@race_type), class: "ml-1 text-gray-700 hover:text-blue-600" %>
+          <%= link_to "Location Templates", admin_race_type_location_templates_path(@race_type), class: "ml-1 text-ismf-gray hover:text-ismf-red" %>
         </div>
       </li>
       <li aria-current="page">
@@ -43,7 +43,7 @@
           <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
           </svg>
-          <span class="ml-1 text-gray-500 font-medium">New Template</span>
+          <span class="ml-1 text-ismf-gray font-medium">New Template</span>
         </div>
       </li>
     </ol>
@@ -51,15 +51,15 @@
 
   <!-- Page header -->
   <div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900">Add Location Template</h1>
-    <p class="mt-2 text-sm text-gray-600">
+    <h1 class="text-3xl font-bold text-ismf-navy">Add Location Template</h1>
+    <p class="mt-2 text-sm text-ismf-gray">
       Create a new location template for <span class="font-semibold"><%= @race_type.name %></span> races.
       This template will be automatically copied to new races of this type.
     </p>
   </div>
 
   <!-- Form card -->
-  <div class="bg-white shadow rounded-lg p-6">
+  <div class="card card-body">
     <%= render "form",
                template: @template,
                race_type: @race_type,
