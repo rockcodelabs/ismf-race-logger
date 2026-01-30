@@ -1,0 +1,106 @@
+<%# frozen_string_literal: true %>
+
+<% content_for :title, "Edit Template - #{@template.name}" %>
+
+<div class="container mx-auto px-4 py-8 max-w-5xl">
+  <!-- Header with breadcrumbs -->
+  <nav class="flex mb-4 text-sm" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+      <li class="inline-flex items-center">
+        <%= link_to admin_root_path, class: "text-gray-700 hover:text-blue-600" do %>
+          <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+          </svg>
+          Dashboard
+        <% end %>
+      </li>
+      <li>
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+          </svg>
+          <span class="ml-1 text-gray-500">Race Types</span>
+        </div>
+      </li>
+      <li>
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+          </svg>
+          <span class="ml-1 text-gray-700"><%= @race_type.name %></span>
+        </div>
+      </li>
+      <li>
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+          </svg>
+          <%= link_to "Location Templates", admin_race_type_location_templates_path(@race_type), class: "ml-1 text-gray-700 hover:text-blue-600" %>
+        </div>
+      </li>
+      <li aria-current="page">
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+          </svg>
+          <span class="ml-1 text-gray-500 font-medium">Edit Template</span>
+        </div>
+      </li>
+    </ol>
+  </nav>
+
+  <!-- Page header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Edit Location Template</h1>
+    <p class="mt-2 text-sm text-gray-600">
+      Update template <span class="font-semibold">"<%= @template.name %>"</span> for <span class="font-semibold"><%= @race_type.name %></span> races.
+      Changes will only affect new races created after this update.
+    </p>
+  </div>
+
+  <!-- Warning banner about existing races -->
+  <div class="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <svg class="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+      </div>
+      <div class="ml-3">
+        <h3 class="text-sm font-medium text-yellow-800">Note: Existing races unchanged</h3>
+        <p class="mt-1 text-sm text-yellow-700">
+          Changes to this template only affect <strong>future races</strong>. 
+          Existing races that already have locations will not be updated.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form card -->
+  <div class="bg-white shadow rounded-lg p-6">
+    <%= render "form",
+               template: @template,
+               race_type: @race_type,
+               course_segments: @course_segments,
+               segment_positions: @segment_positions,
+               color_codes: @color_codes %>
+  </div>
+
+  <!-- Delete section -->
+  <div class="mt-6 bg-white shadow rounded-lg p-6 border-t-4 border-red-500">
+    <h2 class="text-lg font-medium text-gray-900 mb-2">Danger Zone</h2>
+    <p class="text-sm text-gray-600 mb-4">
+      Deleting this template is permanent and cannot be undone. 
+      However, existing races with this location will not be affected.
+    </p>
+    <%= button_to admin_race_type_location_template_path(@race_type, @template),
+                  method: :delete,
+                  data: { turbo_confirm: "Are you sure you want to permanently delete '#{@template.name}'? This action cannot be undone." },
+                  class: "inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" do %>
+      <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+      </svg>
+      Delete Template
+    <% end %>
+  </div>
+</div>

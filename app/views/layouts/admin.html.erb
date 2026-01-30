@@ -80,6 +80,21 @@
               </svg>
               Penalties
             <% end %>
+            
+            <!-- Configuration Section -->
+            <div class="pt-6 mt-6 border-t border-ismf-blue">
+              <h3 class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Configuration</h3>
+              
+              <% RaceType.order(:name).each do |race_type| %>
+                <%= link_to admin_race_type_location_templates_path(race_type), class: "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors #{params[:race_type_id] == race_type.id.to_s ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue hover:text-white'}" do %>
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <%= race_type.name %> Locations
+                <% end %>
+              <% end %>
+            </div>
           </nav>
           
           <!-- User info at bottom -->
@@ -142,6 +157,7 @@
             <%= link_to "Users", admin_users_path, class: "shrink-0 px-3 py-1.5 text-sm font-medium rounded-full transition-colors #{controller_name == 'users' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue'}" %>
             <%= link_to "Competitions", admin_competitions_path, class: "shrink-0 px-3 py-1.5 text-sm font-medium rounded-full transition-colors #{controller_name == 'competitions' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue'}" %>
             <%= link_to "Penalties", admin_penalties_path, class: "shrink-0 px-3 py-1.5 text-sm font-medium rounded-full transition-colors #{controller_name == 'penalties' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue'}" %>
+            <%= link_to "Race Types", admin_race_type_location_templates_path(RaceType.first), class: "shrink-0 px-3 py-1.5 text-sm font-medium rounded-full transition-colors #{controller.class.name.include?('LocationTemplates') ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue'}" if RaceType.any? %>
           </nav>
         </header>
 

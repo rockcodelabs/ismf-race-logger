@@ -10,18 +10,18 @@ module Structs
   # Standard locations (is_standard: true): Come from templates
   # Custom locations (is_standard: false): Race-specific additions
   #
-  class RaceLocation < Dry::Struct
-    attribute :id, IsmfRaceLogger::Types::Integer
-    attribute :race_id, IsmfRaceLogger::Types::Integer
-    attribute :name, IsmfRaceLogger::Types::String
-    attribute :course_segment, IsmfRaceLogger::Types::CourseSegment
-    attribute :segment_position, IsmfRaceLogger::Types::SegmentPosition
-    attribute :display_order, IsmfRaceLogger::Types::Integer
-    attribute :is_standard, IsmfRaceLogger::Types::Bool
-    attribute :color_code, IsmfRaceLogger::Types::ColorCode.optional
-    attribute :description, IsmfRaceLogger::Types::String.optional
-    attribute :created_at, IsmfRaceLogger::Types::FlexibleDateTime
-    attribute :updated_at, IsmfRaceLogger::Types::FlexibleDateTime
+  class RaceLocation < DB::Struct
+    attribute :id, Types::Integer
+    attribute :race_id, Types::Integer
+    attribute :name, Types::String
+    attribute :course_segment, Types::CourseSegment
+    attribute :segment_position, Types::SegmentPosition
+    attribute :display_order, Types::Integer
+    attribute :is_standard, Types::Bool
+    attribute :color_code, Types::ColorCode.optional
+    attribute :description, Types::String.optional
+    attribute :created_at, Types::FlexibleDateTime
+    attribute :updated_at, Types::FlexibleDateTime
 
     # Returns display name with segment information for admin UI
     def display_name_with_segment
