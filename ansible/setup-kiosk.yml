@@ -69,6 +69,8 @@
           - unclutter
           - ca-certificates
           - seatd
+          - fonts-noto-color-emoji
+          - fonts-noto-core
         state: present
         install_recommends: no
 
