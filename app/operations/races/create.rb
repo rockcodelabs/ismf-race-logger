@@ -30,7 +30,8 @@ module Operations
     class Create
       include Dry::Monads[:result]
       include Import[
-        race_repo: "repos.race"
+        race_repo: "repos.race",
+        populate_locations: "operations.races.populate_locations"
       ]
 
       # @param params [Hash] Input parameters
@@ -50,6 +51,18 @@ module Operations
 
         # Create race via injected repo
         created_race = race_repo.create(attrs)
+
+        # Populate race locations from templates
+        populate_result = populate_locations.call(
+          race_id: created_race.id,
+          race_type_id: created_race.race_type_id
+        )
+        
+        # Log warning if population fails, but don't fail the entire operation
+        # (race is already created; locations can be added manually if needed)
+        if populate_result.failure?
+          Rails.logger.warn("Failed to populate locations for race #{created_race.id}: #{populate_result.failure}")
+        end
 
         Success(created_race)
       rescue ActiveRecord::RecordInvalid => e

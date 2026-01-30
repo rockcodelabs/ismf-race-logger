@@ -110,6 +110,19 @@ class AppContainer
   end
 
   # ============================================================================
+  # OPERATIONS
+  # Operations that are injected into other operations
+  # ============================================================================
+
+  namespace :operations do
+    namespace :races do
+      register :populate_locations, memoize: true do
+        Operations::Races::PopulateLocations.new
+      end
+    end
+  end
+
+  # ============================================================================
   # UTILITIES
   # ============================================================================
 
