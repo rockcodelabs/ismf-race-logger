@@ -199,6 +199,98 @@ jobs:
       - name: Deploy to production
         run: kamal deploy
       
+      - name: Purge Cloudflare cache
+        env:
+          BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
+        run: |
+          echo "Fetching Cloudflare credentials from Bitwarden..."
+          
+          # Fetch Cloudflare Zone ID and API Token from Bitwarden
+          export CF_ZONE_ID=$(bws secret get ${{ secrets.BW_SECRET_CF_ZONE_ID }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
+          export CF_API_TOKEN=$(bws secret get ${{ secrets.BW_SECRET_CF_API_TOKEN }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
+          
+          # Verify secrets are set
+          [[ -n "$CF_ZONE_ID" ]] && echo "✅ CF_ZONE_ID fetched" || { echo "❌ CF_ZONE_ID missing"; exit 1; }
+          [[ -n "$CF_API_TOKEN" ]] && echo "✅ CF_API_TOKEN fetched" || { echo "❌ CF_API_TOKEN missing"; exit 1; }
+          
+          echo "Purging Cloudflare cache for all assets..."
+          
+          # Purge everything to ensure fresh assets after deployment
+          PURGE_RESPONSE=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}')
+          
+          # Check if purge was successful
+          SUCCESS=$(echo "$PURGE_RESPONSE" | jq -r '.success')
+          
+          if [ "$SUCCESS" = "true" ]; then
+            echo "✅ Cloudflare cache purged successfully"
+          else
+            echo "❌ Cloudflare cache purge failed:"
+            echo "$PURGE_RESPONSE" | jq '.'
+            exit 1
+          fi
+          
+          echo "Waiting 5 seconds for cache purge to propagate..."
+          sleep 5
+        continue-on-error: false
+      
+      - name: Verify asset availability
+        run: |
+          echo "Verifying critical assets are accessible..."
+          
+          # Give the application a moment to fully start
+          sleep 3
+          
+          # Dynamically detect asset filenames from the container
+          echo "Detecting asset filenames from container..."
+          APPLICATION_CSS=$(kamal app exec "ls /rails/public/assets/application-*.css 2>/dev/null | head -1 | xargs -I {} basename {}" 2>/dev/null || echo "")
+          APPLICATION_JS=$(kamal app exec "ls /rails/public/assets/application-*.js 2>/dev/null | head -1 | xargs -I {} basename {}" 2>/dev/null || echo "")
+          
+          ASSETS_TO_CHECK=()
+          
+          if [ -n "$APPLICATION_CSS" ]; then
+            ASSETS_TO_CHECK+=("https://ismf.taterniczek.pl/assets/$APPLICATION_CSS")
+            echo "Found CSS: $APPLICATION_CSS"
+          fi
+          
+          if [ -n "$APPLICATION_JS" ]; then
+            ASSETS_TO_CHECK+=("https://ismf.taterniczek.pl/assets/$APPLICATION_JS")
+            echo "Found JS: $APPLICATION_JS"
+          fi
+          
+          if [ ${#ASSETS_TO_CHECK[@]} -eq 0 ]; then
+            echo "⚠️  No assets found in container - skipping verification"
+            exit 0
+          fi
+          
+          echo "Testing ${#ASSETS_TO_CHECK[@]} asset(s)..."
+          
+          FAILED=0
+          for ASSET_URL in "${ASSETS_TO_CHECK[@]}"; do
+            echo "Checking: $ASSET_URL"
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -I "$ASSET_URL")
+            
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✅ $ASSET_URL returned $HTTP_CODE"
+            else
+              echo "⚠️  $ASSET_URL returned $HTTP_CODE (may need cache warm-up)"
+              FAILED=1
+            fi
+          done
+          
+          if [ $FAILED -eq 1 ]; then
+            echo ""
+            echo "⚠️  Some assets returned non-200 status codes on first check."
+            echo "This may be normal if Cloudflare needs to fetch from origin."
+            echo "Monitor the site and re-check in a few moments."
+          else
+            echo ""
+            echo "✅ All assets verified successfully!"
+          fi
+        continue-on-error: true
+      
       - name: Cleanup old Docker images
         run: kamal prune all || true
         continue-on-error: true
