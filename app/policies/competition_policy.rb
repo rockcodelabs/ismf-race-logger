@@ -8,7 +8,7 @@
 # - Simple boolean logic: Avoid redundant conditionals
 #
 class CompetitionPolicy < ApplicationPolicy
-  # Anyone authenticated can view competitions
+  # Anyone authenticated can view competitions list
   def index?
     true
   end
@@ -18,40 +18,39 @@ class CompetitionPolicy < ApplicationPolicy
     true
   end
 
-  # Only managers can create competitions
+  # Admins and managers can create competitions
   def create?
-    can_manage?
+    admin? || can_manage?
   end
 
-  # Only managers can update competitions
+  # Admins and managers can update competitions
   def update?
-    can_manage?
+    admin? || can_manage?
   end
 
-  # Only referee managers can delete competitions
-  # More restrictive than general management
+  # Only admins and referee managers can delete competitions
   def destroy?
-    referee_manager?
+    admin? || referee_manager?
   end
 
-  # Only managers can duplicate competitions
+  # Admins and managers can duplicate competitions
   def duplicate?
-    can_manage?
+    admin? || can_manage?
   end
 
-  # Only managers can archive competitions
+  # Admins and managers can archive competitions
   def archive?
-    can_manage?
+    admin? || can_manage?
   end
 
-  # Only managers can create competitions from templates
+  # Admins and managers can create competitions from templates
   def create_from_template?
-    can_manage?
+    admin? || can_manage?
   end
 
-  # Only managers can manage stages within a competition
+  # Admins and managers can manage stages within a competition
   def manage_stages?
-    can_manage?
+    admin? || can_manage?
   end
 
   class Scope < Scope

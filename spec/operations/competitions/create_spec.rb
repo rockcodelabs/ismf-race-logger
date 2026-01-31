@@ -181,7 +181,7 @@ RSpec.describe Operations::Competitions::Create do
 
   describe "dependency injection" do
     let(:mock_repo) { instance_double(CompetitionRepo) }
-    let(:operation_with_mock) { described_class.new(competition: mock_repo) }
+    let(:operation_with_mock) { described_class.new(competition_repo: mock_repo) }
 
     it "allows injecting a mock repo for testing" do
       competition_struct = Structs::Competition.new(

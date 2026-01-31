@@ -30,6 +30,9 @@ module Operations
     #   end
     #
     class UpdateCompetition < Dry::Validation::Contract
+      # Reference the Types module
+      Types = IsmfRaceLogger::Types
+
       params do
         required(:name).filled(:string)
         required(:city).filled(:string)

@@ -5,19 +5,22 @@ module Web
     module Admin
       # CompetitionsController - Admin CRUD for competitions
       #
-      # Uses repos for read operations (returning structs) and AR Competition model
-      # for write operations (forms need AR objects for validation errors).
+      # Uses operations with contracts for write operations (validation)
+      # and repos for read operations (returning structs).
       #
       # Pattern:
       # - Index: Use repos → structs (immutable, presentation-ready)
       # - Show: Use repo → struct (display competition and races)
-      # - New/Create/Update: Use AR model (form_with needs AR for errors)
-      # - Destroy: Use AR model
+      # - New/Create: Use operation with contract validation
+      # - Edit/Update: Use operation with contract validation
+      # - Destroy: Use AR model (simple delete)
       #
       # Note: We use explicit container access instead of Import[] because
       # Rails controllers have their own initialization requirements.
       #
       class CompetitionsController < BaseController
+        include Dry::Monads[:result]
+
         before_action :set_competition, only: [ :show, :edit, :update, :destroy ]
 
         # GET /admin/competitions
@@ -61,12 +64,16 @@ module Web
         # POST /admin/competitions
         def create
           authorize Competition, :create?
-          @competition = Competition.new(competition_params)
 
-          if @competition.save
-            redirect_to admin_competition_path(@competition),
+          result = Operations::Competitions::Create.new.call(competition_params.to_h.symbolize_keys)
+
+          if result.success?
+            redirect_to admin_competition_path(result.value!),
                        notice: "Competition was successfully created."
           else
+            @competition = Competition.new(competition_params)
+            @errors = extract_errors(result.failure)
+            flash.now[:alert] = format_errors(@errors)
             render :new, status: :unprocessable_entity
           end
         end
@@ -82,15 +89,18 @@ module Web
         # PATCH/PUT /admin/competitions/:id
         def update
           authorize @competition, :update?
-          competition_record = Competition.find(params[:id])
 
-          if competition_record.update(competition_params)
-            redirect_to admin_competition_path(competition_record),
+          update_params = competition_params.to_h.symbolize_keys
+          result = Operations::Competitions::Update.new.call(params[:id].to_i, update_params)
+
+          if result.success?
+            redirect_to admin_competition_path(result.value!),
                        notice: "Competition was successfully updated."
           else
-            # On validation error, set both variables for the edit view
             @competition = competition_repo.find!(params[:id])  # struct for display
-            @competition_form = competition_record              # model for form
+            @competition_form = Competition.find(params[:id])   # model for form
+            @errors = extract_errors(result.failure)
+            flash.now[:alert] = format_errors(@errors)
             render :edit, status: :unprocessable_entity
           end
         end
@@ -128,6 +138,30 @@ module Web
             :webpage_url,
             :logo
           )
+        end
+
+        def extract_errors(failure)
+          case failure
+          in [:validation_failed, errors]
+            errors
+          in [:database_error, message]
+            { database: [message] }
+          in [:not_found, message]
+            { record: [message] }
+          in [:unexpected_error, message]
+            { error: [message] }
+          else
+            { error: [failure.to_s] }
+          end
+        end
+
+        def format_errors(errors)
+          return errors.to_s unless errors.is_a?(Hash)
+
+          errors.map do |key, messages|
+            messages = [messages] unless messages.is_a?(Array)
+            "#{key.to_s.humanize}: #{messages.join(', ')}"
+          end.join("; ")
         end
 
         def competition_repo

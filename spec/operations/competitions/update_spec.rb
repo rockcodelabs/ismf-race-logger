@@ -126,13 +126,32 @@ RSpec.describe Operations::Competitions::Update do
         result = operation.call(999999, { name: "Updated Name" })
 
         expect(result).to be_failure
-        expect(result.failure).to eq(:not_found)
+        expect(result.failure).to eq([:not_found, "Competition not found"])
       end
     end
 
     context "when repository update fails" do
       let(:mock_repo) { instance_double(CompetitionRepo) }
-      let(:operation_with_mock) { described_class.new(competition: mock_repo) }
+      let(:operation_with_mock) { described_class.new(competition_repo: mock_repo) }
+
+      before do
+        # Mock find to return existing competition struct
+        existing_struct = Structs::Competition.new(
+          id: competition.id,
+          name: competition.name,
+          city: competition.city,
+          place: competition.place,
+          country: competition.country,
+          description: competition.description,
+          start_date: competition.start_date,
+          end_date: competition.end_date,
+          webpage_url: competition.webpage_url,
+          logo_url: nil,
+          created_at: competition.created_at,
+          updated_at: competition.updated_at
+        )
+        allow(mock_repo).to receive(:find).with(competition.id).and_return(existing_struct)
+      end
 
       it "returns Failure(:update_failed)" do
         allow(mock_repo).to receive(:update).and_return(nil)
@@ -181,10 +200,25 @@ RSpec.describe Operations::Competitions::Update do
 
   describe "dependency injection" do
     let(:mock_repo) { instance_double(CompetitionRepo) }
-    let(:operation_with_mock) { described_class.new(competition: mock_repo) }
+    let(:operation_with_mock) { described_class.new(competition_repo: mock_repo) }
 
     it "allows injecting a mock repo for testing" do
-      competition_struct = Structs::Competition.new(
+      existing_struct = Structs::Competition.new(
+        id: 1,
+        name: "Original Competition",
+        city: "Test City",
+        place: "Test Place",
+        country: "CHE",
+        description: "Test description",
+        start_date: Date.current + 30.days,
+        end_date: Date.current + 32.days,
+        webpage_url: "https://example.com",
+        logo_url: nil,
+        created_at: Time.current,
+        updated_at: Time.current
+      )
+
+      updated_struct = Structs::Competition.new(
         id: 1,
         name: "Updated Competition",
         city: "Test City",
@@ -199,9 +233,10 @@ RSpec.describe Operations::Competitions::Update do
         updated_at: Time.current
       )
 
+      allow(mock_repo).to receive(:find).with(1).and_return(existing_struct)
       allow(mock_repo).to receive(:update)
         .with(1, hash_including(name: "Updated Competition"))
-        .and_return(competition_struct)
+        .and_return(updated_struct)
 
       result = operation_with_mock.call(1, { name: "Updated Competition" })
 
