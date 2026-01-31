@@ -143,8 +143,18 @@ class ReportBroadcaster < BaseBroadcaster
     Turbo::StreamsChannel.broadcast_append_to(
       stream_name(race_id),
       target: "flash-messages",
-      partial: "shared/flash_notice_turbo",
-      locals: { message: message }
+      partial: "shared/flash",
+      locals: { type: "notice", message: message }
+    )
+  end
+
+  # Broadcast flash alert message to all connected clients
+  def broadcast_flash_alert(race_id, message)
+    Turbo::StreamsChannel.broadcast_append_to(
+      stream_name(race_id),
+      target: "flash-messages",
+      partial: "shared/flash",
+      locals: { type: "alert", message: message }
     )
   end
 end
