@@ -115,6 +115,10 @@ class AppContainer
     register :race, memoize: true do
       RaceBroadcaster.new
     end
+
+    register :report, memoize: true do
+      ReportBroadcaster.new
+    end
   end
 
   # ============================================================================

@@ -1,5 +1,7 @@
 <% content_for :page_title, "Reports - #{@race.name}" %>
 
+<%= turbo_stream_from "race_#{@race.id}_reports" %>
+
 <div class="h-screen overflow-hidden flex flex-col bg-gray-100" data-controller="touch-report">
   <!-- Compact Header -->
   <div class="shrink-0 px-3 pt-3 pb-2 bg-white shadow-sm touch-content-with-nav">

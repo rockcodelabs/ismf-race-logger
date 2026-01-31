@@ -69,18 +69,13 @@ module Web
                 report = result.value!
                 wrapped_report = parts_factory.wrap(report)
                 
+                # Broadcast to all connected clients (including the requesting device)
+                report_broadcaster.created(report, @race.id)
+                
                 format.turbo_stream do
-                  # Touch mode: instant update without reload
-                  render turbo_stream: [
-                    turbo_stream.prepend("pending-reports-queue", 
-                      partial: "report_card", 
-                      locals: { report: wrapped_report, race: @race }),
-                    turbo_stream.update("pending-count-badge", 
-                      html: report_repo.count_by_status(@race.id)["pending_review"] || 0),
-                    turbo_stream.append("flash-messages", 
-                      partial: "shared/flash_notice_turbo", 
-                      locals: { message: "Report ##{report.bib_number} created." })
-                  ]
+                  # Rely on broadcast for updates (prevents duplicates)
+                  # Flash message also broadcasted to all devices
+                  head :ok
                 end
                 
                 format.html do
@@ -99,6 +94,7 @@ module Web
                 end
                 
                 format.turbo_stream do
+                  # Only errors are shown locally (not broadcasted)
                   render turbo_stream: turbo_stream.append("flash-messages",
                     partial: "shared/flash_alert_turbo",
                     locals: { message: error_message }), status: :unprocessable_entity
@@ -123,17 +119,13 @@ module Web
                 report = result.value!
                 wrapped_report = parts_factory.wrap(report)
                 
+                # Broadcast to all connected clients (including the requesting device)
+                report_broadcaster.confirmed(report, @race.id)
+                
                 format.turbo_stream do
-                  render turbo_stream: [
-                    turbo_stream.remove("report_#{report.id}"),
-                    turbo_stream.update("pending-count-badge",
-                      html: report_repo.count_by_status(@race.id)["pending_review"] || 0),
-                    turbo_stream.update("confirmed-count",
-                      html: report_repo.count_by_status(@race.id)["confirmed"] || 0),
-                    turbo_stream.append("flash-messages",
-                      partial: "shared/flash_notice_turbo",
-                      locals: { message: "Report ##{report.bib_number} confirmed." })
-                  ]
+                  # Rely on broadcast for updates (prevents duplicates)
+                  # Flash message also broadcasted to all devices
+                  head :ok
                 end
                 
                 format.html do
@@ -146,6 +138,7 @@ module Web
                 error_message = error.is_a?(Array) && error.first == :invalid_status ? error.last : "Error confirming report"
                 
                 format.turbo_stream do
+                  # Only errors are shown locally (not broadcasted)
                   render turbo_stream: turbo_stream.append("flash-messages",
                     partial: "shared/flash_alert_turbo",
                     locals: { message: error_message })
@@ -167,17 +160,13 @@ module Web
               if result.success?
                 report = result.value!
                 
+                # Broadcast to all connected clients (including the requesting device)
+                report_broadcaster.rejected(report, @race.id)
+                
                 format.turbo_stream do
-                  render turbo_stream: [
-                    turbo_stream.remove("report_#{report.id}"),
-                    turbo_stream.update("pending-count-badge",
-                      html: report_repo.count_by_status(@race.id)["pending_review"] || 0),
-                    turbo_stream.update("rejected-count",
-                      html: report_repo.count_by_status(@race.id)["rejected"] || 0),
-                    turbo_stream.append("flash-messages",
-                      partial: "shared/flash_notice_turbo",
-                      locals: { message: "Report ##{report.bib_number} rejected." })
-                  ]
+                  # Rely on broadcast for updates (prevents duplicates)
+                  # Flash message also broadcasted to all devices
+                  head :ok
                 end
                 
                 format.html do
@@ -190,6 +179,7 @@ module Web
                 error_message = error.is_a?(Array) && error.first == :invalid_status ? error.last : "Error rejecting report"
                 
                 format.turbo_stream do
+                  # Only errors are shown locally (not broadcasted)
                   render turbo_stream: turbo_stream.append("flash-messages",
                     partial: "shared/flash_alert_turbo",
                     locals: { message: error_message })
@@ -209,6 +199,10 @@ module Web
 
             if result.success?
               report = result.value!
+              
+              # Broadcast to all connected clients
+              report_broadcaster.reopened(report, @race.id)
+              
               redirect_to admin_race_report_path(@race, report),
                           notice: "Report reopened.",
                           status: :see_other
@@ -255,6 +249,10 @@ module Web
 
           def race_participation_repo
             @race_participation_repo ||= AppContainer["repos.race_participation"]
+          end
+
+          def report_broadcaster
+            @report_broadcaster ||= AppContainer["broadcasters.report"]
           end
         end
       end

@@ -41,23 +41,11 @@ class BaseBroadcaster
     parts_factory.wrap_many(structs)
   end
 
-  # Broadcast a Turbo Stream action
-  def broadcast_to(stream, action:, target:, partial:, locals:)
-    Turbo::StreamsChannel.broadcast_action_to(
-      stream,
-      action: action,
-      target: target,
-      partial: partial,
-      locals: locals
-    )
-  end
-
   # Broadcast append with automatic part wrapping
   def broadcast_append(stream, target:, partial:, struct:, as:)
     part = wrap(struct)
-    broadcast_to(
+    Turbo::StreamsChannel.broadcast_append_to(
       stream,
-      action: :append,
       target: target,
       partial: partial,
       locals: { as => part }
@@ -67,9 +55,8 @@ class BaseBroadcaster
   # Broadcast prepend with automatic part wrapping
   def broadcast_prepend(stream, target:, partial:, struct:, as:)
     part = wrap(struct)
-    broadcast_to(
+    Turbo::StreamsChannel.broadcast_prepend_to(
       stream,
-      action: :prepend,
       target: target,
       partial: partial,
       locals: { as => part }
@@ -79,9 +66,8 @@ class BaseBroadcaster
   # Broadcast replace with automatic part wrapping
   def broadcast_replace(stream, target:, partial:, struct:, as:)
     part = wrap(struct)
-    broadcast_to(
+    Turbo::StreamsChannel.broadcast_replace_to(
       stream,
-      action: :replace,
       target: target,
       partial: partial,
       locals: { as => part }
@@ -91,9 +77,8 @@ class BaseBroadcaster
   # Broadcast update with automatic part wrapping
   def broadcast_update(stream, target:, partial:, struct:, as:)
     part = wrap(struct)
-    broadcast_to(
+    Turbo::StreamsChannel.broadcast_update_to(
       stream,
-      action: :update,
       target: target,
       partial: partial,
       locals: { as => part }
@@ -102,9 +87,8 @@ class BaseBroadcaster
 
   # Broadcast remove (no part needed)
   def broadcast_remove(stream, target:)
-    Turbo::StreamsChannel.broadcast_action_to(
+    Turbo::StreamsChannel.broadcast_remove_to(
       stream,
-      action: :remove,
       target: target
     )
   end

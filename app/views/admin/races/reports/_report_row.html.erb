@@ -1,0 +1,54 @@
+<tr class="<%= report.row_class %>" id="report_<%= report.id %>">
+  <td>
+    <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ismf-navy text-white font-bold text-sm">
+      <%= report.bib_badge %>
+    </span>
+  </td>
+  <td>
+    <div class="font-medium text-ismf-navy"><%= report.athlete_name_display %></div>
+  </td>
+  <td class="text-ismf-gray"><%= report.location_name %></td>
+  <td>
+    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= report.status_badge[:class] %>">
+      <%= report.status_badge[:label] %>
+    </span>
+    <% if report.linked_to_incident? %>
+      <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+        Linked
+      </span>
+    <% end %>
+  </td>
+  <td class="text-ismf-gray text-sm">
+    <div><%= report.created_at_formatted %></div>
+    <div class="text-xs text-gray-400"><%= report.time_ago %></div>
+  </td>
+  <td class="text-right">
+    <div class="flex items-center justify-end gap-1">
+      <%= link_to admin_race_report_path(race, report), class: "inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-ismf-blue hover:bg-blue-50 transition-all", title: "View" do %>
+        <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+      <% end %>
+      <% if report.can_confirm? %>
+        <%= button_to confirm_admin_race_report_path(race, report), method: :post, class: "inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-green-600 hover:bg-green-50 transition-all", title: "Confirm" do %>
+          <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        <% end %>
+        <%= button_to reject_admin_race_report_path(race, report), method: :post, class: "inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all", title: "Reject" do %>
+          <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        <% end %>
+      <% end %>
+      <% if report.can_reopen? %>
+        <%= button_to reopen_admin_race_report_path(race, report), method: :post, class: "inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 transition-all", title: "Reopen" do %>
+          <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        <% end %>
+      <% end %>
+    </div>
+  </td>
+</tr>
