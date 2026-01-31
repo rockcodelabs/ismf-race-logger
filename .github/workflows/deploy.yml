@@ -291,6 +291,14 @@ jobs:
           fi
         continue-on-error: true
       
+      - name: Restart Cloudflare Tunnel
+        run: |
+          echo "Restarting cloudflared tunnel to ensure proper routing..."
+          ssh rege@pi5main.local "sudo systemctl restart cloudflared"
+          sleep 5
+          echo "✅ Cloudflared tunnel restarted"
+        continue-on-error: true
+      
       - name: Cleanup old Docker images
         run: kamal prune all || true
         continue-on-error: true
