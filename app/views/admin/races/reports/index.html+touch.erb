@@ -102,7 +102,7 @@
     <div class="w-72 shrink-0 bg-white border-l border-gray-200 flex flex-col">
       <div class="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
         <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wide">Pending</h2>
-        <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-yellow-100 text-yellow-800">
+        <span id="pending-count-badge" class="px-2 py-0.5 text-xs font-bold rounded-full bg-yellow-100 text-yellow-800">
           <%= @status_counts["pending_review"] || 0 %>
         </span>
       </div>
@@ -129,14 +129,12 @@
                 <div class="flex gap-2">
                   <%= button_to confirm_admin_race_report_path(@race, report.id), 
                       method: :post,
-                      class: "flex-1 py-2 rounded-lg bg-green-500 text-white font-semibold text-sm active:bg-green-600 transition",
-                      data: { turbo_frame: "_top" } do %>
+                      class: "flex-1 py-2 rounded-lg bg-green-500 text-white font-semibold text-sm active:bg-green-600 transition" do %>
                     ✓ Confirm
                   <% end %>
                   <%= button_to reject_admin_race_report_path(@race, report.id), 
                       method: :post,
-                      class: "flex-1 py-2 rounded-lg bg-red-500 text-white font-semibold text-sm active:bg-red-600 transition",
-                      data: { turbo_frame: "_top" } do %>
+                      class: "flex-1 py-2 rounded-lg bg-red-500 text-white font-semibold text-sm active:bg-red-600 transition" do %>
                     ✗ Reject
                   <% end %>
                 </div>
@@ -158,11 +156,11 @@
         <div class="flex items-center justify-between text-xs">
           <span class="flex items-center gap-1">
             <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-            Confirmed: <%= @status_counts["confirmed"] || 0 %>
+            Confirmed: <span id="confirmed-count"><%= @status_counts["confirmed"] || 0 %></span>
           </span>
           <span class="flex items-center gap-1">
             <span class="w-2 h-2 rounded-full bg-red-500"></span>
-            Rejected: <%= @status_counts["rejected"] || 0 %>
+            Rejected: <span id="rejected-count"><%= @status_counts["rejected"] || 0 %></span>
           </span>
         </div>
       </div>

@@ -64,41 +64,48 @@ module Web
               client_uuid: report_params[:client_uuid]
             )
 
-            if result.success?
-              report = result.value!
-              
-              # Touch mode: redirect back to index to continue creating reports
-              # Use status: :see_other (303) for proper Turbo redirect with flash
-              if touch_display?
-                redirect_to admin_race_reports_path(@race),
-                            notice: "Report ##{report.bib_number} created.",
-                            status: :see_other
-              else
-                redirect_to admin_race_report_path(@race, report),
-                            notice: "Report created successfully.",
-                            status: :see_other
-              end
-            else
-              error = result.failure
-              
-              if error.is_a?(Array) && error.first == :validation_failed
-                errors = error.last
+            respond_to do |format|
+              if result.success?
+                report = result.value!
+                wrapped_report = parts_factory.wrap(report)
                 
-                if touch_display?
-                  redirect_to admin_race_reports_path(@race),
-                              alert: "Error: #{errors.values.flatten.join(', ')}"
-                else
-                  flash.now[:alert] = "Validation failed: #{errors.values.flatten.join(', ')}"
-                  @race_locations = race_location_repo.for_race(@race.id)
-                  @participations = race_participation_repo.for_race(@race.id)
-                  render :new, status: :unprocessable_entity
+                format.turbo_stream do
+                  # Touch mode: instant update without reload
+                  render turbo_stream: [
+                    turbo_stream.prepend("pending-reports-queue", 
+                      partial: "report_card", 
+                      locals: { report: wrapped_report, race: @race }),
+                    turbo_stream.update("pending-count-badge", 
+                      html: report_repo.count_by_status(@race.id)["pending_review"] || 0),
+                    turbo_stream.append("flash-messages", 
+                      partial: "shared/flash_notice_turbo", 
+                      locals: { message: "Report ##{report.bib_number} created." })
+                  ]
+                end
+                
+                format.html do
+                  # Desktop: redirect to detail page
+                  redirect_to admin_race_report_path(@race, report),
+                              notice: "Report created successfully.",
+                              status: :see_other
                 end
               else
-                if touch_display?
-                  redirect_to admin_race_reports_path(@race),
-                              alert: "Error creating report"
+                error = result.failure
+                error_message = if error.is_a?(Array) && error.first == :validation_failed
+                  errors = error.last
+                  "Validation failed: #{errors.values.flatten.join(', ')}"
                 else
-                  flash.now[:alert] = "Error creating report: #{error.inspect}"
+                  "Error creating report"
+                end
+                
+                format.turbo_stream do
+                  render turbo_stream: turbo_stream.append("flash-messages",
+                    partial: "shared/flash_alert_turbo",
+                    locals: { message: error_message }), status: :unprocessable_entity
+                end
+                
+                format.html do
+                  flash.now[:alert] = error_message
                   @race_locations = race_location_repo.for_race(@race.id)
                   @participations = race_participation_repo.for_race(@race.id)
                   render :new, status: :unprocessable_entity
@@ -111,24 +118,43 @@ module Web
             authorize @report, :confirm?
             result = Operations::Reports::Confirm.new.call(id: @report.id)
 
-            if result.success?
-              report = result.value!
-              if touch_display?
-                redirect_to admin_race_reports_path(@race),
-                            notice: "Report ##{report.bib_number} confirmed.",
-                            status: :see_other
+            respond_to do |format|
+              if result.success?
+                report = result.value!
+                wrapped_report = parts_factory.wrap(report)
+                
+                format.turbo_stream do
+                  render turbo_stream: [
+                    turbo_stream.remove("report_#{report.id}"),
+                    turbo_stream.update("pending-count-badge",
+                      html: report_repo.count_by_status(@race.id)["pending_review"] || 0),
+                    turbo_stream.update("confirmed-count",
+                      html: report_repo.count_by_status(@race.id)["confirmed"] || 0),
+                    turbo_stream.append("flash-messages",
+                      partial: "shared/flash_notice_turbo",
+                      locals: { message: "Report ##{report.bib_number} confirmed." })
+                  ]
+                end
+                
+                format.html do
+                  redirect_to admin_race_report_path(@race, report),
+                              notice: "Report confirmed.",
+                              status: :see_other
+                end
               else
-                redirect_to admin_race_report_path(@race, report),
-                            notice: "Report confirmed.",
-                            status: :see_other
-              end
-            else
-              error = result.failure
-              redirect_path = touch_display? ? admin_race_reports_path(@race) : admin_race_report_path(@race, @report)
-              if error.is_a?(Array) && error.first == :invalid_status
-                redirect_to redirect_path, alert: error.last
-              else
-                redirect_to redirect_path, alert: "Error confirming report: #{error.inspect}"
+                error = result.failure
+                error_message = error.is_a?(Array) && error.first == :invalid_status ? error.last : "Error confirming report"
+                
+                format.turbo_stream do
+                  render turbo_stream: turbo_stream.append("flash-messages",
+                    partial: "shared/flash_alert_turbo",
+                    locals: { message: error_message })
+                end
+                
+                format.html do
+                  redirect_to admin_race_report_path(@race, @report),
+                              alert: error_message
+                end
               end
             end
           end
@@ -137,24 +163,42 @@ module Web
             authorize @report, :reject?
             result = Operations::Reports::Reject.new.call(id: @report.id)
 
-            if result.success?
-              report = result.value!
-              if touch_display?
-                redirect_to admin_race_reports_path(@race),
-                            notice: "Report ##{report.bib_number} rejected.",
-                            status: :see_other
+            respond_to do |format|
+              if result.success?
+                report = result.value!
+                
+                format.turbo_stream do
+                  render turbo_stream: [
+                    turbo_stream.remove("report_#{report.id}"),
+                    turbo_stream.update("pending-count-badge",
+                      html: report_repo.count_by_status(@race.id)["pending_review"] || 0),
+                    turbo_stream.update("rejected-count",
+                      html: report_repo.count_by_status(@race.id)["rejected"] || 0),
+                    turbo_stream.append("flash-messages",
+                      partial: "shared/flash_notice_turbo",
+                      locals: { message: "Report ##{report.bib_number} rejected." })
+                  ]
+                end
+                
+                format.html do
+                  redirect_to admin_race_report_path(@race, report),
+                              notice: "Report rejected.",
+                              status: :see_other
+                end
               else
-                redirect_to admin_race_report_path(@race, report),
-                            notice: "Report rejected.",
-                            status: :see_other
-              end
-            else
-              error = result.failure
-              redirect_path = touch_display? ? admin_race_reports_path(@race) : admin_race_report_path(@race, @report)
-              if error.is_a?(Array) && error.first == :invalid_status
-                redirect_to redirect_path, alert: error.last
-              else
-                redirect_to redirect_path, alert: "Error rejecting report: #{error.inspect}"
+                error = result.failure
+                error_message = error.is_a?(Array) && error.first == :invalid_status ? error.last : "Error rejecting report"
+                
+                format.turbo_stream do
+                  render turbo_stream: turbo_stream.append("flash-messages",
+                    partial: "shared/flash_alert_turbo",
+                    locals: { message: error_message })
+                end
+                
+                format.html do
+                  redirect_to admin_race_report_path(@race, @report),
+                              alert: error_message
+                end
               end
             end
           end

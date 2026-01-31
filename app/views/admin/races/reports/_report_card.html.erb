@@ -1,0 +1,27 @@
+<div class="p-3 hover:bg-gray-50" id="report_<%= report.id %>">
+  <div class="flex items-center gap-2 mb-2">
+    <span class="w-10 h-10 flex items-center justify-center rounded-full bg-ismf-navy text-white font-bold text-sm">
+      <%= report.bib_badge %>
+    </span>
+    <div class="flex-1 min-w-0">
+      <p class="text-sm font-semibold text-gray-900 truncate">
+        <%= report.athlete_name_display %>
+      </p>
+      <p class="text-xs text-gray-500 truncate">
+        <%= report.location_name %> • <%= report.time_ago %>
+      </p>
+    </div>
+  </div>
+  <div class="flex gap-2">
+    <%= button_to confirm_admin_race_report_path(race, report.id), 
+        method: :post,
+        class: "flex-1 py-2 rounded-lg bg-green-500 text-white font-semibold text-sm active:bg-green-600 transition" do %>
+      ✓ Confirm
+    <% end %>
+    <%= button_to reject_admin_race_report_path(race, report.id), 
+        method: :post,
+        class: "flex-1 py-2 rounded-lg bg-red-500 text-white font-semibold text-sm active:bg-red-600 transition" do %>
+      ✗ Reject
+    <% end %>
+  </div>
+</div>

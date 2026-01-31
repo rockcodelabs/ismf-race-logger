@@ -40,6 +40,9 @@
       <%= render "shared/touch_nav" %>
     <% end %>
     
+    <!-- Flash Messages Container for Turbo Streams -->
+    <div id="flash-messages"></div>
+    
     <!-- Flash Messages (positioned to avoid ISMF logo button: 140x88px) -->
     <% if notice %>
       <div class="fixed top-24 left-4 right-4 z-[9999] bg-green-100 border-2 border-green-500 text-green-900 px-6 py-4 rounded-xl flex items-center gap-4 shadow-lg" data-controller="flash" data-flash-dismiss-after-value="5000" style="display: flex !important; position: fixed !important; visibility: visible !important; pointer-events: auto;">
