@@ -5,7 +5,7 @@ require "rails_helper"
 RSpec.describe "Admin::Races::RaceLocations CRUD", type: :request do
   let(:admin_user) { create(:user, :admin) }
   let(:competition) { create(:competition) }
-  let(:race_type) { RaceType.find_by!(name: "Individual") }
+  let(:race_type) { create(:race_type_individual) }
   let(:race) { create(:race, competition: competition, race_type: race_type) }
 
   before do

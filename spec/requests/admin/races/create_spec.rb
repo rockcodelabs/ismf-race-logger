@@ -17,6 +17,7 @@ RSpec.describe "POST /admin/competitions/:competition_id/races", type: :request 
         race: {
           race_type_id: race_type.id,
           name: "Women's Sprint - Qualification",
+          gender_category: "W",
           stage_type: "Qualification",
           heat_number: nil,
           scheduled_at: 2.hours.from_now
@@ -83,6 +84,7 @@ RSpec.describe "POST /admin/competitions/:competition_id/races", type: :request 
           race: {
             race_type_id: race_type.id,
             name: "Women's Sprint - Semifinal 1",
+            gender_category: "W",
             stage_type: "Semifinal",
             heat_number: 1,
             scheduled_at: 3.hours.from_now
@@ -104,6 +106,7 @@ RSpec.describe "POST /admin/competitions/:competition_id/races", type: :request 
           race: {
             race_type_id: race_type.id,
             name: "Women's Sprint - Final",
+            gender_category: "W",
             stage_type: "Final"
           }
         }
@@ -175,13 +178,14 @@ RSpec.describe "POST /admin/competitions/:competition_id/races", type: :request 
         race: {
           race_type_id: race_type.id,
           name: "Test Race",
+          gender_category: "M",
           stage_type: "Final"
         }
       }
 
       expect(response).to redirect_to(root_path)
       follow_redirect!
-      expect(response.body).to include("must be an administrator")
+      expect(response.body).to include("not authorized")
     end
   end
 end
