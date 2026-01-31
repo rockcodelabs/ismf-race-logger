@@ -34,8 +34,8 @@ module Web
       # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
       allow_browser versions: :modern
 
-      # Changes to the importmap will invalidate the etag for HTML responses
-      stale_when_importmap_changes
+      # Note: stale_when_importmap_changes removed due to keyword argument compatibility
+      # issues with SolidCache in production. Cache busting is handled by asset digests.
 
       rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
 
