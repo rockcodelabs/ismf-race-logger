@@ -245,8 +245,8 @@ jobs:
           
           # Dynamically detect asset filenames from the container
           echo "Detecting asset filenames from container..."
-          APPLICATION_CSS=$(kamal app exec "ls /rails/public/assets/application-*.css 2>/dev/null | head -1 | xargs -I {} basename {}" 2>/dev/null || echo "")
-          APPLICATION_JS=$(kamal app exec "ls /rails/public/assets/application-*.js 2>/dev/null | head -1 | xargs -I {} basename {}" 2>/dev/null || echo "")
+          APPLICATION_CSS=$(kamal app exec "ls /rails/public/assets/application-*.css 2>/dev/null | head -1 | xargs -I {} basename {}" 2>&1 | grep -E "^application-.*\.css$" | head -1 || echo "")
+          APPLICATION_JS=$(kamal app exec "ls /rails/public/assets/application-*.js 2>/dev/null | head -1 | xargs -I {} basename {}" 2>&1 | grep -E "^application-.*\.js$" | head -1 || echo "")
           
           ASSETS_TO_CHECK=()
           
