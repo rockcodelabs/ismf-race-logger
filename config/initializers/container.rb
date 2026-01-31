@@ -77,6 +77,14 @@ class AppContainer
     register :race_location, memoize: true do
       RaceLocationRepo.new
     end
+
+    register :report, memoize: true do
+      ReportRepo.new
+    end
+
+    register :incident, memoize: true do
+      IncidentRepo.new
+    end
   end
 
   # ============================================================================

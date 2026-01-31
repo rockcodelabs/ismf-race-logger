@@ -1,0 +1,150 @@
+<div class="space-y-6">
+  <!-- Page header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <nav class="flex items-center text-sm text-gray-500 mb-2">
+        <%= link_to "Races", admin_competitions_path, class: "hover:text-ismf-blue" %>
+        <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+        <span class="text-ismf-navy"><%= @race.name %></span>
+      </nav>
+      <h1 class="text-2xl font-bold text-ismf-navy">Incidents</h1>
+      <p class="mt-1 text-sm text-ismf-gray">Manage incidents for <%= @race.name %>.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <%= link_to admin_race_reports_path(@race), class: "btn-secondary whitespace-nowrap" do %>
+        <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <span>View Reports</span>
+      <% end %>
+      <%= link_to new_admin_race_incident_path(@race), class: "btn-primary whitespace-nowrap" do %>
+        <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+        <span>New Incident</span>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Status filter tabs -->
+  <div class="flex items-center gap-2">
+    <span class="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
+      All (<%= @status_counts.values.sum %>)
+    </span>
+    <span class="px-3 py-1.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+      Pending (<%= @status_counts["pending"] || 0 %>)
+    </span>
+    <span class="px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
+      Approved (<%= @status_counts["approved"] || 0 %>)
+    </span>
+    <span class="px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-800">
+      Rejected (<%= @status_counts["rejected"] || 0 %>)
+    </span>
+  </div>
+
+  <!-- Incidents table -->
+  <div class="card">
+    <div class="table-container border-0 rounded-none">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Bib(s)</th>
+            <th>Location</th>
+            <th>Reports</th>
+            <th>Penalties</th>
+            <th>Status</th>
+            <th>Time</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 bg-white">
+          <% if @incidents.any? %>
+            <% @incidents.each do |incident| %>
+              <tr class="<%= incident.card_class %>">
+                <td class="font-medium text-ismf-navy">#<%= incident.id %></td>
+                <td>
+                  <div class="flex items-center gap-1">
+                    <% incident.bib_display.split(", ").each do |bib| %>
+                      <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-ismf-navy text-white font-bold text-xs">
+                        <%= bib %>
+                      </span>
+                    <% end %>
+                  </div>
+                </td>
+                <td class="text-ismf-gray"><%= incident.location_display %></td>
+                <td>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    <%= incident.reports_count_display %>
+                  </span>
+                </td>
+                <td>
+                  <% if incident.has_penalties? %>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                      <%= incident.penalties_count_display %>
+                    </span>
+                  <% else %>
+                    <span class="text-gray-400 text-sm">—</span>
+                  <% end %>
+                </td>
+                <td>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= incident.status_badge[:class] %>">
+                    <%= incident.status_badge[:label] %>
+                  </span>
+                </td>
+                <td class="text-ismf-gray text-sm">
+                  <div><%= incident.time_ago_in_words %> ago</div>
+                </td>
+                <td class="text-right">
+                  <div class="flex items-center justify-end gap-1">
+                    <%= link_to admin_race_incident_path(@race, incident), class: "inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-ismf-blue hover:bg-blue-50 transition-all", title: "View" do %>
+                      <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    <% end %>
+                    <% if incident.pending? %>
+                      <%= link_to edit_admin_race_incident_path(@race, incident), class: "inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-green-600 hover:bg-green-50 transition-all", title: "Decide" do %>
+                        <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      <% end %>
+                    <% end %>
+                    <% unless incident.pending? %>
+                      <%= button_to reopen_admin_race_incident_path(@race, incident), method: :post, class: "inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 transition-all", title: "Reopen" do %>
+                        <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          <% else %>
+            <tr>
+              <td colspan="8" class="text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-ismf-navy">No incidents</h3>
+                <p class="mt-1 text-sm text-ismf-gray">No incidents have been created for this race yet.</p>
+                <p class="mt-1 text-sm text-ismf-gray">Create incidents by merging confirmed reports.</p>
+                <div class="mt-6">
+                  <%= link_to new_admin_race_incident_path(@race), class: "btn-primary whitespace-nowrap" do %>
+                    <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span>Create Incident</span>
+                  <% end %>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

@@ -2,9 +2,18 @@
 
 FactoryBot.define do
   factory :race_type do
-    name { "Individual" }
-    description { "Individual race format" }
+    sequence(:name) { |n| "RaceType#{n}" }
+    description { "Generic race format" }
 
+    # Use initialize_with to find existing or create new
+    # This prevents duplicate key errors when seeds have already created race types
+    initialize_with do
+      RaceType.find_or_create_by(name: name) do |rt|
+        rt.description = description
+      end
+    end
+
+    # Named race type factories that find existing seeded records
     factory :race_type_individual do
       name { "Individual" }
       description { "Individual race format" }

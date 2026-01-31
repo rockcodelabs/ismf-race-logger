@@ -25,6 +25,9 @@ class User < ApplicationRecord
   belongs_to :role, optional: true
   has_many :sessions, dependent: :destroy
   has_many :magic_links, dependent: :destroy
+  has_many :reports, dependent: :nullify
+  has_many :decided_incidents, class_name: "Incident", foreign_key: :decided_by_user_id, dependent: :nullify,
+                               inverse_of: :decided_by_user
 
   # Presentation helper for views (not business logic)
   # In pure Hanami, this would be in a presenter or view helper

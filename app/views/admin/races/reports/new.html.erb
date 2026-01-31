@@ -1,0 +1,129 @@
+<div class="space-y-6">
+  <!-- Page header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <nav class="flex items-center text-sm text-gray-500 mb-2">
+        <%= link_to "Races", admin_competitions_path, class: "hover:text-ismf-blue" %>
+        <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+        <%= link_to @race.name, admin_race_reports_path(@race), class: "hover:text-ismf-blue" %>
+        <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+        <span class="text-ismf-navy">New Report</span>
+      </nav>
+      <h1 class="text-2xl font-bold text-ismf-navy">New Report</h1>
+      <p class="mt-1 text-sm text-ismf-gray">Create a new report for <%= @race.name %>.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <%= link_to admin_race_reports_path(@race), class: "btn-secondary whitespace-nowrap" do %>
+        <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span>Cancel</span>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Form card -->
+  <div class="card max-w-2xl">
+    <div class="p-6">
+      <%= form_with url: admin_race_reports_path(@race), method: :post, local: true, class: "space-y-6" do |form| %>
+        
+        <!-- Race Location -->
+        <div>
+          <label for="report_race_location_id" class="block text-sm font-medium text-ismf-navy">
+            Location <span class="text-red-500">*</span>
+          </label>
+          <select name="report[race_location_id]" id="report_race_location_id" required
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-ismf-blue focus:ring-ismf-blue sm:text-sm">
+            <option value="">Select a location...</option>
+            <% @race_locations.each do |location| %>
+              <option value="<%= location.id %>">
+                <%= location.name %> (<%= location.course_segment.titleize %>)
+              </option>
+            <% end %>
+          </select>
+          <p class="mt-1 text-xs text-ismf-gray">Where on the course did the incident occur?</p>
+        </div>
+
+        <!-- Participant (Bib Number) -->
+        <div>
+          <label for="report_race_participation_id" class="block text-sm font-medium text-ismf-navy">
+            Participant (Bib Number) <span class="text-red-500">*</span>
+          </label>
+          <select name="report[race_participation_id]" id="report_race_participation_id" required
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-ismf-blue focus:ring-ismf-blue sm:text-sm"
+                  data-controller="participant-select"
+                  data-action="change->participant-select#updateBib">
+            <option value="" data-bib="">Select a participant...</option>
+            <% @participations.each do |participation| %>
+              <option value="<%= participation.id %>" data-bib="<%= participation.bib_number %>">
+                #<%= participation.bib_number %> - <%= participation.athlete&.first_name %> <%= participation.athlete&.last_name %>
+              </option>
+            <% end %>
+          </select>
+          <p class="mt-1 text-xs text-ismf-gray">Select the athlete involved in the incident.</p>
+        </div>
+
+        <!-- Hidden bib_number field (auto-populated) -->
+        <input type="hidden" name="report[bib_number]" id="report_bib_number" value="">
+
+        <!-- Athlete Position (for team races) -->
+        <% if @race.gender_category.to_s.length == 2 %>
+          <div>
+            <label for="report_athlete_position" class="block text-sm font-medium text-ismf-navy">
+              Athlete Position (Team Race)
+            </label>
+            <select name="report[athlete_position]" id="report_athlete_position"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-ismf-blue focus:ring-ismf-blue sm:text-sm">
+              <option value="">Not applicable</option>
+              <option value="1">Athlete A (First)</option>
+              <option value="2">Athlete B (Second)</option>
+            </select>
+            <p class="mt-1 text-xs text-ismf-gray">For team races, specify which athlete in the team.</p>
+          </div>
+        <% end %>
+
+        <!-- Description -->
+        <div>
+          <label for="report_description" class="block text-sm font-medium text-ismf-navy">
+            Description
+          </label>
+          <textarea name="report[description]" id="report_description" rows="4"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-ismf-blue focus:ring-ismf-blue sm:text-sm"
+                    placeholder="Optional: Describe what happened..."></textarea>
+          <p class="mt-1 text-xs text-ismf-gray">Add any notes about the observed incident.</p>
+        </div>
+
+        <!-- Submit -->
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+          <%= link_to "Cancel", admin_race_reports_path(@race), class: "btn-secondary" %>
+          <button type="submit" class="btn-primary">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Create Report
+          </button>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Auto-populate bib_number when participant is selected
+  document.addEventListener('DOMContentLoaded', function() {
+    const participationSelect = document.getElementById('report_race_participation_id');
+    const bibInput = document.getElementById('report_bib_number');
+    
+    if (participationSelect && bibInput) {
+      participationSelect.addEventListener('change', function() {
+        const selectedOption = participationSelect.options[participationSelect.selectedIndex];
+        const bibNumber = selectedOption.getAttribute('data-bib');
+        bibInput.value = bibNumber || '';
+      });
+    }
+  });
+</script>

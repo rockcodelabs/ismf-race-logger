@@ -29,4 +29,6 @@ class Race < ApplicationRecord
   has_many :athletes, through: :race_participations
   has_many :teams, dependent: :destroy
   has_many :race_locations, dependent: :destroy
+  has_many :reports, dependent: :destroy
+  has_many :incidents, dependent: :destroy
 end

@@ -1,0 +1,108 @@
+<div class="space-y-6">
+  <!-- Page header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <nav class="flex items-center text-sm text-gray-500 mb-2">
+        <%= link_to "Races", admin_competitions_path, class: "hover:text-ismf-blue" %>
+        <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+        <%= link_to @race.name, admin_race_incidents_path(@race), class: "hover:text-ismf-blue" %>
+        <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+        <span class="text-ismf-navy">New Incident</span>
+      </nav>
+      <h1 class="text-2xl font-bold text-ismf-navy">Create Incident</h1>
+      <p class="mt-1 text-sm text-ismf-gray">Merge confirmed reports into an incident for <%= @race.name %>.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <%= link_to admin_race_incidents_path(@race), class: "btn-secondary whitespace-nowrap" do %>
+        <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span>Cancel</span>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Form card -->
+  <div class="card">
+    <div class="p-6">
+      <%= form_with url: admin_race_incidents_path(@race), method: :post, local: true, class: "space-y-6" do |form| %>
+        
+        <!-- Select Reports -->
+        <div>
+          <label class="block text-sm font-medium text-ismf-navy mb-3">
+            Select Reports to Merge <span class="text-red-500">*</span>
+          </label>
+          <p class="text-xs text-ismf-gray mb-4">Select one or more confirmed reports to merge into this incident.</p>
+          
+          <div class="space-y-2 max-h-96 overflow-y-auto border border-gray-200 rounded-lg p-4">
+            <% @available_reports.each do |report| %>
+              <label class="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                <input type="checkbox" 
+                       name="report_ids[]" 
+                       value="<%= report.id %>"
+                       <%= 'checked' if params[:report_ids]&.include?(report.id.to_s) %>
+                       class="h-5 w-5 rounded border-gray-300 text-ismf-blue focus:ring-ismf-blue">
+                <div class="flex items-center gap-3 flex-1">
+                  <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ismf-navy text-white font-bold text-sm shrink-0">
+                    <%= report.bib_badge %>
+                  </span>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-medium text-ismf-navy truncate"><%= report.athlete_name_display %></p>
+                    <p class="text-sm text-ismf-gray"><%= report.location_name %></p>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= report.status_badge[:class] %>">
+                      <%= report.status_badge[:label] %>
+                    </span>
+                    <p class="text-xs text-ismf-gray mt-1"><%= report.time_ago %></p>
+                  </div>
+                </div>
+              </label>
+            <% end %>
+          </div>
+          
+          <% if @available_reports.empty? %>
+            <div class="text-center py-8 bg-gray-50 rounded-lg">
+              <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-ismf-navy">No confirmed reports available</h3>
+              <p class="mt-1 text-sm text-ismf-gray">Confirm some reports first before creating an incident.</p>
+              <div class="mt-4">
+                <%= link_to admin_race_reports_path(@race), class: "text-ismf-blue hover:underline" do %>
+                  Go to Reports →
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label for="description" class="block text-sm font-medium text-ismf-navy">
+            Description
+          </label>
+          <textarea name="description" id="description" rows="4"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-ismf-blue focus:ring-ismf-blue sm:text-sm"
+                    placeholder="Optional: Add notes about this incident..."></textarea>
+          <p class="mt-1 text-xs text-ismf-gray">Describe the incident or add any relevant notes.</p>
+        </div>
+
+        <!-- Submit -->
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+          <%= link_to "Cancel", admin_race_incidents_path(@race), class: "btn-secondary" %>
+          <button type="submit" class="btn-primary" <%= 'disabled' if @available_reports.empty? %>>
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            Create Incident
+          </button>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

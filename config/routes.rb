@@ -38,6 +38,25 @@ Rails.application.routes.draw do
         end
       end
     end
+
+    # Reports and Incidents (nested under races)
+    resources :races, only: [] do
+      resources :reports, controller: "races/reports", only: [:index, :show, :new, :create] do
+        member do
+          post :confirm
+          post :reject
+          post :reopen
+        end
+      end
+
+      resources :incidents, controller: "races/incidents", only: [:index, :show, :new, :create, :edit] do
+        member do
+          post :decide
+          post :attach_penalties
+          post :reopen
+        end
+      end
+    end
     
     # Athlete import routes (nested under races)
     resources :races, only: [] do

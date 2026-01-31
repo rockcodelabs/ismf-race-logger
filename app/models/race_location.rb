@@ -13,8 +13,8 @@ class RaceLocation < ApplicationRecord
   belongs_to :race
   before_validation :normalize_optional_fields
 
-  # has_many :reports, dependent: :nullify  # TODO: Uncomment when Report model is created
-  # has_many :incidents, dependent: :nullify  # TODO: Uncomment when Incident model is created
+  has_many :reports, dependent: :nullify
+  has_many :incidents, dependent: :nullify
 
   validates :name, presence: true
   validates :course_segment, presence: true

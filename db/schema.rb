@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_30_194536) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_31_113639) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -69,6 +69,33 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_30_194536) do
     t.index ["country"], name: "index_competitions_on_country"
     t.index ["start_date", "end_date"], name: "index_competitions_on_start_date_and_end_date"
     t.index ["start_date"], name: "index_competitions_on_start_date"
+  end
+
+  create_table "incident_penalties", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "incident_id", null: false
+    t.bigint "penalty_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["incident_id", "penalty_id"], name: "index_incident_penalties_on_incident_id_and_penalty_id", unique: true
+    t.index ["incident_id"], name: "index_incident_penalties_on_incident_id"
+    t.index ["penalty_id"], name: "index_incident_penalties_on_penalty_id"
+  end
+
+  create_table "incidents", force: :cascade do |t|
+    t.uuid "client_uuid", null: false
+    t.datetime "created_at", null: false
+    t.datetime "decided_at"
+    t.bigint "decided_by_user_id"
+    t.text "description"
+    t.bigint "race_id", null: false
+    t.bigint "race_location_id"
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.index ["client_uuid"], name: "index_incidents_on_client_uuid", unique: true
+    t.index ["decided_by_user_id"], name: "index_incidents_on_decided_by_user_id"
+    t.index ["race_id"], name: "index_incidents_on_race_id"
+    t.index ["race_location_id"], name: "index_incidents_on_race_location_id"
+    t.index ["status"], name: "index_incidents_on_status"
   end
 
   create_table "magic_links", force: :cascade do |t|
@@ -181,6 +208,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_30_194536) do
     t.index ["status"], name: "index_races_on_status"
   end
 
+  create_table "reports", force: :cascade do |t|
+    t.integer "athlete_position"
+    t.integer "bib_number", null: false
+    t.uuid "client_uuid", null: false
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.bigint "incident_id"
+    t.bigint "race_id", null: false
+    t.bigint "race_location_id", null: false
+    t.bigint "race_participation_id", null: false
+    t.string "status", default: "pending_review", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["bib_number"], name: "index_reports_on_bib_number"
+    t.index ["client_uuid"], name: "index_reports_on_client_uuid", unique: true
+    t.index ["incident_id"], name: "index_reports_on_incident_id"
+    t.index ["race_id"], name: "index_reports_on_race_id"
+    t.index ["race_location_id"], name: "index_reports_on_race_location_id"
+    t.index ["race_participation_id"], name: "index_reports_on_race_participation_id"
+    t.index ["status"], name: "index_reports_on_status"
+    t.index ["user_id"], name: "index_reports_on_user_id"
+  end
+
   create_table "roles", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -226,6 +276,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_30_194536) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "incident_penalties", "incidents"
+  add_foreign_key "incident_penalties", "penalties"
+  add_foreign_key "incidents", "race_locations"
+  add_foreign_key "incidents", "races"
+  add_foreign_key "incidents", "users", column: "decided_by_user_id"
   add_foreign_key "magic_links", "users"
   add_foreign_key "race_locations", "races"
   add_foreign_key "race_participations", "athletes"
@@ -234,6 +289,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_30_194536) do
   add_foreign_key "race_type_location_templates", "race_types"
   add_foreign_key "races", "competitions"
   add_foreign_key "races", "race_types"
+  add_foreign_key "reports", "incidents"
+  add_foreign_key "reports", "race_locations"
+  add_foreign_key "reports", "race_participations"
+  add_foreign_key "reports", "races"
+  add_foreign_key "reports", "users"
   add_foreign_key "sessions", "users"
   add_foreign_key "teams", "athletes", column: "athlete_1_id"
   add_foreign_key "teams", "athletes", column: "athlete_2_id"

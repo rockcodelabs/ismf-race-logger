@@ -1,0 +1,174 @@
+<div class="space-y-6">
+  <!-- Page header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <nav class="flex items-center text-sm text-gray-500 mb-2">
+        <%= link_to "Races", admin_competitions_path, class: "hover:text-ismf-blue" %>
+        <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+        <%= link_to @race.name, admin_race_reports_path(@race), class: "hover:text-ismf-blue" %>
+        <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+        <span class="text-ismf-navy">Report #<%= @report.id %></span>
+      </nav>
+      <h1 class="text-2xl font-bold text-ismf-navy">Report #<%= @report.id %></h1>
+      <p class="mt-1 text-sm text-ismf-gray">Created <%= @report.created_at_full %></p>
+    </div>
+    <div class="flex items-center gap-3">
+      <%= link_to admin_race_reports_path(@race), class: "btn-secondary whitespace-nowrap" do %>
+        <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span>Back to Reports</span>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main content -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Report details card -->
+      <div class="card">
+        <div class="p-6">
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-4">
+              <span class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-ismf-navy text-white font-bold text-2xl">
+                <%= @report.bib_badge %>
+              </span>
+              <div>
+                <h2 class="text-xl font-semibold text-ismf-navy"><%= @report.athlete_name_display %></h2>
+                <p class="text-ismf-gray">Bib #<%= @report.bib_number %></p>
+              </div>
+            </div>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium <%= @report.status_badge[:class] %>">
+              <%= @report.status_badge[:label] %>
+            </span>
+          </div>
+
+          <div class="mt-6 grid grid-cols-2 gap-6">
+            <div>
+              <dt class="text-sm font-medium text-ismf-gray">Location</dt>
+              <dd class="mt-1 text-sm text-ismf-navy"><%= @report.location_name %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-ismf-gray">Time</dt>
+              <dd class="mt-1 text-sm text-ismf-navy"><%= @report.created_at_full %></dd>
+            </div>
+            <% if @report.athlete_position.present? && @report.athlete_position > 0 %>
+              <div>
+                <dt class="text-sm font-medium text-ismf-gray">Athlete Position (Team)</dt>
+                <dd class="mt-1 text-sm text-ismf-navy">Athlete <%= @report.athlete_position == 1 ? "A" : "B" %></dd>
+              </div>
+            <% end %>
+            <% if @report.linked_to_incident? %>
+              <div>
+                <dt class="text-sm font-medium text-ismf-gray">Linked Incident</dt>
+                <dd class="mt-1">
+                  <%= link_to admin_race_incident_path(@race, @report.incident_id), class: "text-ismf-blue hover:underline" do %>
+                    Incident #<%= @report.incident_id %>
+                  <% end %>
+                </dd>
+              </div>
+            <% end %>
+          </div>
+
+          <% if @report.description.present? %>
+            <div class="mt-6">
+              <dt class="text-sm font-medium text-ismf-gray">Description</dt>
+              <dd class="mt-1 text-sm text-ismf-navy"><%= @report.description %></dd>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- Actions card -->
+      <div class="card">
+        <div class="p-6">
+          <h3 class="text-lg font-semibold text-ismf-navy mb-4">Actions</h3>
+          
+          <div class="space-y-3">
+            <% if @report.can_confirm? %>
+              <%= button_to confirm_admin_race_report_path(@race, @report), method: :post, class: "w-full btn-success" do %>
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Confirm Report
+              <% end %>
+              
+              <%= button_to reject_admin_race_report_path(@race, @report), method: :post, class: "w-full btn-danger" do %>
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Reject Report
+              <% end %>
+            <% end %>
+
+            <% if @report.can_reopen? %>
+              <%= button_to reopen_admin_race_report_path(@race, @report), method: :post, class: "w-full btn-warning" do %>
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Reopen Report
+              <% end %>
+            <% end %>
+
+            <% if @report.can_merge? %>
+              <%= link_to new_admin_race_incident_path(@race, report_ids: [@report.id]), class: "w-full btn-primary" do %>
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                Create Incident
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status info card -->
+      <div class="card">
+        <div class="p-6">
+          <h3 class="text-lg font-semibold text-ismf-navy mb-4">Status History</h3>
+          
+          <div class="space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-ismf-navy">Created</p>
+                <p class="text-xs text-ismf-gray"><%= @report.created_at_full %></p>
+              </div>
+            </div>
+
+            <% if @report.status != "pending_review" %>
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full <%= @report.status == 'confirmed' ? 'bg-blue-100' : 'bg-red-100' %> flex items-center justify-center">
+                  <% if @report.status == "confirmed" %>
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  <% else %>
+                    <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  <% end %>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-ismf-navy"><%= @report.status_badge[:label] %></p>
+                  <p class="text-xs text-ismf-gray"><%= @report.time_ago %></p>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

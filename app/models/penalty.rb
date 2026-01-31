@@ -20,5 +20,6 @@
 # - Summary: app/db/structs/penalty_summary.rb
 #
 class Penalty < ApplicationRecord
-  # No associations yet - this is reference data
+  has_many :incident_penalties, dependent: :destroy
+  has_many :incidents, through: :incident_penalties
 end

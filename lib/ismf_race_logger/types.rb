@@ -26,7 +26,10 @@ module IsmfRaceLogger
     )
 
     # Incident statuses
-    IncidentStatus = Strict::String.enum("unofficial", "official")
+    IncidentStatus = Strict::String.enum("pending", "approved", "rejected")
+
+    # Report statuses
+    ReportStatus = Strict::String.enum("pending_review", "confirmed", "rejected")
 
     # Decision types
     DecisionType = Strict::String.enum(

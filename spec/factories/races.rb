@@ -10,7 +10,7 @@ FactoryBot.define do
     stage_name { "Qualification" }
     heat_number { nil }
     scheduled_at { Time.current + 2.hours }
-    position { 0 }
+    sequence(:position) { |n| n }
     status { "scheduled" }
 
     # Automatically set stage_name based on stage_type and heat_number
