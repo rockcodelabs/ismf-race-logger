@@ -28,7 +28,7 @@ module Web
         #
         class LocationTemplatesController < Admin::BaseController
           before_action :set_race_type
-          before_action :set_template, only: [:edit, :update, :destroy]
+          before_action :set_template, only: [ :edit, :update, :destroy ]
           after_action :verify_authorized
 
           # GET /admin/race_types/:race_type_id/location_templates
@@ -62,11 +62,11 @@ module Web
             in Dry::Monads::Success(template)
               redirect_to admin_race_type_location_templates_path(@race_type),
                          notice: "Template '#{template.name}' was successfully added."
-            in Dry::Monads::Failure([error_type, message])
+            in Dry::Monads::Failure([ error_type, message ])
               @course_segments = course_segment_options
               @segment_positions = segment_position_options
               @color_codes = color_code_options
-              @errors = { error_type => [message] }
+              @errors = { error_type => [ message ] }
               flash.now[:alert] = message
               render :new, status: :unprocessable_entity
             end
@@ -86,7 +86,7 @@ module Web
 
             # Direct update for now (can create operation later if needed)
             template_record = RaceTypeLocationTemplate.find(@template.id)
-            
+
             if template_record.update(template_params)
               redirect_to admin_race_type_location_templates_path(@race_type),
                          notice: "Template '#{template_record.name}' was successfully updated."
@@ -122,7 +122,7 @@ module Web
             authorize RaceTypeLocationTemplate
 
             order_params = params[:order] || {}
-            
+
             RaceTypeLocationTemplate.transaction do
               order_params.each do |id, position|
                 RaceTypeLocationTemplate.where(id: id, race_type_id: @race_type.id)
@@ -170,35 +170,35 @@ module Web
 
           def course_segment_options
             [
-              ['Start Area', 'start_area'],
-              ['Uphill 1', 'uphill1'],
-              ['Uphill 2', 'uphill2'],
-              ['Uphill 3', 'uphill3'],
-              ['Transition 1→2', 'transition_1to2'],
-              ['Transition 2→1', 'transition_2to1'],
-              ['Descent', 'descent'],
-              ['Footpart', 'footpart'],
-              ['Finish Area', 'finish_area']
+              [ "Start Area", "start_area" ],
+              [ "Uphill 1", "uphill1" ],
+              [ "Uphill 2", "uphill2" ],
+              [ "Uphill 3", "uphill3" ],
+              [ "Transition 1→2", "transition_1to2" ],
+              [ "Transition 2→1", "transition_2to1" ],
+              [ "Descent", "descent" ],
+              [ "Footpart", "footpart" ],
+              [ "Finish Area", "finish_area" ]
             ]
           end
 
           def segment_position_options
             [
-              ['Start', 'start'],
-              ['Middle', 'middle'],
-              ['Top', 'top'],
-              ['Bottom', 'bottom'],
-              ['End', 'end'],
-              ['Full (entire segment)', 'full']
+              [ "Start", "start" ],
+              [ "Middle", "middle" ],
+              [ "Top", "top" ],
+              [ "Bottom", "bottom" ],
+              [ "End", "end" ],
+              [ "Full (entire segment)", "full" ]
             ]
           end
 
           def color_code_options
             [
-              ['None', ''],
-              ['Green (Uphill)', 'green'],
-              ['Red (Descent)', 'red'],
-              ['Yellow (Footpart)', 'yellow']
+              [ "None", "" ],
+              [ "Green (Uphill)", "green" ],
+              [ "Red (Descent)", "red" ],
+              [ "Yellow (Footpart)", "yellow" ]
             ]
           end
 

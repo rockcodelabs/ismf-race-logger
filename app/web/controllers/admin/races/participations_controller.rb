@@ -15,7 +15,7 @@ module Web
         class ParticipationsController < Admin::BaseController
           before_action :set_competition
           before_action :set_race
-          before_action :set_participation, only: [:destroy]
+          before_action :set_participation, only: [ :destroy ]
 
           # POST /admin/competitions/:competition_id/races/:race_id/participations/copy
           #
@@ -24,7 +24,7 @@ module Web
             authorize RaceParticipation
 
             source_race_id = params[:source_race_id]
-            
+
             unless source_race_id.present?
               redirect_to admin_competition_race_path(@competition, @race),
                          alert: "Please select a source race to copy from."
@@ -40,7 +40,7 @@ module Web
               summary = result.value!
               message = "✓ Copied #{summary[:copied_count]} participant#{'s' unless summary[:copied_count] == 1}"
               message += " (#{summary[:skipped_count]} skipped)" if summary[:skipped_count] > 0
-              
+
               redirect_to admin_competition_race_path(@competition, @race),
                          notice: message
             else
@@ -86,7 +86,7 @@ module Web
 
           def set_competition
             @competition = competition_repo.find(params[:competition_id])
-            
+
             unless @competition
               redirect_to admin_competitions_path, alert: "Competition not found"
             end
@@ -94,7 +94,7 @@ module Web
 
           def set_race
             @race = race_repo.find(params[:race_id])
-            
+
             unless @race && @race.competition_id == @competition.id
               redirect_to admin_competition_races_path(@competition), alert: "Race not found"
             end
@@ -102,9 +102,9 @@ module Web
 
           def set_participation
             @participation = RaceParticipation.find(params[:id])
-            
+
             unless @participation.race_id == @race.id
-              redirect_to admin_competition_race_path(@competition, @race), 
+              redirect_to admin_competition_race_path(@competition, @race),
                          alert: "Participation not found"
             end
           end

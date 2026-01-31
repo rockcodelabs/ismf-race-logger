@@ -1,0 +1,120 @@
+<% content_for :page_title, "Incidents - #{@race.name}" %>
+
+<div class="h-screen overflow-hidden flex flex-col bg-gray-50">
+  <!-- Header -->
+  <div class="shrink-0 px-4 py-3 bg-white shadow-sm touch-content-with-nav">
+    <div class="flex items-center justify-between gap-3">
+      <%= link_to admin_competition_race_path(@race.competition, @race), class: "flex items-center gap-2 text-ismf-gray" do %>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+      <% end %>
+      <div class="flex-1 min-w-0">
+        <h1 class="text-xl font-bold text-ismf-navy">Incidents</h1>
+        <p class="text-xs text-ismf-gray truncate"><%= @race.name %></p>
+      </div>
+      <div class="flex items-center gap-2">
+        <%= link_to admin_race_reports_path(@race), class: "flex items-center gap-1 px-3 py-2 rounded-lg bg-green-100 text-green-700 font-semibold text-sm" do %>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Reports
+        <% end %>
+        <%= link_to new_admin_race_incident_path(@race), class: "flex items-center gap-1 px-3 py-2 rounded-lg bg-ismf-blue text-white font-semibold text-sm" do %>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          New
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Tabs -->
+  <div class="shrink-0 px-4 py-2 bg-white border-b border-gray-200 flex items-center gap-2 overflow-x-auto">
+    <span class="px-3 py-1.5 text-xs font-bold rounded-full bg-gray-100 text-gray-700 whitespace-nowrap">
+      All (<%= @status_counts.values.sum %>)
+    </span>
+    <span class="px-3 py-1.5 text-xs font-bold rounded-full bg-yellow-100 text-yellow-800 whitespace-nowrap">
+      Pending (<%= @status_counts["pending"] || 0 %>)
+    </span>
+    <span class="px-3 py-1.5 text-xs font-bold rounded-full bg-green-100 text-green-800 whitespace-nowrap">
+      Approved (<%= @status_counts["approved"] || 0 %>)
+    </span>
+    <span class="px-3 py-1.5 text-xs font-bold rounded-full bg-red-100 text-red-800 whitespace-nowrap">
+      Rejected (<%= @status_counts["rejected"] || 0 %>)
+    </span>
+  </div>
+
+  <!-- Incidents List -->
+  <div class="flex-1 overflow-y-auto touch-scrollable">
+    <% if @incidents.any? %>
+      <div class="divide-y divide-gray-200">
+        <% @incidents.each do |incident| %>
+          <%= link_to admin_race_incident_path(@race, incident), class: "block bg-white p-4 active:bg-gray-50 transition" do %>
+            <div class="flex items-center gap-3">
+              <!-- Bib Badges -->
+              <div class="flex -space-x-2">
+                <% incident.bib_display.split(", ").take(3).each do |bib| %>
+                  <span class="w-10 h-10 flex items-center justify-center rounded-full bg-ismf-navy text-white font-bold text-sm border-2 border-white">
+                    <%= bib %>
+                  </span>
+                <% end %>
+                <% if incident.bib_display.split(", ").size > 3 %>
+                  <span class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-400 text-white font-bold text-xs border-2 border-white">
+                    +<%= incident.bib_display.split(", ").size - 3 %>
+                  </span>
+                <% end %>
+              </div>
+
+              <!-- Details -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-base font-bold text-ismf-navy">Incident #<%= incident.id %></span>
+                  <span class="px-2 py-0.5 text-xs font-bold rounded-full <%= incident.status_badge[:class] %>">
+                    <%= incident.status_badge[:label] %>
+                  </span>
+                </div>
+                <div class="flex items-center gap-3 text-sm text-gray-500">
+                  <span><%= incident.location_display %></span>
+                  <span>•</span>
+                  <span><%= incident.reports_count_display %></span>
+                  <% if incident.has_penalties? %>
+                    <span>•</span>
+                    <span class="text-orange-600 font-semibold"><%= incident.penalties_count_display %></span>
+                  <% end %>
+                </div>
+              </div>
+
+              <!-- Arrow -->
+              <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+
+            <!-- Time -->
+            <p class="text-xs text-gray-400 mt-2 ml-14">
+              <%= incident.time_ago_in_words %> ago
+            </p>
+          <% end %>
+        <% end %>
+      </div>
+    <% else %>
+      <!-- Empty State -->
+      <div class="flex flex-col items-center justify-center py-16 px-6 text-center">
+        <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+          <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h3 class="text-lg font-bold text-ismf-navy mb-2">No incidents yet</h3>
+        <p class="text-sm text-ismf-gray mb-6">
+          Create incidents by merging confirmed reports.
+        </p>
+        <%= link_to new_admin_race_incident_path(@race), class: "px-6 py-3 rounded-xl bg-ismf-blue text-white font-semibold" do %>
+          Create Incident
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

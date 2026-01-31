@@ -20,25 +20,38 @@ module Web
         # - Create/Update: Use operations (business logic)
         #
         class ReportsController < Admin::BaseController
+          include Dry::Monads[:result]
+
           before_action :set_race
           before_action :set_report, only: [ :show, :confirm, :reject, :reopen ]
 
           def index
+            authorize Report, :index?
             @reports = report_repo.for_race(@race.id)
             @reports = parts_factory.wrap_many(@reports)
             @status_counts = report_repo.count_by_status(@race.id)
+
+            # Touch view needs locations and participations for the split-screen UI
+            if touch_display?
+              @race_locations = race_location_repo.for_race(@race.id)
+              @participations = race_participation_repo.for_race(@race.id)
+              # Note: participations are structs, not wrapped in parts (no Part class exists)
+            end
           end
 
           def show
+            authorize @report, :show?
             @report = parts_factory.wrap(@report)
           end
 
           def new
+            authorize Report, :create?
             @race_locations = race_location_repo.for_race(@race.id)
             @participations = race_participation_repo.for_race(@race.id)
           end
 
           def create
+            authorize Report, :create?
             result = Operations::Reports::Create.new.call(
               race_id: @race.id,
               race_location_id: report_params[:race_location_id].to_i,
@@ -46,71 +59,112 @@ module Web
               bib_number: report_params[:bib_number].to_i,
               user_id: Current.user.id,
               athlete_position: report_params[:athlete_position]&.to_i,
-              description: report_params[:description]
+              description: report_params[:description],
+              client_uuid: report_params[:client_uuid]
             )
 
-            case result
-            in Success(report)
-              redirect_to admin_race_report_path(@race, report),
-                          notice: "Report created successfully."
-            in Failure([ :validation_failed, errors ])
-              flash.now[:alert] = "Validation failed: #{errors.values.flatten.join(', ')}"
-              @race_locations = race_location_repo.for_race(@race.id)
-              @participations = race_participation_repo.for_race(@race.id)
-              render :new, status: :unprocessable_entity
-            in Failure(error)
-              flash.now[:alert] = "Error creating report: #{error.inspect}"
-              @race_locations = race_location_repo.for_race(@race.id)
-              @participations = race_participation_repo.for_race(@race.id)
-              render :new, status: :unprocessable_entity
+            if result.success?
+              report = result.value!
+              # Touch mode: redirect back to index to continue creating reports
+              if touch_display?
+                redirect_to admin_race_reports_path(@race),
+                            notice: "Report ##{report.bib_number} created."
+              else
+                redirect_to admin_race_report_path(@race, report),
+                            notice: "Report created successfully."
+              end
+            else
+              error = result.failure
+              if error.is_a?(Array) && error.first == :validation_failed
+                errors = error.last
+                if touch_display?
+                  redirect_to admin_race_reports_path(@race),
+                              alert: "Error: #{errors.values.flatten.join(', ')}"
+                else
+                  flash.now[:alert] = "Validation failed: #{errors.values.flatten.join(', ')}"
+                  @race_locations = race_location_repo.for_race(@race.id)
+                  @participations = race_participation_repo.for_race(@race.id)
+                  render :new, status: :unprocessable_entity
+                end
+              else
+                if touch_display?
+                  redirect_to admin_race_reports_path(@race),
+                              alert: "Error creating report"
+                else
+                  flash.now[:alert] = "Error creating report: #{error.inspect}"
+                  @race_locations = race_location_repo.for_race(@race.id)
+                  @participations = race_participation_repo.for_race(@race.id)
+                  render :new, status: :unprocessable_entity
+                end
+              end
             end
           end
 
           def confirm
+            authorize @report, :confirm?
             result = Operations::Reports::Confirm.new.call(id: @report.id)
 
-            case result
-            in Success(report)
-              redirect_to admin_race_report_path(@race, report),
-                          notice: "Report confirmed."
-            in Failure([ :invalid_status, message ])
-              redirect_to admin_race_report_path(@race, @report),
-                          alert: message
-            in Failure(error)
-              redirect_to admin_race_report_path(@race, @report),
-                          alert: "Error confirming report: #{error.inspect}"
+            if result.success?
+              report = result.value!
+              if touch_display?
+                redirect_to admin_race_reports_path(@race),
+                            notice: "Report ##{report.bib_number} confirmed."
+              else
+                redirect_to admin_race_report_path(@race, report),
+                            notice: "Report confirmed."
+              end
+            else
+              error = result.failure
+              redirect_path = touch_display? ? admin_race_reports_path(@race) : admin_race_report_path(@race, @report)
+              if error.is_a?(Array) && error.first == :invalid_status
+                redirect_to redirect_path, alert: error.last
+              else
+                redirect_to redirect_path, alert: "Error confirming report: #{error.inspect}"
+              end
             end
           end
 
           def reject
+            authorize @report, :reject?
             result = Operations::Reports::Reject.new.call(id: @report.id)
 
-            case result
-            in Success(report)
-              redirect_to admin_race_report_path(@race, report),
-                          notice: "Report rejected."
-            in Failure([ :invalid_status, message ])
-              redirect_to admin_race_report_path(@race, @report),
-                          alert: message
-            in Failure(error)
-              redirect_to admin_race_report_path(@race, @report),
-                          alert: "Error rejecting report: #{error.inspect}"
+            if result.success?
+              report = result.value!
+              if touch_display?
+                redirect_to admin_race_reports_path(@race),
+                            notice: "Report ##{report.bib_number} rejected."
+              else
+                redirect_to admin_race_report_path(@race, report),
+                            notice: "Report rejected."
+              end
+            else
+              error = result.failure
+              redirect_path = touch_display? ? admin_race_reports_path(@race) : admin_race_report_path(@race, @report)
+              if error.is_a?(Array) && error.first == :invalid_status
+                redirect_to redirect_path, alert: error.last
+              else
+                redirect_to redirect_path, alert: "Error rejecting report: #{error.inspect}"
+              end
             end
           end
 
           def reopen
+            authorize @report, :reopen?
             result = Operations::Reports::Reopen.new.call(id: @report.id)
 
-            case result
-            in Success(report)
+            if result.success?
+              report = result.value!
               redirect_to admin_race_report_path(@race, report),
                           notice: "Report reopened."
-            in Failure(:already_pending)
-              redirect_to admin_race_report_path(@race, @report),
-                          alert: "Report is already pending review."
-            in Failure(error)
-              redirect_to admin_race_report_path(@race, @report),
-                          alert: "Error reopening report: #{error.inspect}"
+            else
+              error = result.failure
+              if error == :already_pending
+                redirect_to admin_race_report_path(@race, @report),
+                            alert: "Report is already pending review."
+              else
+                redirect_to admin_race_report_path(@race, @report),
+                            alert: "Error reopening report: #{error.inspect}"
+              end
             end
           end
 
@@ -130,7 +184,8 @@ module Web
               :race_participation_id,
               :bib_number,
               :athlete_position,
-              :description
+              :description,
+              :client_uuid
             )
           end
 

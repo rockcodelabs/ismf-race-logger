@@ -1,0 +1,205 @@
+<% content_for :page_title, "Reports - #{@race.name}" %>
+
+<div class="h-screen overflow-hidden flex flex-col bg-gray-100" data-controller="touch-report">
+  <!-- Compact Header -->
+  <div class="shrink-0 px-3 pt-3 pb-2 bg-white shadow-sm touch-content-with-nav">
+    <div class="flex items-center justify-between gap-3">
+      <%= link_to admin_competition_race_path(@race.competition, @race), class: "flex items-center gap-2 text-ismf-gray" do %>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+      <% end %>
+      <div class="flex-1 min-w-0">
+        <h1 class="text-lg font-bold text-ismf-navy truncate">Reports</h1>
+        <p class="text-xs text-ismf-gray truncate"><%= @race.name %></p>
+      </div>
+      <%= link_to admin_race_incidents_path(@race), class: "flex items-center gap-1 px-3 py-2 rounded-lg bg-orange-100 text-orange-700 font-semibold text-sm" do %>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        Incidents
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="flex-1 flex overflow-hidden">
+    
+    <!-- Left: Location Sidebar -->
+    <div class="w-48 shrink-0 bg-white border-r border-gray-200 flex flex-col">
+      <div class="px-3 py-2 border-b border-gray-200">
+        <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wide">Location</h2>
+      </div>
+      <div class="flex-1 overflow-y-auto touch-scrollable p-2 space-y-1">
+        <% @race_locations.each do |location| %>
+          <button type="button"
+                  class="touch-location-btn w-full px-3 py-3 rounded-lg text-left font-semibold text-sm transition-all"
+                  style="background-color: <%= location.color_code || '#e5e7eb' %>20; border: 2px solid <%= location.color_code || '#9ca3af' %>;"
+                  data-action="click->touch-report#selectLocation"
+                  data-touch-report-location-id-param="<%= location.id %>"
+                  data-touch-report-location-name-param="<%= location.name %>"
+                  data-location-id="<%= location.id %>">
+            <span class="block truncate" style="color: <%= location.color_code || '#374151' %>;">
+              <%= location.name %>
+            </span>
+          </button>
+        <% end %>
+        <% if @race_locations.empty? %>
+          <div class="text-center py-6 text-gray-400 text-sm">
+            No locations defined
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Center: Participant Selector -->
+    <div class="flex-1 flex flex-col bg-gray-50">
+      <!-- Selected Location Banner -->
+      <div class="shrink-0 px-3 py-2 bg-gray-200 border-b border-gray-300"
+           data-touch-report-target="locationBanner">
+        <p class="text-sm font-medium text-gray-600">
+          <span class="text-gray-400">Select a location first</span>
+        </p>
+      </div>
+
+      <!-- Participant List Header -->
+      <div class="shrink-0 px-3 py-2 bg-white border-b border-gray-200 flex items-center justify-between">
+        <h2 class="text-sm font-bold text-gray-700">Select Athlete</h2>
+        <span class="text-xs text-gray-500"><%= @participations.size %> participants</span>
+      </div>
+
+      <!-- Participant Grid -->
+      <div class="flex-1 overflow-y-auto touch-scrollable p-2">
+        <div class="grid grid-cols-4 gap-2">
+          <% @participations.each do |participation| %>
+            <button type="button"
+                    class="touch-bib-btn flex flex-col items-center justify-center p-2 rounded-xl bg-white border-2 border-gray-200 transition-all disabled:opacity-50"
+                    data-action="click->touch-report#selectBib"
+                    data-touch-report-participation-id-param="<%= participation.id %>"
+                    data-touch-report-bib-param="<%= participation.bib_number %>"
+                    data-touch-report-athlete-param="<%= participation.athlete&.display_name || 'Unknown' %>"
+                    data-touch-report-target="bibButton"
+                    disabled>
+              <span class="text-2xl font-black text-ismf-navy"><%= participation.bib_number %></span>
+              <span class="text-xs text-gray-500 truncate w-full text-center">
+                <%= participation.athlete&.last_name&.truncate(10) || 'Unknown' %>
+              </span>
+            </button>
+          <% end %>
+        </div>
+        <% if @participations.empty? %>
+          <div class="flex flex-col items-center justify-center py-12 text-gray-400">
+            <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <p class="text-sm">No participants in this race</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Right: Pending Reports Queue -->
+    <div class="w-72 shrink-0 bg-white border-l border-gray-200 flex flex-col">
+      <div class="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
+        <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wide">Pending</h2>
+        <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-yellow-100 text-yellow-800">
+          <%= @status_counts["pending_review"] || 0 %>
+        </span>
+      </div>
+      
+      <div class="flex-1 overflow-y-auto touch-scrollable" data-touch-report-target="pendingQueue" id="pending-reports-queue">
+        <% pending_reports = @reports.select { |r| r.status == "pending_review" } %>
+        <% if pending_reports.any? %>
+          <div class="divide-y divide-gray-100">
+            <% pending_reports.each do |report| %>
+              <div class="p-3 hover:bg-gray-50" id="report_<%= report.id %>">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="w-10 h-10 flex items-center justify-center rounded-full bg-ismf-navy text-white font-bold text-sm">
+                    <%= report.bib_badge %>
+                  </span>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-900 truncate">
+                      <%= report.athlete_name_display %>
+                    </p>
+                    <p class="text-xs text-gray-500 truncate">
+                      <%= report.location_name %> • <%= report.time_ago %>
+                    </p>
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <%= button_to confirm_admin_race_report_path(@race, report.id), 
+                      method: :post,
+                      class: "flex-1 py-2 rounded-lg bg-green-500 text-white font-semibold text-sm active:bg-green-600 transition",
+                      data: { turbo_frame: "_top" } do %>
+                    ✓ Confirm
+                  <% end %>
+                  <%= button_to reject_admin_race_report_path(@race, report.id), 
+                      method: :post,
+                      class: "flex-1 py-2 rounded-lg bg-red-500 text-white font-semibold text-sm active:bg-red-600 transition",
+                      data: { turbo_frame: "_top" } do %>
+                    ✗ Reject
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="flex flex-col items-center justify-center py-8 text-gray-400">
+            <svg class="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p class="text-sm">No pending reports</p>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Status Summary -->
+      <div class="shrink-0 px-3 py-2 border-t border-gray-200 bg-gray-50">
+        <div class="flex items-center justify-between text-xs">
+          <span class="flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+            Confirmed: <%= @status_counts["confirmed"] || 0 %>
+          </span>
+          <span class="flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-red-500"></span>
+            Rejected: <%= @status_counts["rejected"] || 0 %>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden Form for Report Creation -->
+  <%= form_with url: admin_race_reports_path(@race), 
+                method: :post, 
+                data: { 
+                  touch_report_target: "form",
+                  turbo_frame: "_top"
+                },
+                id: "touch-report-form",
+                class: "hidden" do |f| %>
+    <%= f.hidden_field :race_location_id, data: { touch_report_target: "locationInput" } %>
+    <%= f.hidden_field :race_participation_id, data: { touch_report_target: "participationInput" } %>
+    <%= f.hidden_field :bib_number, data: { touch_report_target: "bibInput" } %>
+    <%= f.hidden_field :client_uuid, value: "", data: { touch_report_target: "clientUuidInput" } %>
+  <% end %>
+</div>
+
+<% unless @race.status == "in_progress" %>
+  <!-- Race Not In Progress Overlay -->
+  <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-2xl p-6 mx-4 max-w-sm text-center shadow-xl">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-100 flex items-center justify-center">
+        <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <h3 class="text-lg font-bold text-gray-900 mb-2">Race Not In Progress</h3>
+      <p class="text-sm text-gray-600 mb-4">
+        Reports can only be created when the race is in progress.
+        Current status: <span class="font-semibold"><%= @race.status.titleize %></span>
+      </p>
+      <%= link_to "Back to Race", admin_competition_race_path(@race.competition, @race), class: "inline-block px-6 py-3 rounded-xl bg-ismf-blue text-white font-semibold" %>
+    </div>
+  </div>
+<% end %>

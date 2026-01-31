@@ -1,0 +1,116 @@
+<% content_for :page_title, "Report ##{@report.id}" %>
+
+<div class="h-screen overflow-hidden flex flex-col bg-gray-50">
+  <!-- Header -->
+  <div class="shrink-0 px-4 py-3 bg-white shadow-sm touch-content-with-nav">
+    <div class="flex items-center justify-between gap-3">
+      <%= link_to admin_race_reports_path(@race), class: "flex items-center gap-2 text-ismf-gray" do %>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+      <% end %>
+      <div class="flex-1 min-w-0">
+        <h1 class="text-xl font-bold text-ismf-navy">Report #<%= @report.id %></h1>
+      </div>
+      <span class="px-3 py-1.5 text-sm font-bold rounded-full <%= @report.status_badge[:class] %>">
+        <%= @report.status_badge[:label] %>
+      </span>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-1 overflow-y-auto touch-scrollable p-4">
+    <!-- Athlete Card -->
+    <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+      <div class="flex items-center gap-4">
+        <span class="w-20 h-20 flex items-center justify-center rounded-2xl bg-ismf-navy text-white font-black text-3xl">
+          <%= @report.bib_badge %>
+        </span>
+        <div class="flex-1 min-w-0">
+          <h2 class="text-xl font-bold text-ismf-navy truncate">
+            <%= @report.athlete_name_display %>
+          </h2>
+          <p class="text-base text-ismf-gray">Bib #<%= @report.bib_number %></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Details Grid -->
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <div class="bg-white rounded-xl p-4">
+        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Location</p>
+        <p class="text-lg font-semibold text-ismf-navy"><%= @report.location_name %></p>
+      </div>
+      <div class="bg-white rounded-xl p-4">
+        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Time</p>
+        <p class="text-lg font-semibold text-ismf-navy"><%= @report.time_ago %></p>
+      </div>
+      <% if @report.athlete_position.present? && @report.athlete_position > 0 %>
+        <div class="bg-white rounded-xl p-4">
+          <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Team Position</p>
+          <p class="text-lg font-semibold text-ismf-navy">Athlete <%= @report.athlete_position == 1 ? "A" : "B" %></p>
+        </div>
+      <% end %>
+      <% if @report.linked_to_incident? %>
+        <div class="bg-white rounded-xl p-4">
+          <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Linked Incident</p>
+          <%= link_to admin_race_incident_path(@race, @report.incident_id), class: "text-lg font-semibold text-ismf-blue" do %>
+            Incident #<%= @report.incident_id %> →
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <% if @report.description.present? %>
+      <div class="bg-white rounded-xl p-4 mb-4">
+        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Description</p>
+        <p class="text-base text-ismf-navy"><%= @report.description %></p>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Action Buttons (fixed at bottom) -->
+  <div class="shrink-0 px-4 py-4 bg-white border-t border-gray-200 space-y-3">
+    <% if @report.can_confirm? %>
+      <div class="flex gap-3">
+        <%= button_to confirm_admin_race_report_path(@race, @report), 
+            method: :post, 
+            class: "flex-1 flex items-center justify-center gap-2 py-4 rounded-xl bg-green-500 text-white font-bold text-lg active:bg-green-600 transition" do %>
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+          </svg>
+          Confirm
+        <% end %>
+        <%= button_to reject_admin_race_report_path(@race, @report), 
+            method: :post, 
+            class: "flex-1 flex items-center justify-center gap-2 py-4 rounded-xl bg-red-500 text-white font-bold text-lg active:bg-red-600 transition" do %>
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          Reject
+        <% end %>
+      </div>
+    <% end %>
+
+    <% if @report.can_reopen? %>
+      <%= button_to reopen_admin_race_report_path(@race, @report), 
+          method: :post, 
+          class: "w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-yellow-500 text-white font-bold text-lg active:bg-yellow-600 transition" do %>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        Reopen Report
+      <% end %>
+    <% end %>
+
+    <% if @report.can_merge? %>
+      <%= link_to new_admin_race_incident_path(@race, report_ids: [@report.id]), 
+          class: "w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-orange-500 text-white font-bold text-lg active:bg-orange-600 transition" do %>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        Create Incident
+      <% end %>
+    <% end %>
+  </div>
+</div>

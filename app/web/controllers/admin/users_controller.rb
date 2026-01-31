@@ -21,19 +21,23 @@ module Web
         before_action :set_user, only: [ :edit, :update, :destroy ]
 
         def index
+          authorize User, :index?
           @users = user_repo.all
         end
 
         def show
+          authorize User, :show?
           # Load AR model to access associations (sessions)
           @user = User.find(params[:id])
         end
 
         def new
+          authorize User, :create?
           @user = User.new
         end
 
         def create
+          authorize User, :create?
           @user = User.new(user_params)
           @user.admin = params[:user][:admin] == "1" || params[:user][:admin] == true
 
@@ -45,11 +49,13 @@ module Web
         end
 
         def edit
+          authorize @user, :update?
           # For edit, we need the AR model for form_with
           @user = User.find(params[:id])
         end
 
         def update
+          authorize @user, :update?
           # @user is a struct from before_action, need AR model for update
           user_record = User.find(params[:id])
           user_record.assign_attributes(user_params)
@@ -64,6 +70,7 @@ module Web
         end
 
         def destroy
+          authorize @user, :destroy?
           user_record = User.find(params[:id])
 
           if user_record == Current.user

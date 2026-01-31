@@ -25,16 +25,20 @@ module Web
         # - Create/Update: Use operations (business logic)
         #
         class IncidentsController < Admin::BaseController
+          include Dry::Monads[:result]
+
           before_action :set_race
           before_action :set_incident, only: [ :show, :edit, :decide, :attach_penalties, :reopen ]
 
           def index
+            authorize Incident, :index?
             @incidents = incident_repo.for_race(@race.id)
             @incidents = parts_factory.wrap_many(@incidents)
             @status_counts = incident_repo.count_by_status(@race.id)
           end
 
           def show
+            authorize @incident, :show?
             @incident = parts_factory.wrap(@incident)
             @reports = report_repo.for_incident(@incident.id)
             @reports = parts_factory.wrap_many(@reports)
@@ -42,6 +46,7 @@ module Web
           end
 
           def new
+            authorize Incident, :create?
             # Get confirmed reports that are not yet linked to an incident
             @available_reports = report_repo.confirmed_without_incident(@race.id)
             @available_reports = parts_factory.wrap_many(@available_reports)
@@ -53,6 +58,7 @@ module Web
           end
 
           def create
+            authorize Incident, :create?
             report_ids = params[:report_ids]&.map(&:to_i) || []
 
             if report_ids.empty?
@@ -68,17 +74,17 @@ module Web
               description: params[:description]
             )
 
-            case result
-            in Success(incident)
+            if result.success?
+              incident = result.value!
               redirect_to admin_race_incident_path(@race, incident),
                           notice: "Incident created from #{report_ids.size} report(s)."
-            in Failure([ :validation_failed, errors ])
-              flash.now[:alert] = "Validation failed: #{errors.values.flatten.join(', ')}"
-              @available_reports = report_repo.confirmed_without_incident(@race.id)
-              @available_reports = parts_factory.wrap_many(@available_reports)
-              render :new, status: :unprocessable_entity
-            in Failure(error)
-              flash.now[:alert] = "Error creating incident: #{error.inspect}"
+            else
+              error = result.failure
+              if error.is_a?(Array) && error.first == :validation_failed
+                flash.now[:alert] = "Validation failed: #{error.last.values.flatten.join(', ')}"
+              else
+                flash.now[:alert] = "Error creating incident: #{error.inspect}"
+              end
               @available_reports = report_repo.confirmed_without_incident(@race.id)
               @available_reports = parts_factory.wrap_many(@available_reports)
               render :new, status: :unprocessable_entity
@@ -86,6 +92,7 @@ module Web
           end
 
           def edit
+            authorize @incident, :update?
             @incident = parts_factory.wrap(@incident)
             @reports = report_repo.for_incident(@incident.id)
             @reports = parts_factory.wrap_many(@reports)
@@ -94,6 +101,7 @@ module Web
           end
 
           def decide
+            authorize @incident, :decide?
             result = Operations::Incidents::Decide.new.call(
               id: @incident.id,
               status: params[:status],
@@ -102,52 +110,68 @@ module Web
               penalty_ids: params[:penalty_ids]&.map(&:to_i)
             )
 
-            case result
-            in Success(incident)
+            if result.success?
+              incident = result.value!
               status_label = incident.status == "approved" ? "approved" : "rejected"
               redirect_to admin_race_incident_path(@race, incident),
                           notice: "Incident #{status_label}."
-            in Failure([ :validation_failed, errors ])
-              redirect_to admin_race_incident_path(@race, @incident),
-                          alert: "Validation failed: #{errors.values.flatten.join(', ')}"
-            in Failure(error)
-              redirect_to admin_race_incident_path(@race, @incident),
-                          alert: "Error deciding incident: #{error.inspect}"
+            else
+              error = result.failure
+              if error.is_a?(Array) && error.first == :validation_failed
+                redirect_to admin_race_incident_path(@race, @incident),
+                            alert: "Validation failed: #{error.last.values.flatten.join(', ')}"
+              else
+                redirect_to admin_race_incident_path(@race, @incident),
+                            alert: "Error deciding incident: #{error.inspect}"
+              end
             end
           end
 
           def attach_penalties
+            authorize @incident, :attach_penalties?
+
+            # Filter out blank strings and convert to integers
+            # Rails sends empty arrays as [""] which we need to handle
+            penalty_ids = Array(params[:penalty_ids]).reject(&:blank?).map(&:to_i)
+
             result = Operations::Incidents::AttachPenalties.new.call(
               incident_id: @incident.id,
-              penalty_ids: params[:penalty_ids]&.map(&:to_i) || []
+              penalty_ids: penalty_ids
             )
 
-            case result
-            in Success(incident)
+            if result.success?
+              incident = result.value!
               redirect_to admin_race_incident_path(@race, incident),
                           notice: "Penalties updated."
-            in Failure([ :validation_failed, errors ])
-              redirect_to admin_race_incident_path(@race, @incident),
-                          alert: "Validation failed: #{errors.values.flatten.join(', ')}"
-            in Failure(error)
-              redirect_to admin_race_incident_path(@race, @incident),
-                          alert: "Error attaching penalties: #{error.inspect}"
+            else
+              error = result.failure
+              if error.is_a?(Array) && error.first == :validation_failed
+                redirect_to admin_race_incident_path(@race, @incident),
+                            alert: "Validation failed: #{error.last.values.flatten.join(', ')}"
+              else
+                redirect_to admin_race_incident_path(@race, @incident),
+                            alert: "Error attaching penalties: #{error.inspect}"
+              end
             end
           end
 
           def reopen
+            authorize @incident, :reopen?
             result = Operations::Incidents::Reopen.new.call(id: @incident.id)
 
-            case result
-            in Success(incident)
+            if result.success?
+              incident = result.value!
               redirect_to admin_race_incident_path(@race, incident),
                           notice: "Incident reopened."
-            in Failure(:already_pending)
-              redirect_to admin_race_incident_path(@race, @incident),
-                          alert: "Incident is already pending."
-            in Failure(error)
-              redirect_to admin_race_incident_path(@race, @incident),
-                          alert: "Error reopening incident: #{error.inspect}"
+            else
+              error = result.failure
+              if error == :already_pending
+                redirect_to admin_race_incident_path(@race, @incident),
+                            alert: "Incident is already pending."
+              else
+                redirect_to admin_race_incident_path(@race, @incident),
+                            alert: "Error reopening incident: #{error.inspect}"
+              end
             end
           end
 

@@ -2,12 +2,13 @@
 
 require "rails_helper"
 
-RSpec.describe RacePolicy do
-  subject(:policy) { described_class.new(user, race) }
+RSpec.describe IncidentPolicy do
+  subject(:policy) { described_class.new(user, incident) }
 
   let(:competition) { create(:competition) }
   let(:race_type) { create(:race_type_sprint) }
   let(:race) { create(:race, competition: competition, race_type: race_type) }
+  let(:incident) { create(:incident, race: race) }
 
   describe "permissions based on user role" do
     context "when user is an admin" do
@@ -19,6 +20,9 @@ RSpec.describe RacePolicy do
       it { is_expected.to permit_action(:create) }
       it { is_expected.to permit_action(:edit) }
       it { is_expected.to permit_action(:update) }
+      it { is_expected.to permit_action(:decide) }
+      it { is_expected.to permit_action(:attach_penalties) }
+      it { is_expected.to permit_action(:reopen) }
       it { is_expected.to permit_action(:destroy) }
     end
 
@@ -32,10 +36,13 @@ RSpec.describe RacePolicy do
       it { is_expected.to permit_action(:create) }
       it { is_expected.to permit_action(:edit) }
       it { is_expected.to permit_action(:update) }
-      it { is_expected.to permit_action(:destroy) }
+      it { is_expected.to permit_action(:decide) }
+      it { is_expected.to permit_action(:attach_penalties) }
+      it { is_expected.to permit_action(:reopen) }
+      it { is_expected.not_to permit_action(:destroy) }
     end
 
-    context "when user is a referee (national or international)" do
+    context "when user is a national referee" do
       let(:referee_role) { create(:role, name: "national_referee") }
       let(:user) { create(:user, role: referee_role) }
 
@@ -45,6 +52,9 @@ RSpec.describe RacePolicy do
       it { is_expected.not_to permit_action(:create) }
       it { is_expected.not_to permit_action(:edit) }
       it { is_expected.not_to permit_action(:update) }
+      it { is_expected.not_to permit_action(:decide) }
+      it { is_expected.not_to permit_action(:attach_penalties) }
+      it { is_expected.not_to permit_action(:reopen) }
       it { is_expected.not_to permit_action(:destroy) }
     end
 
@@ -55,6 +65,9 @@ RSpec.describe RacePolicy do
       it { is_expected.to permit_action(:index) }
       it { is_expected.to permit_action(:show) }
       it { is_expected.not_to permit_action(:create) }
+      it { is_expected.not_to permit_action(:decide) }
+      it { is_expected.not_to permit_action(:attach_penalties) }
+      it { is_expected.not_to permit_action(:reopen) }
       it { is_expected.not_to permit_action(:destroy) }
     end
 
@@ -65,6 +78,9 @@ RSpec.describe RacePolicy do
       it { is_expected.to permit_action(:index) }
       it { is_expected.to permit_action(:show) }
       it { is_expected.not_to permit_action(:create) }
+      it { is_expected.not_to permit_action(:decide) }
+      it { is_expected.not_to permit_action(:attach_penalties) }
+      it { is_expected.not_to permit_action(:reopen) }
       it { is_expected.not_to permit_action(:destroy) }
     end
 
@@ -75,6 +91,9 @@ RSpec.describe RacePolicy do
       it { is_expected.to permit_action(:index) }
       it { is_expected.to permit_action(:show) }
       it { is_expected.not_to permit_action(:create) }
+      it { is_expected.not_to permit_action(:decide) }
+      it { is_expected.not_to permit_action(:attach_penalties) }
+      it { is_expected.not_to permit_action(:reopen) }
       it { is_expected.not_to permit_action(:destroy) }
     end
 
@@ -85,6 +104,9 @@ RSpec.describe RacePolicy do
       it { is_expected.not_to permit_action(:index) }
       it { is_expected.not_to permit_action(:show) }
       it { is_expected.not_to permit_action(:create) }
+      it { is_expected.not_to permit_action(:decide) }
+      it { is_expected.not_to permit_action(:attach_penalties) }
+      it { is_expected.not_to permit_action(:reopen) }
       it { is_expected.not_to permit_action(:destroy) }
     end
 
@@ -94,47 +116,19 @@ RSpec.describe RacePolicy do
       it { is_expected.not_to permit_action(:index) }
       it { is_expected.not_to permit_action(:show) }
       it { is_expected.not_to permit_action(:create) }
+      it { is_expected.not_to permit_action(:decide) }
+      it { is_expected.not_to permit_action(:attach_penalties) }
+      it { is_expected.not_to permit_action(:reopen) }
       it { is_expected.not_to permit_action(:destroy) }
     end
   end
 
-  describe "#update? business rules" do
+  describe "#create? (merge reports)" do
     context "when user is admin" do
       let(:user) { create(:user, admin: true) }
 
-      context "when race is scheduled" do
-        let(:race) { create(:race, :scheduled, competition: competition, race_type: race_type) }
-
-        it "allows update" do
-          expect(policy.update?).to be true
-        end
-      end
-
-      context "when race is in_progress" do
-        let(:race) { create(:race, :in_progress, competition: competition, race_type: race_type) }
-
-        it "allows update" do
-          expect(policy.update?).to be true
-        end
-      end
-
-      context "when race is completed" do
-        let(:race) do
-          race_struct = create(:race, :completed, competition: competition, race_type: race_type)
-          AppContainer["repos.race"].find(race_struct.id)
-        end
-
-        it "denies update (completed races cannot be edited)" do
-          expect(policy.update?).to be false
-        end
-      end
-
-      context "when race is cancelled" do
-        let(:race) { create(:race, :cancelled, competition: competition, race_type: race_type) }
-
-        it "allows update" do
-          expect(policy.update?).to be true
-        end
+      it "allows merging reports into incidents" do
+        expect(policy.create?).to be true
       end
     end
 
@@ -142,23 +136,8 @@ RSpec.describe RacePolicy do
       let(:var_operator_role) { create(:role, name: "var_operator") }
       let(:user) { create(:user, role: var_operator_role) }
 
-      context "when race is completed" do
-        let(:race) do
-          race_record = create(:race, :completed, competition: competition, race_type: race_type)
-          AppContainer["repos.race"].find(race_record.id)
-        end
-
-        it "denies update (completed races cannot be edited)" do
-          expect(policy.update?).to be false
-        end
-      end
-
-      context "when race is not completed" do
-        let(:race) { create(:race, :scheduled, competition: competition, race_type: race_type) }
-
-        it "allows update" do
-          expect(policy.update?).to be true
-        end
+      it "allows merging reports into incidents" do
+        expect(policy.create?).to be true
       end
     end
 
@@ -166,31 +145,101 @@ RSpec.describe RacePolicy do
       let(:referee_role) { create(:role, name: "national_referee") }
       let(:user) { create(:user, role: referee_role) }
 
-      context "even when race is scheduled" do
-        let(:race) { create(:race, :scheduled, competition: competition, race_type: race_type) }
-
-        it "denies update (referees are read-only)" do
-          expect(policy.update?).to be false
-        end
+      it "denies merging reports into incidents" do
+        expect(policy.create?).to be false
       end
     end
   end
 
-  describe "#edit?" do
-    let(:user) { create(:user, admin: true) }
+  describe "#decide?" do
+    context "when user is admin" do
+      let(:user) { create(:user, admin: true) }
 
-    it "delegates to update?" do
-      expect(policy.edit?).to eq(policy.update?)
+      it "allows making decisions on incidents" do
+        expect(policy.decide?).to be true
+      end
     end
 
-    context "when race is completed" do
-      let(:race) do
-        race_record = create(:race, :completed, competition: competition, race_type: race_type)
-        AppContainer["repos.race"].find(race_record.id)
-      end
+    context "when user is VAR operator" do
+      let(:var_operator_role) { create(:role, name: "var_operator") }
+      let(:user) { create(:user, role: var_operator_role) }
 
-      it "denies edit" do
-        expect(policy.edit?).to be false
+      it "allows making decisions on incidents" do
+        expect(policy.decide?).to be true
+      end
+    end
+
+    context "when user is referee" do
+      let(:referee_role) { create(:role, name: "national_referee") }
+      let(:user) { create(:user, role: referee_role) }
+
+      it "denies making decisions on incidents" do
+        expect(policy.decide?).to be false
+      end
+    end
+
+    context "when user is jury president" do
+      let(:jury_president_role) { create(:role, name: "jury_president") }
+      let(:user) { create(:user, role: jury_president_role) }
+
+      it "denies making decisions on incidents (can_manage? but not admin/VAR)" do
+        expect(policy.decide?).to be false
+      end
+    end
+  end
+
+  describe "#attach_penalties?" do
+    context "when user is admin" do
+      let(:user) { create(:user, admin: true) }
+
+      it "allows attaching penalties to incidents" do
+        expect(policy.attach_penalties?).to be true
+      end
+    end
+
+    context "when user is VAR operator" do
+      let(:var_operator_role) { create(:role, name: "var_operator") }
+      let(:user) { create(:user, role: var_operator_role) }
+
+      it "allows attaching penalties to incidents" do
+        expect(policy.attach_penalties?).to be true
+      end
+    end
+
+    context "when user is referee" do
+      let(:referee_role) { create(:role, name: "international_referee") }
+      let(:user) { create(:user, role: referee_role) }
+
+      it "denies attaching penalties to incidents" do
+        expect(policy.attach_penalties?).to be false
+      end
+    end
+  end
+
+  describe "#reopen?" do
+    context "when user is admin" do
+      let(:user) { create(:user, admin: true) }
+
+      it "allows reopening decided incidents" do
+        expect(policy.reopen?).to be true
+      end
+    end
+
+    context "when user is VAR operator" do
+      let(:var_operator_role) { create(:role, name: "var_operator") }
+      let(:user) { create(:user, role: var_operator_role) }
+
+      it "allows reopening decided incidents" do
+        expect(policy.reopen?).to be true
+      end
+    end
+
+    context "when user is referee" do
+      let(:referee_role) { create(:role, name: "national_referee") }
+      let(:user) { create(:user, role: referee_role) }
+
+      it "denies reopening incidents" do
+        expect(policy.reopen?).to be false
       end
     end
   end
@@ -199,24 +248,8 @@ RSpec.describe RacePolicy do
     context "when user is admin" do
       let(:user) { create(:user, admin: true) }
 
-      it "allows deletion at any time" do
+      it "allows deletion" do
         expect(policy.destroy?).to be true
-      end
-
-      context "even when race is completed" do
-        let(:race) { create(:race, :completed, competition: competition, race_type: race_type) }
-
-        it "allows deletion" do
-          expect(policy.destroy?).to be true
-        end
-      end
-
-      context "even when race has participants (future feature)" do
-        let(:race) { create(:race, competition: competition, race_type: race_type) }
-
-        it "allows deletion (as per requirements)" do
-          expect(policy.destroy?).to be true
-        end
       end
     end
 
@@ -224,8 +257,8 @@ RSpec.describe RacePolicy do
       let(:var_operator_role) { create(:role, name: "var_operator") }
       let(:user) { create(:user, role: var_operator_role) }
 
-      it "allows deletion" do
-        expect(policy.destroy?).to be true
+      it "denies deletion (only admins can delete)" do
+        expect(policy.destroy?).to be false
       end
     end
 
@@ -240,18 +273,16 @@ RSpec.describe RacePolicy do
   end
 
   describe "Scope" do
-    let(:competition) { create(:competition) }
-    let(:race_type) { create(:race_type_sprint) }
-    let!(:race1) { create(:race, competition: competition, race_type: race_type) }
-    let!(:race2) { create(:race, competition: competition, race_type: race_type) }
+    let!(:incident1) { create(:incident, race: race) }
+    let!(:incident2) { create(:incident, race: race) }
 
     describe "#resolve" do
       context "when user is admin" do
         let(:user) { create(:user, admin: true) }
 
-        it "returns all races" do
-          scope = described_class::Scope.new(user, Race.where(competition: competition)).resolve
-          expect(scope).to match_array([race1, race2])
+        it "returns all incidents" do
+          scope = described_class::Scope.new(user, Incident.all).resolve
+          expect(scope).to include(incident1, incident2)
         end
       end
 
@@ -259,9 +290,9 @@ RSpec.describe RacePolicy do
         let(:var_operator_role) { create(:role, name: "var_operator") }
         let(:user) { create(:user, role: var_operator_role) }
 
-        it "returns all races" do
-          scope = described_class::Scope.new(user, Race.where(competition: competition)).resolve
-          expect(scope).to match_array([race1, race2])
+        it "returns all incidents" do
+          scope = described_class::Scope.new(user, Incident.all).resolve
+          expect(scope).to include(incident1, incident2)
         end
       end
 
@@ -269,19 +300,9 @@ RSpec.describe RacePolicy do
         let(:referee_role) { create(:role, name: "national_referee") }
         let(:user) { create(:user, role: referee_role) }
 
-        it "returns all races (read-only access)" do
-          scope = described_class::Scope.new(user, Race.where(competition: competition)).resolve
-          expect(scope).to match_array([race1, race2])
-        end
-      end
-
-      context "when user is referee manager" do
-        let(:referee_manager_role) { create(:role, name: "referee_manager") }
-        let(:user) { create(:user, role: referee_manager_role) }
-
-        it "returns all races" do
-          scope = described_class::Scope.new(user, Race.where(competition: competition)).resolve
-          expect(scope).to match_array([race1, race2])
+        it "returns all incidents (read-only access)" do
+          scope = described_class::Scope.new(user, Incident.all).resolve
+          expect(scope).to include(incident1, incident2)
         end
       end
 
@@ -289,8 +310,8 @@ RSpec.describe RacePolicy do
         let(:broadcast_viewer_role) { create(:role, name: "broadcast_viewer") }
         let(:user) { create(:user, role: broadcast_viewer_role) }
 
-        it "returns no races" do
-          scope = described_class::Scope.new(user, Race.where(competition: competition)).resolve
+        it "returns no incidents" do
+          scope = described_class::Scope.new(user, Incident.all).resolve
           expect(scope).to be_empty
         end
       end
@@ -298,8 +319,8 @@ RSpec.describe RacePolicy do
       context "when user has no role" do
         let(:user) { create(:user, role: nil) }
 
-        it "returns no races" do
-          scope = described_class::Scope.new(user, Race.where(competition: competition)).resolve
+        it "returns no incidents" do
+          scope = described_class::Scope.new(user, Incident.all).resolve
           expect(scope).to be_empty
         end
       end
@@ -309,60 +330,17 @@ RSpec.describe RacePolicy do
   describe "performance optimizations" do
     let(:user) { create(:user, admin: true) }
 
-    it "memoizes role checks" do
+    it "memoizes admin_or_var? check" do
       # First call should set instance variable
-      policy.send(:admin?)
-      expect(policy.instance_variable_get(:@admin)).to be true
+      policy.send(:admin_or_var?)
+      expect(policy.instance_variable_get(:@admin_or_var)).to be true
 
       # Second call should return memoized value
-      expect(policy.send(:admin?)).to be true
-    end
-
-    it "caches user_role_name" do
-      # First call should fetch role name
-      first_call = policy.send(:user_role_name)
-      
-      # Second call should use cached value
-      second_call = policy.send(:user_role_name)
-      expect(second_call).to eq(first_call)
+      expect(policy.send(:admin_or_var?)).to be true
     end
   end
 
   describe "edge cases" do
-    context "when race record responds to completed? method" do
-      let(:user) { create(:user, admin: true) }
-      let(:race_struct) do
-        Structs::Race.new(
-          id: 1,
-          status: "completed",
-          competition_id: 1,
-          race_type_id: 1,
-          name: "Test",
-          stage_type: "Final",
-          stage_name: "Final",
-          position: 0,
-          gender_category: "M",
-          created_at: Time.current,
-          updated_at: Time.current
-        )
-      end
-
-      it "uses the completed? method from struct" do
-        policy = described_class.new(user, race_struct)
-        expect(policy.update?).to be false
-      end
-    end
-
-    context "when race record doesn't respond to completed?" do
-      let(:user) { create(:user, admin: true) }
-      let(:race_hash) { { id: 1, status: "scheduled" } }
-
-      it "allows update (no completed? method to check)" do
-        policy = described_class.new(user, race_hash)
-        expect(policy.update?).to be true
-      end
-    end
-
     context "when user is nil" do
       let(:user) { nil }
 
@@ -370,8 +348,20 @@ RSpec.describe RacePolicy do
         expect(policy.index?).to be false
         expect(policy.show?).to be false
         expect(policy.create?).to be false
-        expect(policy.update?).to be false
+        expect(policy.decide?).to be false
+        expect(policy.attach_penalties?).to be false
+        expect(policy.reopen?).to be false
         expect(policy.destroy?).to be false
+      end
+    end
+
+    context "when incident is nil" do
+      let(:user) { create(:user, admin: true) }
+      let(:incident) { nil }
+
+      it "still evaluates permissions based on user role" do
+        expect(policy.create?).to be true
+        expect(policy.decide?).to be true
       end
     end
   end

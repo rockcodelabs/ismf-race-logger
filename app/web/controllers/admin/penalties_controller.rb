@@ -16,6 +16,7 @@ module Web
       #
       class PenaltiesController < BaseController
         def index
+          authorize Penalty, :index?
           @penalties = penalty_repo.all
         end
 

@@ -1,0 +1,108 @@
+<% content_for :page_title, "Create Incident - #{@race.name}" %>
+
+<div class="h-screen overflow-hidden flex flex-col bg-gray-50" data-controller="touch-incident-merge">
+  <!-- Header -->
+  <div class="shrink-0 px-4 py-3 bg-white shadow-sm touch-content-with-nav">
+    <div class="flex items-center justify-between gap-3">
+      <%= link_to admin_race_incidents_path(@race), class: "flex items-center gap-2 text-ismf-gray" do %>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      <% end %>
+      <div class="flex-1 min-w-0">
+        <h1 class="text-xl font-bold text-ismf-navy">Create Incident</h1>
+        <p class="text-xs text-ismf-gray truncate">Merge reports for <%= @race.name %></p>
+      </div>
+    </div>
+  </div>
+
+  <%= form_with url: admin_race_incidents_path(@race), method: :post, local: true, class: "flex-1 flex flex-col overflow-hidden" do |form| %>
+    <!-- Main Content -->
+    <div class="flex-1 overflow-y-auto touch-scrollable p-4">
+      
+      <!-- Select Reports Section -->
+      <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-bold text-gray-500 uppercase tracking-wide">Select Reports</h2>
+          <span class="px-2 py-1 text-xs font-bold rounded-full bg-blue-100 text-blue-800" data-touch-incident-merge-target="selectedCount">
+            0 selected
+          </span>
+        </div>
+        
+        <% if @available_reports.any? %>
+          <div class="space-y-2">
+            <% @available_reports.each do |report| %>
+              <label class="flex items-center gap-3 p-3 rounded-xl bg-gray-50 active:bg-gray-100 transition cursor-pointer"
+                     data-action="click->touch-incident-merge#toggleReport">
+                <input type="checkbox" 
+                       name="report_ids[]" 
+                       value="<%= report.id %>"
+                       <%= 'checked' if params[:report_ids]&.include?(report.id.to_s) %>
+                       class="sr-only"
+                       data-touch-incident-merge-target="checkbox">
+                <span class="w-6 h-6 flex items-center justify-center rounded-lg border-2 border-gray-300 bg-white shrink-0 transition-colors"
+                      data-touch-incident-merge-target="checkmark">
+                  <svg class="w-4 h-4 text-white hidden" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                </span>
+                <span class="w-12 h-12 flex items-center justify-center rounded-full bg-ismf-navy text-white font-bold text-base shrink-0">
+                  <%= report.bib_badge %>
+                </span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-base font-semibold text-ismf-navy truncate"><%= report.athlete_name_display %></p>
+                  <p class="text-sm text-gray-500"><%= report.location_name %> • <%= report.time_ago %></p>
+                </div>
+              </label>
+            <% end %>
+          </div>
+        <% else %>
+          <!-- Empty State -->
+          <div class="flex flex-col items-center justify-center py-8 text-center">
+            <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+              <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h3 class="text-base font-bold text-ismf-navy mb-1">No Reports Available</h3>
+            <p class="text-sm text-gray-500 mb-4">Confirm some reports first to create an incident.</p>
+            <%= link_to admin_race_reports_path(@race), class: "px-4 py-2 rounded-lg bg-ismf-blue text-white font-semibold text-sm" do %>
+              Go to Reports
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Description Section -->
+      <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+        <label for="description" class="block text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">
+          Description (Optional)
+        </label>
+        <textarea name="description" 
+                  id="description" 
+                  rows="3"
+                  class="w-full rounded-xl border-gray-300 text-base p-3 focus:border-ismf-blue focus:ring-ismf-blue"
+                  placeholder="Add notes about this incident..."></textarea>
+      </div>
+    </div>
+
+    <!-- Action Buttons (fixed at bottom) -->
+    <div class="shrink-0 px-4 py-4 bg-white border-t border-gray-200">
+      <div class="flex gap-3">
+        <%= link_to admin_race_incidents_path(@race), 
+            class: "flex-1 flex items-center justify-center gap-2 py-4 rounded-xl bg-gray-200 text-gray-700 font-bold text-lg active:bg-gray-300 transition" do %>
+          Cancel
+        <% end %>
+        <button type="submit" 
+                class="flex-1 flex items-center justify-center gap-2 py-4 rounded-xl bg-orange-500 text-white font-bold text-lg active:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                data-touch-incident-merge-target="submitButton"
+                <%= 'disabled' if @available_reports.empty? %>>
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          Create Incident
+        </button>
+      </div>
+    </div>
+  <% end %>
+</div>

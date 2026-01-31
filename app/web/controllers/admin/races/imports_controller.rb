@@ -20,6 +20,7 @@ module Web
           #
           # Shows the import form with a textarea for pasting JSON
           def new
+            authorize Race, :update?
             render :new
           end
 
@@ -27,6 +28,7 @@ module Web
           #
           # Processes the JSON import and redirects to race show page on success
           def create
+            authorize Race, :update?
             result = import_operation.call(
               race_id: @race.id,
               athletes_json: params[:athletes_json]
@@ -45,12 +47,12 @@ module Web
 
           def set_race
             @race = race_repo.find(params[:race_id])
-            
+
             unless @race
               redirect_to admin_races_path, alert: "Race not found"
               return
             end
-            
+
             @competition = competition_repo.find(@race.competition_id)
           end
 
@@ -67,7 +69,7 @@ module Web
               # String error (e.g., JSON parse error)
               flash.now[:alert] = failure
             end
-            
+
             render :new, status: :unprocessable_entity
           end
 

@@ -29,7 +29,7 @@ module Web
         def index
           authorize Race
           @races = race_repo.for_competition(@competition.id)
-          
+
           # Group races by race_type for display
           @races_by_type = @races.group_by(&:race_type_name)
         end
@@ -55,12 +55,12 @@ module Web
         # POST /admin/competitions/:competition_id/races
         def create
           authorize Race
-          
+
           # Clean up params: convert empty strings to nil for optional fields
           cleaned_params = race_params.to_h.symbolize_keys
           cleaned_params[:heat_number] = nil if cleaned_params[:heat_number].blank?
           cleaned_params[:scheduled_at] = nil if cleaned_params[:scheduled_at].blank?
-          
+
           result = Operations::Races::Create.new.call(
             competition_id: @competition.id,
             **cleaned_params
@@ -92,12 +92,12 @@ module Web
         # PATCH/PUT /admin/competitions/:competition_id/races/:id
         def update
           authorize @race
-          
+
           # Clean up params: convert empty strings to nil for optional fields
           cleaned_params = race_params.to_h.symbolize_keys
           cleaned_params[:heat_number] = nil if cleaned_params[:heat_number].blank?
           cleaned_params[:scheduled_at] = nil if cleaned_params[:scheduled_at].blank?
-          
+
           result = Operations::Races::Update.new.call(
             id: @race.id,
             **cleaned_params
@@ -167,9 +167,9 @@ module Web
 
         def format_errors(errors)
           return errors.to_s unless errors.is_a?(Hash)
-          
+
           errors.map do |key, messages|
-            messages = [messages] unless messages.is_a?(Array)
+            messages = [ messages ] unless messages.is_a?(Array)
             "#{key.to_s.humanize}: #{messages.join(', ')}"
           end.join("; ")
         end

@@ -6,6 +6,7 @@ FactoryBot.define do
     association :race_type
     
     sequence(:name) { |n| "Race #{n}" }
+    gender_category { "M" }
     stage_type { "Qualification" }
     stage_name { "Qualification" }
     heat_number { nil }

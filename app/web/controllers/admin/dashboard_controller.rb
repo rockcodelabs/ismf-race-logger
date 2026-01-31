@@ -13,6 +13,7 @@ module Web
       #
       class DashboardController < BaseController
         def index
+          authorize :dashboard, :index?
           @total_users = user_repo.count
           @admin_users = user_repo.where(admin: true).count
           @recent_users = user_repo.all.first(5)
