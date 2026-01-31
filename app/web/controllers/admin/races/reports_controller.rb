@@ -52,6 +52,7 @@ module Web
 
           def create
             authorize Report, :create?
+            
             result = Operations::Reports::Create.new.call(
               race_id: @race.id,
               race_location_id: report_params[:race_location_id].to_i,
@@ -65,18 +66,24 @@ module Web
 
             if result.success?
               report = result.value!
+              
               # Touch mode: redirect back to index to continue creating reports
+              # Use status: :see_other (303) for proper Turbo redirect with flash
               if touch_display?
                 redirect_to admin_race_reports_path(@race),
-                            notice: "Report ##{report.bib_number} created."
+                            notice: "Report ##{report.bib_number} created.",
+                            status: :see_other
               else
                 redirect_to admin_race_report_path(@race, report),
-                            notice: "Report created successfully."
+                            notice: "Report created successfully.",
+                            status: :see_other
               end
             else
               error = result.failure
+              
               if error.is_a?(Array) && error.first == :validation_failed
                 errors = error.last
+                
                 if touch_display?
                   redirect_to admin_race_reports_path(@race),
                               alert: "Error: #{errors.values.flatten.join(', ')}"
@@ -108,10 +115,12 @@ module Web
               report = result.value!
               if touch_display?
                 redirect_to admin_race_reports_path(@race),
-                            notice: "Report ##{report.bib_number} confirmed."
+                            notice: "Report ##{report.bib_number} confirmed.",
+                            status: :see_other
               else
                 redirect_to admin_race_report_path(@race, report),
-                            notice: "Report confirmed."
+                            notice: "Report confirmed.",
+                            status: :see_other
               end
             else
               error = result.failure
@@ -132,10 +141,12 @@ module Web
               report = result.value!
               if touch_display?
                 redirect_to admin_race_reports_path(@race),
-                            notice: "Report ##{report.bib_number} rejected."
+                            notice: "Report ##{report.bib_number} rejected.",
+                            status: :see_other
               else
                 redirect_to admin_race_report_path(@race, report),
-                            notice: "Report rejected."
+                            notice: "Report rejected.",
+                            status: :see_other
               end
             else
               error = result.failure
@@ -155,7 +166,8 @@ module Web
             if result.success?
               report = result.value!
               redirect_to admin_race_report_path(@race, report),
-                          notice: "Report reopened."
+                          notice: "Report reopened.",
+                          status: :see_other
             else
               error = result.failure
               if error == :already_pending

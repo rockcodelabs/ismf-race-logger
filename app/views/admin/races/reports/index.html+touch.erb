@@ -171,7 +171,8 @@
 
   <!-- Hidden Form for Report Creation -->
   <%= form_with url: admin_race_reports_path(@race), 
-                method: :post, 
+                method: :post,
+                scope: :report,
                 data: { 
                   touch_report_target: "form",
                   turbo_frame: "_top"

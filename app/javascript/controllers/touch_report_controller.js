@@ -22,14 +22,13 @@ export default class extends Controller {
   ]
 
   connect() {
-    console.log("📋 Touch report controller connected")
     this.selectedLocationId = null
     this.selectedLocationName = null
     this.isSubmitting = false
   }
 
   disconnect() {
-    console.log("📋 Touch report controller disconnected")
+    // Clean up
   }
 
   // Called when a location button is tapped
@@ -62,7 +61,6 @@ export default class extends Controller {
     }
 
     if (this.isSubmitting) {
-      console.log("Already submitting, ignoring tap")
       return
     }
 
@@ -81,12 +79,15 @@ export default class extends Controller {
     if (this.hasLocationInputTarget) {
       this.locationInputTarget.value = this.selectedLocationId
     }
+    
     if (this.hasParticipationInputTarget) {
       this.participationInputTarget.value = participationId
     }
+    
     if (this.hasBibInputTarget) {
       this.bibInputTarget.value = bibNumber
     }
+    
     if (this.hasClientUuidInputTarget) {
       this.clientUuidInputTarget.value = clientUuid
     }
@@ -96,7 +97,6 @@ export default class extends Controller {
 
     // Submit the form
     this.isSubmitting = true
-    console.log(`📋 Creating report: Bib ${bibNumber} @ ${this.selectedLocationName}`)
 
     if (this.hasFormTarget) {
       this.formTarget.requestSubmit()

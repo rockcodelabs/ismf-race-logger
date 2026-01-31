@@ -161,6 +161,44 @@ module Web
       def current_user
         Current.user
       end
+
+      # Generic Turbo error response handler for Rails 8
+      # 
+      # Usage in controllers:
+      #   if result.failure?
+      #     respond_to_turbo_with_error("Error message")
+      #   end
+      #
+      # This handles the Rails 8 + Turbo requirement:
+      # - For Turbo requests (form submissions): Return 422 with Turbo Stream flash message
+      # - For non-Turbo requests: Redirect with flash alert (traditional behavior)
+      #
+      def respond_to_turbo_with_error(message, redirect_path: nil)
+        respond_to do |format|
+          format.turbo_stream do
+            render turbo_stream: turbo_stream.append("flash-container", partial: "shared/flash_alert", locals: { message: message }), status: :unprocessable_entity
+          end
+          format.html do
+            if redirect_path
+              redirect_to redirect_path, alert: message
+            else
+              flash.now[:alert] = message
+              render status: :unprocessable_entity
+            end
+          end
+        end
+      end
+
+      # Render a Turbo Stream flash message
+      # This is used to show flash messages via Turbo Streams without full page reload
+      #
+      def turbo_flash_alert(message)
+        turbo_stream.append "flash-container", partial: "shared/flash_alert", locals: { message: message }
+      end
+
+      def turbo_flash_notice(message)
+        turbo_stream.append "flash-container", partial: "shared/flash_notice", locals: { message: message }
+      end
     end
   end
 end
