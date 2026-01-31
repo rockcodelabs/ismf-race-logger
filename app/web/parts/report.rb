@@ -67,12 +67,13 @@ module Web
         end
       end
 
-      # Athlete name with fallback
+      # Athlete name with flag and fallback
       def athlete_name_display
-        if value.respond_to?(:athlete_name) && value.athlete_name.present?
-          value.athlete_name
-        elsif value.respond_to?(:athlete_display)
+        if value.respond_to?(:athlete_display)
           value.athlete_display
+        elsif value.respond_to?(:athlete_name) && value.athlete_name.present?
+          # Fallback to plain name if athlete_display not available
+          value.athlete_name
         else
           "Bib ##{value.bib_number}"
         end

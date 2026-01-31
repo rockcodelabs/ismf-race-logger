@@ -20,6 +20,7 @@ RSpec.describe Structs::Report do
       updated_at: Time.current,
       race_location_name: race_location_name,
       athlete_name: athlete_name,
+      athlete_country: athlete_country,
       user_name: "Referee Smith"
     )
   end
@@ -29,6 +30,7 @@ RSpec.describe Structs::Report do
   let(:athlete_position) { nil }
   let(:race_location_name) { "Uphill Checkpoint" }
   let(:athlete_name) { "John Doe" }
+  let(:athlete_country) { nil }
 
   describe "attributes" do
     it "has all expected attributes" do
@@ -355,11 +357,22 @@ RSpec.describe Structs::Report do
     end
 
     describe "#athlete_display" do
-      context "when athlete_name is present" do
+      context "when athlete_name is present without country" do
         let(:athlete_name) { "Jane Smith" }
+        let(:athlete_country) { nil }
 
-        it "returns the athlete name" do
+        it "returns the athlete name without flag" do
           expect(report.athlete_display).to eq("Jane Smith")
+        end
+      end
+
+      context "when athlete_name is present with country" do
+        let(:athlete_name) { "Jane Smith" }
+        let(:athlete_country) { "ITA" }
+
+        it "returns the athlete name with flag" do
+          expect(report.athlete_display).to start_with("🇮🇹")
+          expect(report.athlete_display).to include("Jane Smith")
         end
       end
 
@@ -377,6 +390,36 @@ RSpec.describe Structs::Report do
         it "returns bib number fallback" do
           expect(report.athlete_display).to eq("Bib #42")
         end
+      end
+    end
+
+    describe "#country_flag" do
+      it "converts ITA to Italian flag" do
+        expect(report.country_flag("ITA")).to eq("🇮🇹")
+      end
+
+      it "converts FRA to French flag" do
+        expect(report.country_flag("FRA")).to eq("🇫🇷")
+      end
+
+      it "converts USA to US flag" do
+        expect(report.country_flag("USA")).to eq("🇺🇸")
+      end
+
+      it "converts SUI to Swiss flag" do
+        expect(report.country_flag("SUI")).to eq("🇨🇭")
+      end
+
+      it "returns empty string for nil country" do
+        expect(report.country_flag(nil)).to eq("")
+      end
+
+      it "returns empty string for blank country" do
+        expect(report.country_flag("")).to eq("")
+      end
+
+      it "handles lowercase codes" do
+        expect(report.country_flag("ita")).to eq("🇮🇹")
       end
     end
 
@@ -405,6 +448,7 @@ RSpec.describe Structs::Report do
         "updated_at" => Time.current,
         "race_location_name" => nil,
         "athlete_name" => nil,
+        "athlete_country" => nil,
         "user_name" => nil
       )
 
@@ -431,6 +475,7 @@ RSpec.describe Structs::Report do
         updated_at: Time.current,
         race_location_name: nil,
         athlete_name: nil,
+        athlete_country: nil,
         user_name: nil
       )
 
@@ -439,6 +484,7 @@ RSpec.describe Structs::Report do
       expect(report.description).to be_nil
       expect(report.race_location_name).to be_nil
       expect(report.athlete_name).to be_nil
+      expect(report.athlete_country).to be_nil
       expect(report.user_name).to be_nil
     end
   end

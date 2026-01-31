@@ -35,6 +35,7 @@ module Structs
     # Optional nested data (loaded via repo methods)
     attribute :race_location_name, Types::String.optional
     attribute :athlete_name, Types::String.optional
+    attribute :athlete_country, Types::String.optional
     attribute :user_name, Types::String.optional
 
     # Status helpers
@@ -109,9 +110,51 @@ module Structs
       race_location_name.presence || "Unknown"
     end
 
-    # Display athlete name
+    # Display athlete name with flag
     def athlete_display
-      athlete_name.presence || "Bib ##{bib_number}"
+      if athlete_name.present?
+        flag = athlete_country.present? ? country_flag(athlete_country) : ""
+        "#{flag} #{athlete_name}".strip
+      else
+        "Bib ##{bib_number}"
+      end
+    end
+
+    # Convert ISO country code to flag emoji
+    # @param country_code [String] ISO 3166-1 alpha-3 code (e.g., "ITA")
+    # @return [String] Flag emoji
+    def country_flag(country_code)
+      return "" if country_code.blank?
+      
+      # Convert ISO 3166-1 alpha-3 to alpha-2 for flag emoji
+      # This is a simplified mapping for common countries
+      alpha2 = case country_code.upcase
+      when "ITA" then "IT"
+      when "FRA" then "FR"
+      when "ESP" then "ES"
+      when "SUI" then "CH"
+      when "AUT" then "AT"
+      when "GER" then "DE"
+      when "USA" then "US"
+      when "GBR" then "GB"
+      when "CAN" then "CA"
+      when "JPN" then "JP"
+      when "CHN" then "CN"
+      when "RUS" then "RU"
+      when "NOR" then "NO"
+      when "SWE" then "SE"
+      when "FIN" then "FI"
+      when "POL" then "PL"
+      when "CZE" then "CZ"
+      when "SVK" then "SK"
+      when "SLO" then "SI"
+      when "BEL" then "BE"
+      when "NED" then "NL"
+      else country_code[0..1] # Fallback: use first 2 letters
+      end
+      
+      # Convert to flag emoji using regional indicator symbols
+      alpha2.upcase.chars.map { |c| (c.ord + 127397).chr(Encoding::UTF_8) }.join
     end
 
     # Time since created (for display)

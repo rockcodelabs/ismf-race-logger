@@ -159,6 +159,7 @@ class ReportRepo < DB::Repo
       updated_at: record.updated_at,
       race_location_name: record.race_location&.name,
       athlete_name: build_athlete_name(record),
+      athlete_country: build_athlete_country(record),
       user_name: record.user&.display_name
     )
   end
@@ -173,6 +174,7 @@ class ReportRepo < DB::Repo
       race_location_id: record.race_location_id,
       race_location_name: record.race_location&.name,
       athlete_name: build_athlete_name(record),
+      athlete_country: build_athlete_country(record),
       status: record.status,
       created_at: record.created_at
     )
@@ -185,5 +187,9 @@ class ReportRepo < DB::Repo
     return nil unless athlete
 
     "#{athlete.first_name} #{athlete.last_name}"
+  end
+
+  def build_athlete_country(record)
+    record.race_participation&.athlete&.country
   end
 end
