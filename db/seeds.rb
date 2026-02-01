@@ -24,6 +24,25 @@ puts "=" * 80
 puts "ISMF RACE LOGGER - SEEDING DATABASE"
 puts "=" * 80
 
+# Clear entire database before seeding
+puts "\n▶ Clearing entire database..."
+Report.delete_all
+IncidentPenalty.delete_all
+Incident.delete_all
+RaceParticipation.delete_all
+Team.delete_all
+RaceLocation.delete_all
+Race.delete_all
+Competition.delete_all
+Athlete.delete_all
+RaceTypeLocationTemplate.delete_all
+RaceType.delete_all
+Session.delete_all
+MagicLink.delete_all
+User.delete_all
+Role.delete_all
+puts "✅ Database cleared"
+
 # Load seed files in order
 seed_files = [
   "roles",

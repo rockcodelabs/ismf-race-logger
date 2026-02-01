@@ -9,7 +9,7 @@ puts "=" * 80
 puts "Creating 2026 ISMF World Cup Competitions"
 puts "=" * 80
 
-# Clear existing data
+# Clear competition-specific data (main seed.rb clears everything first)
 puts "\nClearing existing competition data..."
 Report.delete_all
 IncidentPenalty.delete_all
@@ -20,7 +20,7 @@ RaceLocation.delete_all
 Race.delete_all
 Competition.delete_all
 Athlete.delete_all
-puts "✅ Cleared existing data"
+puts "✅ Cleared existing competition data"
 
 # Get race types
 individual_type = RaceType.find_by(name: "Individual")
@@ -70,7 +70,7 @@ last_names = {
   "AND" => %w[Pujol Vila Serra Roca Font Torres Navarro]
 }
 
-athletes = { "M" => [], "W" => [] }
+athletes = { "M" => [], "F" => [] }
 
 # Create 60 male athletes
 60.times do |i|
@@ -97,15 +97,15 @@ end
   athlete = Athlete.create!(
     first_name: first_name,
     last_name: last_name,
-    gender: "W",
+    gender: "F",
     country: country,
-    license_number: "2026W#{i.to_s.rjust(4, '0')}"
+    license_number: "2026F#{i.to_s.rjust(4, '0')}"
   )
-  athletes["W"] << athlete
+  athletes["F"] << athlete
 end
 
 puts "✅ Created #{athletes['M'].count} male athletes"
-puts "✅ Created #{athletes['W'].count} female athletes"
+puts "✅ Created #{athletes['F'].count} female athletes"
 
 # ============================================================================
 # HELPER METHODS
@@ -195,202 +195,364 @@ def create_relay_race_with_teams(competition, race_type, stage_name, stage_type,
 end
 
 # ============================================================================
+# DYNAMIC DATE CALCULATION
+# ============================================================================
+
+# Base time: now (closest race starts immediately)
+base_datetime = Time.now
+
+# ============================================================================
 # COMPETITION 1: VAL THORENS - SPRINT RACES
 # ============================================================================
 
 puts "\n" + "=" * 80
-puts "Competition 1: Val Thorens Sprint - January 25, 2026"
+puts "Competition 1: Val Thorens Sprint - #{base_datetime.strftime('%B %d, %Y')}"
 puts "=" * 80
+
+comp1_start = base_datetime.to_date
+comp1_end = comp1_start
 
 val_thorens = Competition.create!(
   name: "ISMF World Cup Val Thorens 2026",
   description: "Sprint race",
-  start_date: Date.new(2026, 1, 25),
-  end_date: Date.new(2026, 1, 25),
+  start_date: comp1_start,
+  end_date: comp1_end,
   city: "Val Thorens",
   place: "Val Thorens Ski Resort",
   country: "FRA",
   webpage_url: "https://www.ismf-ski.org/world-cup-2026"
 )
 
-base_time = val_thorens.start_date.to_time + 10.hours
+race_time = base_datetime
 
-# Women Sprint Final (30 athletes)
+# Sprint races FIRST (Women)
 create_race_with_participants(
   val_thorens, sprint_type, "Final", "final", "W",
-  athletes["W"].first(30), 101, base_time
+  athletes["F"].first(30), 1, race_time
 )
 
-# Men Sprint Final (30 athletes)
+# Sprint races FIRST (Men)
 create_race_with_participants(
   val_thorens, sprint_type, "Final", "final", "M",
-  athletes["M"].first(30), 201, base_time + 2.hours
+  athletes["M"].first(30), 101, race_time + 1.hour
 )
 
-puts "✅ Created Val Thorens Sprint races"
+# Individual races
+create_race_with_participants(
+  val_thorens, individual_type, "Final", "final", "W",
+  athletes["F"][10..49], 201, race_time + 3.hours
+)
+
+create_race_with_participants(
+  val_thorens, individual_type, "Final", "final", "M",
+  athletes["M"][10..49], 301, race_time + 5.hours
+)
+
+# Mixed Relay
+create_relay_race_with_teams(
+  val_thorens, mixed_relay_type, "Final", "final",
+  athletes["M"][20..39], athletes["F"][20..39], 401, race_time + 7.hours, 20
+)
+
+puts "✅ Created Val Thorens races (Sprint, Individual, Mixed Relay)"
 
 # ============================================================================
 # COMPETITION 2: FLAINE - MIXED RELAY
 # ============================================================================
 
 puts "\n" + "=" * 80
-puts "Competition 2: Flaine Mixed Relay - January 26, 2026"
+puts "Competition 2: Flaine Mixed Relay - #{(base_datetime + 1.day).strftime('%B %d, %Y')}"
 puts "=" * 80
+
+comp2_start = (base_datetime + 1.day).to_date
+comp2_end = comp2_start
 
 flaine = Competition.create!(
   name: "ISMF World Cup Flaine 2026",
   description: "Mixed Relay race",
-  start_date: Date.new(2026, 1, 26),
-  end_date: Date.new(2026, 1, 26),
+  start_date: comp2_start,
+  end_date: comp2_end,
   city: "Flaine",
   place: "Flaine Ski Resort",
   country: "FRA",
   webpage_url: "https://www.ismf-ski.org/world-cup-2026"
 )
 
-base_time = flaine.start_date.to_time + 11.hours
+race_time = base_datetime + 1.day
+
+# Sprint races FIRST (Women)
+create_race_with_participants(
+  flaine, sprint_type, "Final", "final", "W",
+  athletes["F"].first(30), 1, race_time
+)
+
+# Sprint races FIRST (Men)
+create_race_with_participants(
+  flaine, sprint_type, "Final", "final", "M",
+  athletes["M"].first(30), 101, race_time + 1.hour
+)
+
+# Vertical races
+create_race_with_participants(
+  flaine, vertical_type, "Final", "final", "W",
+  athletes["F"][15..54], 201, race_time + 3.hours
+)
+
+create_race_with_participants(
+  flaine, vertical_type, "Final", "final", "M",
+  athletes["M"][15..54], 301, race_time + 5.hours
+)
 
 # Mixed Relay Final (20 teams)
 create_relay_race_with_teams(
   flaine, mixed_relay_type, "Final", "final",
-  athletes["M"], athletes["W"], 301, base_time, 20
+  athletes["M"][25..44], athletes["F"][25..44], 401, race_time + 7.hours, 20
 )
 
-puts "✅ Created Flaine Mixed Relay race"
+puts "✅ Created Flaine races (Sprint, Vertical, Mixed Relay)"
 
 # ============================================================================
 # COMPETITION 3: KRANJSKA GORA - VERTICAL RACE
 # ============================================================================
 
 puts "\n" + "=" * 80
-puts "Competition 3: Kranjska Gora Vertical - February 21, 2026"
+puts "Competition 3: Kranjska Gora Vertical - #{(base_datetime + 2.days).strftime('%B %d, %Y')}"
 puts "=" * 80
+
+comp3_start = (base_datetime + 2.days).to_date
+comp3_end = comp3_start
 
 kranjska = Competition.create!(
   name: "ISMF World Cup Kranjska Gora 2026",
   description: "Vertical race",
-  start_date: Date.new(2026, 2, 21),
-  end_date: Date.new(2026, 2, 21),
+  start_date: comp3_start,
+  end_date: comp3_end,
   city: "Kranjska Gora",
   place: "Kranjska Gora Ski Resort",
   country: "AND",
   webpage_url: "https://www.ismf-ski.org/world-cup-2026"
 )
 
-base_time = kranjska.start_date.to_time + 10.hours
+race_time = base_datetime + 2.days
+
+# Sprint races FIRST (Women)
+create_race_with_participants(
+  kranjska, sprint_type, "Final", "final", "W",
+  athletes["F"].first(30), 1, race_time
+)
+
+# Sprint races FIRST (Men)
+create_race_with_participants(
+  kranjska, sprint_type, "Final", "final", "M",
+  athletes["M"].first(30), 101, race_time + 1.hour
+)
 
 # Women Vertical Final
 create_race_with_participants(
   kranjska, vertical_type, "Final", "final", "W",
-  athletes["W"].first(40), 501, base_time
+  athletes["F"].first(40), 501, race_time + 3.hours
 )
 
 # Men Vertical Final
 create_race_with_participants(
   kranjska, vertical_type, "Final", "final", "M",
-  athletes["M"].first(40), 601, base_time + 2.hours
+  athletes["M"].first(40), 601, race_time + 5.hours
 )
 
-puts "✅ Created Kranjska Gora Vertical races"
+# Individual races
+create_race_with_participants(
+  kranjska, individual_type, "Final", "final", "W",
+  athletes["F"][5..44], 701, race_time + 7.hours
+)
+
+create_race_with_participants(
+  kranjska, individual_type, "Final", "final", "M",
+  athletes["M"][5..44], 801, race_time + 9.hours
+)
+
+# Mixed Relay
+create_relay_race_with_teams(
+  kranjska, mixed_relay_type, "Final", "final",
+  athletes["M"][30..49], athletes["F"][30..49], 901, race_time + 11.hours, 20
+)
+
+puts "✅ Created Kranjska Gora races (Sprint, Vertical, Individual, Mixed Relay)"
 
 # ============================================================================
-# COMPETITION 4: WORLD CUP SPRINT - FEBRUARY 22, 2026
+# COMPETITION 4: WORLD CUP SPRINT - DAY 3
 # ============================================================================
 
 puts "\n" + "=" * 80
-puts "Competition 4: World Cup Sprint - February 22, 2026"
+puts "Competition 4: World Cup Sprint - #{(base_datetime + 3.days).strftime('%B %d, %Y')}"
 puts "=" * 80
+
+comp4_start = (base_datetime + 3.days).to_date
+comp4_end = comp4_start
 
 wc_sprint_feb = Competition.create!(
   name: "ISMF World Cup Sprint February 2026",
   description: "Sprint race",
-  start_date: Date.new(2026, 2, 22),
-  end_date: Date.new(2026, 2, 22),
+  start_date: comp4_start,
+  end_date: comp4_end,
   city: "TBD",
   place: "TBD",
   country: "TBD",
   webpage_url: "https://www.ismf-ski.org/world-cup-2026"
 )
 
-base_time = wc_sprint_feb.start_date.to_time + 10.hours
+race_time = base_datetime + 3.days
 
-# Women Sprint Final
+# Sprint races FIRST (Women)
 create_race_with_participants(
   wc_sprint_feb, sprint_type, "Final", "final", "W",
-  athletes["W"].first(30), 101, base_time
+  athletes["F"].first(30), 1, race_time
 )
 
-# Men Sprint Final
+# Sprint races FIRST (Men)
 create_race_with_participants(
   wc_sprint_feb, sprint_type, "Final", "final", "M",
-  athletes["M"].first(30), 201, base_time + 2.hours
+  athletes["M"].first(30), 101, race_time + 1.hour
 )
 
-puts "✅ Created World Cup Sprint (Feb 22) races"
+# Vertical races
+create_race_with_participants(
+  wc_sprint_feb, vertical_type, "Final", "final", "W",
+  athletes["F"][20..59], 201, race_time + 3.hours
+)
+
+create_race_with_participants(
+  wc_sprint_feb, vertical_type, "Final", "final", "M",
+  athletes["M"][20..59], 301, race_time + 5.hours
+)
+
+# Mixed Relay
+create_relay_race_with_teams(
+  wc_sprint_feb, mixed_relay_type, "Final", "final",
+  athletes["M"][35..54], athletes["F"][35..54], 401, race_time + 7.hours, 20
+)
+
+puts "✅ Created World Cup races (Sprint, Vertical, Mixed Relay)"
 
 # ============================================================================
-# COMPETITION 5: WORLD CUP SPRINT - MARCH 8, 2026
+# COMPETITION 5: WORLD CUP SPRINT - DAY 4
 # ============================================================================
 
 puts "\n" + "=" * 80
-puts "Competition 5: World Cup Sprint - March 8, 2026"
+puts "Competition 5: World Cup Sprint - #{(base_datetime + 4.days).strftime('%B %d, %Y')}"
 puts "=" * 80
+
+comp5_start = (base_datetime + 4.days).to_date
+comp5_end = comp5_start
 
 wc_sprint_mar = Competition.create!(
   name: "ISMF World Cup Sprint March 2026",
   description: "Sprint race",
-  start_date: Date.new(2026, 3, 8),
-  end_date: Date.new(2026, 3, 8),
+  start_date: comp5_start,
+  end_date: comp5_end,
   city: "TBD",
   place: "TBD",
   country: "TBD",
   webpage_url: "https://www.ismf-ski.org/world-cup-2026"
 )
 
-base_time = wc_sprint_mar.start_date.to_time + 10.hours
+race_time = base_datetime + 4.days
 
-# Women Sprint Final
+# Sprint races FIRST (Women)
 create_race_with_participants(
   wc_sprint_mar, sprint_type, "Final", "final", "W",
-  athletes["W"].first(30), 101, base_time
+  athletes["F"].first(30), 1, race_time
 )
 
-# Men Sprint Final
+# Sprint races FIRST (Men)
 create_race_with_participants(
   wc_sprint_mar, sprint_type, "Final", "final", "M",
-  athletes["M"].first(30), 201, base_time + 2.hours
+  athletes["M"].first(30), 101, race_time + 1.hour
 )
 
-puts "✅ Created World Cup Sprint (Mar 8) races"
+# Individual races
+create_race_with_participants(
+  wc_sprint_mar, individual_type, "Final", "final", "W",
+  athletes["F"][12..51], 201, race_time + 3.hours
+)
+
+create_race_with_participants(
+  wc_sprint_mar, individual_type, "Final", "final", "M",
+  athletes["M"][12..51], 301, race_time + 5.hours
+)
+
+# Vertical races
+create_race_with_participants(
+  wc_sprint_mar, vertical_type, "Final", "final", "W",
+  athletes["F"][25..59], 401, race_time + 7.hours
+)
+
+create_race_with_participants(
+  wc_sprint_mar, vertical_type, "Final", "final", "M",
+  athletes["M"][25..59], 501, race_time + 9.hours
+)
+
+# Mixed Relay
+create_relay_race_with_teams(
+  wc_sprint_mar, mixed_relay_type, "Final", "final",
+  athletes["M"][40..59], athletes["F"][40..59], 601, race_time + 11.hours, 20
+)
+
+puts "✅ Created World Cup races (Sprint, Individual, Vertical, Mixed Relay)"
 
 # ============================================================================
-# COMPETITION 6: WORLD CUP MIXED RELAY - MARCH 9, 2026
+# COMPETITION 6: WORLD CUP MIXED RELAY - DAY 5
 # ============================================================================
 
 puts "\n" + "=" * 80
-puts "Competition 6: World Cup Mixed Relay - March 9, 2026"
+puts "Competition 6: World Cup Mixed Relay - #{(base_datetime + 5.days).strftime('%B %d, %Y')}"
 puts "=" * 80
+
+comp6_start = (base_datetime + 5.days).to_date
+comp6_end = comp6_start
 
 wc_relay_mar = Competition.create!(
   name: "ISMF World Cup Mixed Relay March 2026",
   description: "Mixed Relay race",
-  start_date: Date.new(2026, 3, 9),
-  end_date: Date.new(2026, 3, 9),
+  start_date: comp6_start,
+  end_date: comp6_end,
   city: "TBD",
   place: "TBD",
   country: "TBD",
   webpage_url: "https://www.ismf-ski.org/world-cup-2026"
 )
 
-base_time = wc_relay_mar.start_date.to_time + 11.hours
+race_time = base_datetime + 5.days
+
+# Sprint races FIRST (Women)
+create_race_with_participants(
+  wc_relay_mar, sprint_type, "Final", "final", "W",
+  athletes["F"].first(30), 1, race_time
+)
+
+# Sprint races FIRST (Men)
+create_race_with_participants(
+  wc_relay_mar, sprint_type, "Final", "final", "M",
+  athletes["M"].first(30), 101, race_time + 1.hour
+)
+
+# Individual races
+create_race_with_participants(
+  wc_relay_mar, individual_type, "Final", "final", "W",
+  athletes["F"][8..47], 201, race_time + 3.hours
+)
+
+create_race_with_participants(
+  wc_relay_mar, individual_type, "Final", "final", "M",
+  athletes["M"][8..47], 301, race_time + 5.hours
+)
 
 # Mixed Relay Final
 create_relay_race_with_teams(
   wc_relay_mar, mixed_relay_type, "Final", "final",
-  athletes["M"], athletes["W"], 301, base_time, 20
+  athletes["M"][45..59], athletes["F"][45..59], 401, race_time + 7.hours, 15
 )
 
-puts "✅ Created World Cup Mixed Relay (Mar 9) race"
+puts "✅ Created World Cup races (Sprint, Individual, Mixed Relay)"
 
 # ============================================================================
 # SUMMARY
@@ -401,7 +563,7 @@ puts "=" * 80
 puts "2026 World Cup Competitions Summary"
 puts "=" * 80
 puts "  Total Competitions: #{Competition.count}"
-puts "  Total Athletes: #{Athlete.count} (#{athletes['M'].count}M / #{athletes['W'].count}W)"
+puts "  Total Athletes: #{Athlete.count} (#{athletes['M'].count}M / #{athletes['F'].count}F)"
 puts "  Total Races: #{Race.count}"
 puts "  Total Participations: #{RaceParticipation.count}"
 puts "  Total Teams: #{Team.count}"
@@ -411,5 +573,8 @@ Competition.order(:start_date).each do |comp|
   puts "#{comp.start_date.strftime('%b %d, %Y')}: #{comp.name}"
   puts "  Location: #{comp.city}, #{comp.country}"
   puts "  Races: #{comp.races.count}"
+  comp.races.order(:position).each do |race|
+    puts "    #{race.position + 1}. #{race.name} at #{race.scheduled_at.strftime('%H:%M')}"
+  end
   puts ""
 end
