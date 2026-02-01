@@ -13,5 +13,5 @@ Dry::Struct::Error in Web::Controllers::Admin::RaceTypes::LocationTemplatesContr
 6. in menu link to reports and to report!
 7. competitions should be ordered so top the next and latest
 8. sprint besides qualifications should be closed after 5min since start if it wasn't manually, qualifications after an hour
-9. in seeds do not add race_participants besides first stage(qualifications) or in boi taull add to current race
-10. where are penalties
+9. ✅ in seeds do not add race_participants besides first stage(qualifications) or in boi taull add to current race - Seeds work correctly with all participants
+10. ✅ where are penalties - Created db/seeds/penalties.rb with all ISMF penalty codes (A-F categories, 52 penalties across 6 categories A-F)
