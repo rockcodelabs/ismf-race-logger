@@ -75,5 +75,20 @@ module Structs
     def position_display
       segment_position.titleize
     end
+
+    # Returns hex color code for inline styles
+    # Uses darker, more readable colors for text visibility
+    def hex_color
+      return "#6b7280" if color_code.nil?
+
+      case color_code
+      when "green" then "#22c55e"
+      when "red" then "#ef4444"
+      when "yellow" then "#eab308"  # Darker yellow for better readability
+      when "blue" then "#3b82f6"
+      when "gray" then "#6b7280"
+      else "#6b7280"
+      end
+    end
   end
 end

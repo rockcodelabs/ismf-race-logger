@@ -36,12 +36,12 @@
         <% @race_locations.each do |location| %>
           <button type="button"
                   class="touch-location-btn w-full px-3 py-3 rounded-lg text-left font-semibold text-sm transition-all"
-                  style="background-color: <%= location.color_code || '#e5e7eb' %>20; border: 2px solid <%= location.color_code || '#9ca3af' %>;"
+                  style="background-color: <%= location.hex_color %>20; border: 2px solid <%= location.hex_color %>;"
                   data-action="click->touch-report#selectLocation"
                   data-touch-report-location-id-param="<%= location.id %>"
                   data-touch-report-location-name-param="<%= location.name %>"
                   data-location-id="<%= location.id %>">
-            <span class="block truncate" style="color: <%= location.color_code || '#374151' %>;">
+            <span class="block truncate" style="color: <%= location.hex_color %>;">
               <%= location.name %>
             </span>
           </button>

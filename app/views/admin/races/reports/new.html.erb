@@ -43,7 +43,7 @@
         <% @race_locations.each_with_index do |location, index| %>
           <button type="button"
                   class="location-btn w-full px-4 py-3 rounded-lg font-bold transition-all border-2 hover:scale-105 text-center"
-                  style="background-color: <%= location.color_code || '#e5e7eb' %>; border-color: <%= location.color_code || '#9ca3af' %>; color: white;"
+                  style="background-color: <%= location.hex_color %>; border-color: <%= location.hex_color %>; color: white;"
                   data-action="click->report-form#selectLocation"
                   data-report-form-location-id-param="<%= location.id %>"
                   data-report-form-location-name-param="<%= location.name %>"
