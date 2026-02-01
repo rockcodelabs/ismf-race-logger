@@ -30,9 +30,8 @@ export default class extends Controller {
     raceId: Number,
     directUploadUrl: String,
     attachUrl: String,
-    minSize: { type: Number, default: 10 * 1024 * 1024 }, // 10MB
-    maxSize: { type: Number, default: 50 * 1024 * 1024 }, // 50MB
-    allowedTypes: { type: Array, default: ["video/mp4"] }
+    maxSize: { type: Number, default: 500 * 1024 * 1024 }, // 500MB
+    allowedTypes: { type: Array, default: ["video/mp4", "video/quicktime", "video/webm", "video/ogg", "video/x-msvideo", "video/avi"] }
   }
 
   connect() {
@@ -41,7 +40,6 @@ export default class extends Controller {
       raceId: this.raceIdValue,
       directUploadUrl: this.directUploadUrlValue,
       attachUrl: this.attachUrlValue,
-      minSize: this.minSizeValue,
       maxSize: this.maxSizeValue,
       allowedTypes: this.allowedTypesValue,
       actions: this.element.dataset.action
@@ -192,7 +190,6 @@ export default class extends Controller {
   // Validate single file
   validateFile(file) {
     const sizeMB = (file.size / 1024 / 1024).toFixed(2)
-    const minMB = Math.round(this.minSizeValue / 1024 / 1024)
     const maxMB = Math.round(this.maxSizeValue / 1024 / 1024)
 
     // Check file type
@@ -200,19 +197,11 @@ export default class extends Controller {
       console.warn(`  ❌ Invalid type: ${file.type} (allowed: ${this.allowedTypesValue.join(', ')})`)
       return {
         valid: false,
-        error: `Invalid type (${file.type}). Only MP4 videos allowed.`
+        error: `Invalid type (${file.type}). Supported: MP4, MOV, WebM, OGG, AVI`
       }
     }
 
-    // Check file size
-    if (file.size < this.minSizeValue) {
-      console.warn(`  ❌ File too small: ${sizeMB}MB (minimum: ${minMB}MB)`)
-      return {
-        valid: false,
-        error: `File too small (minimum: ${minMB}MB)`
-      }
-    }
-
+    // Check file size (no minimum, only maximum)
     if (file.size > this.maxSizeValue) {
       console.warn(`  ❌ File too large: ${sizeMB}MB (maximum: ${maxMB}MB)`)
       return {
@@ -289,7 +278,17 @@ export default class extends Controller {
   uploadFile(file) {
     console.log(`    🎬 Creating DirectUpload for ${file.name} to ${this.directUploadUrlValue}`)
     return new Promise((resolve, reject) => {
-      const upload = new DirectUpload(file, this.directUploadUrlValue)
+      const upload = new DirectUpload(file, this.directUploadUrlValue, {
+        directUploadWillStoreFileWithXHR: (xhr) => {
+          xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+              const progress = Math.round((event.loaded / event.total) * 100)
+              console.log(`    📊 Upload progress for ${file.name}: ${progress}%`)
+              this.updateProgress(progress, file.name)
+            }
+          })
+        }
+      })
       
       console.log('    📡 Calling upload.create()...')
       upload.create((error, blob) => {
@@ -302,6 +301,42 @@ export default class extends Controller {
         }
       })
     })
+  }
+
+  // Update progress display
+  updateProgress(percentage, filename) {
+    // Update element with upload progress feedback
+    const progressMessage = `Uploading ${filename}... ${percentage}%`
+    console.log(`📈 ${progressMessage}`)
+    
+    // Show progress in the upload zone
+    this.showUploadProgress(percentage, filename)
+  }
+
+  // Show upload progress in the UI
+  showUploadProgress(percentage, filename) {
+    // Add a subtle progress indicator to the drop zone
+    const progressText = this.element.querySelector('.upload-progress-text')
+    if (progressText) {
+      progressText.textContent = `Uploading ${filename}... ${percentage}%`
+    } else {
+      // Create progress text if it doesn't exist
+      const dropZone = this.element.querySelector('.border-dashed')
+      if (dropZone) {
+        const text = document.createElement('p')
+        text.className = 'upload-progress-text text-sm text-blue-600 font-medium mt-2'
+        text.textContent = `Uploading ${filename}... ${percentage}%`
+        dropZone.appendChild(text)
+      }
+    }
+  }
+
+  // Clear upload progress
+  clearUploadProgress() {
+    const progressText = this.element.querySelector('.upload-progress-text')
+    if (progressText) {
+      progressText.remove()
+    }
   }
 
   // Attach uploaded videos to report
@@ -344,25 +379,28 @@ export default class extends Controller {
   showUploadingState(fileCount) {
     console.log('💫 Showing uploading state:', fileCount, 'file(s)')
     this.element.classList.add('bg-blue-50', 'animate-pulse', 'ring-2', 'ring-blue-400')
-    this.element.title = `Uploading ${fileCount} video${fileCount === 1 ? '' : 's'}...`
   }
 
   // Clear uploading state
   clearUploadingState() {
     console.log('🧹 Clearing uploading state')
     this.element.classList.remove('bg-blue-50', 'animate-pulse', 'ring-2', 'ring-blue-400')
-    this.element.title = ''
+    this.clearUploadProgress()
   }
 
   // Show success message
   showSuccess(message) {
-    // Flash message will be shown via Turbo Stream from server
+    // Show flash message in DOM
+    this.showFlashMessage(message, 'notice')
     console.log('✅ SUCCESS:', message)
   }
 
   // Show error message
   showError(message) {
     console.error('❌ ERROR:', message)
+    
+    // Show flash message in DOM
+    this.showFlashMessage(message, 'alert')
     
     // Dispatch error event for flash notifications
     console.log('📣 Dispatching error event...')
@@ -371,11 +409,54 @@ export default class extends Controller {
       bubbles: true
     })
 
-    // Highlight row briefly in red
-    console.log('🔴 Highlighting row in red')
+    // Highlight element briefly in red
+    console.log('🔴 Highlighting in red')
     this.element.classList.add('bg-red-50', 'ring-2', 'ring-red-400')
     setTimeout(() => {
       this.element.classList.remove('bg-red-50', 'ring-2', 'ring-red-400')
     }, 3000)
+  }
+
+  // Show flash message in DOM
+  showFlashMessage(message, type) {
+    const flashContainer = document.getElementById('flash-messages')
+    if (!flashContainer) {
+      console.warn('⚠️ Flash container not found')
+      return
+    }
+
+    const flashId = `flash-${crypto.randomUUID()}`
+    const bgClass = type === 'notice' ? 'bg-green-100' : 'bg-red-100'
+    const borderClass = type === 'notice' ? 'border-green-500' : 'border-red-500'
+    const textClass = type === 'notice' ? 'text-green-900' : 'text-red-900'
+    const buttonClass = type === 'notice' ? 'text-green-700 hover:text-green-900' : 'text-red-700 hover:text-red-900'
+    const iconPath = type === 'notice' 
+      ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+      : 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+    const dismissTime = type === 'notice' ? 3000 : 5000
+
+    const flashHTML = `
+      <div id="${flashId}" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999] ${bgClass} border-2 ${borderClass} ${textClass} px-6 py-4 rounded-xl flex items-center gap-4 shadow-lg animate-slide-down max-w-md" style="display: flex !important; position: fixed !important; visibility: visible !important; pointer-events: auto;">
+        <svg class="w-8 h-8 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}" />
+        </svg>
+        <span class="text-xl font-semibold flex-1">${message}</span>
+        <button type="button" class="${buttonClass}" onclick="this.parentElement.remove()">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    `
+
+    flashContainer.insertAdjacentHTML('beforeend', flashHTML)
+
+    // Auto-dismiss
+    setTimeout(() => {
+      const flashElement = document.getElementById(flashId)
+      if (flashElement) {
+        flashElement.remove()
+      }
+    }, dismissTime)
   }
 }

@@ -114,9 +114,25 @@ export default class extends Controller {
       this.videoTarget.currentTime = this.startTime > 0 ? this.startTime : 0
     }
     
-    this.videoTarget.play()
-    this.playing = true
-    this.updatePlayPauseButton()
+    const playPromise = this.videoTarget.play()
+    
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          this.playing = true
+          this.updatePlayPauseButton()
+          console.log('✅ Video playing successfully')
+        })
+        .catch(error => {
+          console.error('❌ Auto-play prevented:', error)
+          this.playing = false
+          this.updatePlayPauseButton()
+          // Optionally show user feedback that they need to manually start playback
+        })
+    } else {
+      this.playing = true
+      this.updatePlayPauseButton()
+    }
   }
 
   pause() {
@@ -284,22 +300,38 @@ export default class extends Controller {
           
           // Auto-play if markers are set
           if (this.startTime > 0 || this.endTime > 0) {
-            console.log('Auto-playing video from start marker')
-            // Wait for video to be ready, then jump to start and play
-            if (this.videoTarget.readyState >= 2) {
-              this.videoTarget.currentTime = this.startTime
-              setTimeout(() => this.play(), 100)
-            } else {
-              this.videoTarget.addEventListener('loadedmetadata', () => {
-                this.videoTarget.currentTime = this.startTime
-                setTimeout(() => this.play(), 100)
-              }, { once: true })
-            }
+            console.log('🎬 Auto-playing video from start marker')
+            this.autoPlayFromMarker()
           }
         }
       }
     } catch (error) {
       console.error('Error loading markers:', error)
+    }
+  }
+
+  autoPlayFromMarker() {
+    // Ensure video is muted for autoplay to work
+    this.videoTarget.muted = this.isMuted
+    
+    const attemptPlay = () => {
+      console.log('⏩ Seeking to start marker:', this.startTime)
+      this.videoTarget.currentTime = this.startTime
+      
+      // Wait a bit for seek to complete, then play
+      setTimeout(() => {
+        console.log('▶️ Attempting to play video...')
+        this.play()
+      }, 200)
+    }
+    
+    // Wait for video to be ready
+    if (this.videoTarget.readyState >= 2) {
+      // Video metadata is already loaded
+      attemptPlay()
+    } else {
+      // Wait for metadata to load
+      this.videoTarget.addEventListener('loadedmetadata', attemptPlay, { once: true })
     }
   }
 
@@ -441,7 +473,12 @@ export default class extends Controller {
     if (this.endTime > 0 && this.videoTarget.currentTime >= this.endTime) {
       if (this.loopEnabled && this.startTime >= 0) {
         // Loop back to start marker
+        console.log('🔁 Looping back to start marker:', this.startTime)
         this.videoTarget.currentTime = this.startTime > 0 ? this.startTime : 0
+        // Ensure video continues playing after seeking
+        if (this.videoTarget.paused) {
+          this.play()
+        }
       } else {
         // Stop at end marker
         this.pause()
@@ -554,3 +591,4 @@ export default class extends Controller {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />`
   }
 }
+

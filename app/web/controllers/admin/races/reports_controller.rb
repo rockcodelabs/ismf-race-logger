@@ -134,9 +134,19 @@ module Web
                 report_broadcaster.confirmed(report, @race.id)
                 
                 format.turbo_stream do
-                  # Rely on broadcast for updates (prevents duplicates)
-                  # Flash message also broadcasted to all devices
-                  head :ok
+                  render turbo_stream: [
+                    turbo_stream.replace("report-status-badge", html: %{
+                      <span id="report-status-badge" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium #{wrapped_report.status_badge[:class]}">
+                        #{wrapped_report.status_badge[:label]}
+                      </span>
+                    }.html_safe),
+                    turbo_stream.replace("report-actions-card",
+                      partial: "actions_card",
+                      locals: { report: wrapped_report, race: @race }),
+                    turbo_stream.append("flash-messages",
+                      partial: "shared/flash",
+                      locals: { type: "notice", message: "Report confirmed." })
+                  ]
                 end
                 
                 format.html do
@@ -170,14 +180,25 @@ module Web
             respond_to do |format|
               if result.success?
                 report = result.value!
+                wrapped_report = parts_factory.wrap(report)
                 
                 # Broadcast to all connected clients (including the requesting device)
                 report_broadcaster.rejected(report, @race.id)
                 
                 format.turbo_stream do
-                  # Rely on broadcast for updates (prevents duplicates)
-                  # Flash message also broadcasted to all devices
-                  head :ok
+                  render turbo_stream: [
+                    turbo_stream.replace("report-status-badge", html: %{
+                      <span id="report-status-badge" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium #{wrapped_report.status_badge[:class]}">
+                        #{wrapped_report.status_badge[:label]}
+                      </span>
+                    }.html_safe),
+                    turbo_stream.replace("report-actions-card",
+                      partial: "actions_card",
+                      locals: { report: wrapped_report, race: @race }),
+                    turbo_stream.append("flash-messages",
+                      partial: "shared/flash",
+                      locals: { type: "notice", message: "Report rejected." })
+                  ]
                 end
                 
                 format.html do
@@ -208,23 +229,49 @@ module Web
             authorize @report, :reopen?
             result = Operations::Reports::Reopen.new.call(id: @report.id)
 
-            if result.success?
-              report = result.value!
-              
-              # Broadcast to all connected clients
-              report_broadcaster.reopened(report, @race.id)
-              
-              redirect_to admin_race_report_path(@race, report),
-                          notice: "Report reopened.",
-                          status: :see_other
-            else
-              error = result.failure
-              if error == :already_pending
-                redirect_to admin_race_report_path(@race, @report),
-                            alert: "Report is already pending review."
+            respond_to do |format|
+              if result.success?
+                report = result.value!
+                wrapped_report = parts_factory.wrap(report)
+                
+                # Broadcast to all connected clients
+                report_broadcaster.reopened(report, @race.id)
+                
+                format.turbo_stream do
+                  render turbo_stream: [
+                    turbo_stream.replace("report-status-badge", html: %{
+                      <span id="report-status-badge" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium #{wrapped_report.status_badge[:class]}">
+                        #{wrapped_report.status_badge[:label]}
+                      </span>
+                    }.html_safe),
+                    turbo_stream.replace("report-actions-card",
+                      partial: "actions_card",
+                      locals: { report: wrapped_report, race: @race }),
+                    turbo_stream.append("flash-messages",
+                      partial: "shared/flash",
+                      locals: { type: "notice", message: "Report reopened." })
+                  ]
+                end
+                
+                format.html do
+                  redirect_to admin_race_report_path(@race, report),
+                              notice: "Report reopened.",
+                              status: :see_other
+                end
               else
-                redirect_to admin_race_report_path(@race, @report),
-                            alert: "Error reopening report: #{error.inspect}"
+                error = result.failure
+                error_message = error == :already_pending ? "Report is already pending review." : "Error reopening report: #{error.inspect}"
+                
+                format.turbo_stream do
+                  render turbo_stream: turbo_stream.append("flash-messages",
+                    partial: "shared/flash",
+                    locals: { type: "alert", message: error_message })
+                end
+                
+                format.html do
+                  redirect_to admin_race_report_path(@race, @report),
+                              alert: error_message
+                end
               end
             end
           end

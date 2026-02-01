@@ -57,7 +57,7 @@ Rails.application.routes.draw do
         end
         
         # Video attachments for reports
-        resources :videos, only: [:create], controller: "reports/videos"
+        resources :videos, only: [:create, :destroy], controller: "reports/videos"
       end
 
       resources :incidents, controller: "races/incidents", only: [:index, :show, :new, :create, :edit, :update, :destroy] do

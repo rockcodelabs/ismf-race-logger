@@ -144,6 +144,14 @@ class ReportBroadcaster < BaseBroadcaster
       locals: { report: part, race: race }
     )
     
+    # Broadcast updated videos section for show page
+    Turbo::StreamsChannel.broadcast_replace_to(
+      stream_name(report.race_id),
+      target: "report-videos-section",
+      partial: "admin/races/reports/videos_section",
+      locals: { report: part, race: race }
+    )
+    
     # Broadcast flash message to all devices
     count = report.videos.count
     broadcast_flash_notice(report.race_id, "#{count} video#{count == 1 ? '' : 's'} added to report ##{report.bib_number}.")

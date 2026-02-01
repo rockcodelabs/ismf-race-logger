@@ -5,7 +5,7 @@ module Operations
     # AttachVideos Operation
     #
     # Attaches multiple video files to an existing report.
-    # Validates file size (10-50MB) and content type (MP4 only).
+    # Validates file size (max 500MB) and content type (common video formats).
     #
     # Usage:
     #   operation = Operations::Reports::AttachVideos.new
@@ -27,9 +27,15 @@ module Operations
       include Import["repos.report"]
 
       # File size constraints (in bytes)
-      MIN_FILE_SIZE = 10.megabytes
-      MAX_FILE_SIZE = 50.megabytes
-      ALLOWED_CONTENT_TYPE = "video/mp4"
+      MAX_FILE_SIZE = 500.megabytes
+      ALLOWED_CONTENT_TYPES = [
+        "video/mp4",
+        "video/quicktime",
+        "video/webm",
+        "video/ogg",
+        "video/x-msvideo",
+        "video/avi"
+      ].freeze
 
       # Attach videos to a report
       #
@@ -84,14 +90,12 @@ module Operations
 
         blobs.each do |blob|
           # Validate content type
-          unless blob.content_type == ALLOWED_CONTENT_TYPE
-            errors << "File '#{blob.filename}' is not MP4 format (got: #{blob.content_type})"
+          unless ALLOWED_CONTENT_TYPES.include?(blob.content_type)
+            errors << "File '#{blob.filename}' has unsupported format (got: #{blob.content_type}). Supported: MP4, MOV, WebM, OGG, AVI"
           end
 
-          # Validate file size
-          if blob.byte_size < MIN_FILE_SIZE
-            errors << "File '#{blob.filename}' is too small (minimum: #{MIN_FILE_SIZE / 1.megabyte}MB)"
-          elsif blob.byte_size > MAX_FILE_SIZE
+          # Validate file size (no minimum, only maximum)
+          if blob.byte_size > MAX_FILE_SIZE
             errors << "File '#{blob.filename}' is too large (maximum: #{MAX_FILE_SIZE / 1.megabyte}MB)"
           end
         end

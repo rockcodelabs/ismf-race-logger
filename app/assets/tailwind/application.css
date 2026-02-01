@@ -122,6 +122,40 @@ h1, h2, h3, h4, h5, h6 {
   opacity: 0.9;
 }
 
+.btn-success {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+  background-color: var(--color-fop-success);
+  color: white;
+}
+
+.btn-success:hover {
+  opacity: 0.9;
+}
+
+.btn-warning {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+  background-color: var(--color-fop-warning);
+  color: white;
+}
+
+.btn-warning:hover {
+  opacity: 0.9;
+}
+
 /* Form inputs */
 .form-input {
   width: 100%;
@@ -303,7 +337,9 @@ h1, h2, h3, h4, h5, h6 {
   .btn-primary,
   .btn-secondary,
   .btn-outline,
-  .btn-danger {
+  .btn-danger,
+  .btn-success,
+  .btn-warning {
     min-height: 3rem; /* 48px */
     min-width: 3rem;
     padding: 0.75rem 1.5rem;
@@ -326,6 +362,8 @@ h1, h2, h3, h4, h5, h6 {
   .btn-secondary:active,
   .btn-outline:active,
   .btn-danger:active,
+  .btn-success:active,
+  .btn-warning:active,
   button:active,
   input[type="submit"]:active {
     transform: scale(0.96);
@@ -434,7 +472,9 @@ h1, h2, h3, h4, h5, h6 {
   .btn-primary,
   .btn-secondary,
   .btn-outline,
-  .btn-danger {
+  .btn-danger,
+  .btn-success,
+  .btn-warning {
     min-height: 4rem; /* 64px */
     padding: 1rem 2rem;
     font-size: 1.375rem;
@@ -521,7 +561,9 @@ h1, h2, h3, h4, h5, h6 {
   /* Ripple effect on touch */
   .btn:active::after,
   .btn-primary:active::after,
-  .btn-secondary:active::after {
+  .btn-secondary:active::after,
+  .btn-success:active::after,
+  .btn-warning:active::after {
     content: '';
     position: absolute;
     inset: 0;
@@ -535,7 +577,9 @@ h1, h2, h3, h4, h5, h6 {
   .btn-primary,
   .btn-secondary,
   .btn-outline,
-  .btn-danger {
+  .btn-danger,
+  .btn-success,
+  .btn-warning {
     position: relative;
     overflow: hidden;
   }

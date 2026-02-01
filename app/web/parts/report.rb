@@ -94,6 +94,14 @@ module Web
         value.created_at.strftime("%b %d, %Y at %H:%M")
       end
 
+      # Formatted time for prominent display (big time, small date)
+      def created_at_time_display
+        {
+          time: value.created_at.strftime("%H:%M:%S"),
+          date: value.created_at.strftime("%b %d, %Y")
+        }
+      end
+
       # Time ago in words (simple implementation)
       def time_ago
         seconds = Time.current - value.created_at
