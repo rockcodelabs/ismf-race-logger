@@ -12,16 +12,18 @@
                  drop->video-upload#drop"
     onclick="if (!event.target.closest('a, button, input, select, textarea')) { Turbo.visit('<%= admin_race_report_path(race, report) %>'); }"
     title="Click to view report details">
-  <td>
-    <input type="checkbox" 
-           data-report-selection-target="checkbox" 
-           data-report-id="<%= report.id %>"
-           data-incident-id="<%= report.incident_id %>"
-           data-incident-status="<%= report.respond_to?(:incident_status) ? report.incident_status : '' %>"
-           data-has-decision="<%= report.respond_to?(:incident_has_decision?) ? report.incident_has_decision? : false %>"
-           data-action="change->report-selection#updateSelection"
-           class="w-4 h-4 rounded border-gray-300 text-ismf-blue focus:ring-ismf-blue">
-  </td>
+  <% if policy(report).create? %>
+    <td>
+      <input type="checkbox" 
+             data-report-selection-target="checkbox" 
+             data-report-id="<%= report.id %>"
+             data-incident-id="<%= report.incident_id %>"
+             data-incident-status="<%= report.respond_to?(:incident_status) ? report.incident_status : '' %>"
+             data-has-decision="<%= report.respond_to?(:incident_has_decision?) ? report.incident_has_decision? : false %>"
+             data-action="change->report-selection#updateSelection"
+             class="w-4 h-4 rounded border-gray-300 text-ismf-blue focus:ring-ismf-blue">
+    </td>
+  <% end %>
   <td>
     <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ismf-navy text-white font-bold text-sm">
       <%= report.bib_badge %>

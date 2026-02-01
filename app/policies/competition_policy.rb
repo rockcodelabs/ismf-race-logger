@@ -18,39 +18,39 @@ class CompetitionPolicy < ApplicationPolicy
     true
   end
 
-  # Admins and managers can create competitions
+  # Only VAR operators can create competitions
   def create?
-    admin? || can_manage?
+    var_operator?
   end
 
-  # Admins and managers can update competitions
+  # Only VAR operators can update competitions
   def update?
-    admin? || can_manage?
+    var_operator?
   end
 
-  # Only admins and referee managers can delete competitions
+  # Only VAR operators can delete competitions
   def destroy?
-    admin? || referee_manager?
+    var_operator?
   end
 
-  # Admins and managers can duplicate competitions
+  # Only VAR operators can duplicate competitions
   def duplicate?
-    admin? || can_manage?
+    var_operator?
   end
 
-  # Admins and managers can archive competitions
+  # Only VAR operators can archive competitions
   def archive?
-    admin? || can_manage?
+    var_operator?
   end
 
-  # Admins and managers can create competitions from templates
+  # Only VAR operators can create competitions from templates
   def create_from_template?
-    admin? || can_manage?
+    var_operator?
   end
 
-  # Admins and managers can manage stages within a competition
+  # Only VAR operators can manage stages within a competition
   def manage_stages?
-    admin? || can_manage?
+    var_operator?
   end
 
   class Scope < Scope

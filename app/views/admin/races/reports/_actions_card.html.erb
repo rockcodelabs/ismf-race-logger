@@ -129,14 +129,16 @@
     <% else %>
       <!-- No incident - show standard report actions -->
       <div class="space-y-3">
-        <% if report.can_confirm? %>
+        <% if report.can_confirm? && policy(report).confirm? %>
           <%= button_to confirm_admin_race_report_path(race, report), method: :post, class: "w-full btn-success" do %>
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
             Confirm Report
           <% end %>
-          
+        <% end %>
+        
+        <% if report.can_confirm? && policy(report).reject? %>
           <%= button_to reject_admin_race_report_path(race, report), method: :post, class: "w-full btn-danger" do %>
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />

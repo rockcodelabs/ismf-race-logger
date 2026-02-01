@@ -6,16 +6,17 @@
 # that may result in penalties.
 #
 # Permissions:
-# - Admins: Full access (create, decide, attach_penalties, reopen)
 # - VAR Operators: Full access (create, decide, attach_penalties, reopen)
+# - Referee Manager: Can view and decide incidents (no create/reopen)
+# - Jury President: Can view and decide incidents (no create/reopen)
 # - Referees: Read-only access (can view but not modify incidents)
 # - Others: No access
 #
 # Business Rules:
-# - Only admin/VAR can merge reports into incidents
-# - Only admin/VAR can make decisions on incidents
-# - Only admin/VAR can attach or modify penalties
-# - Only admin/VAR can reopen decided incidents
+# - Only VAR operators can merge reports into incidents (create)
+# - VAR operators, referee managers, and jury presidents can decide incidents
+# - Only VAR operators can attach or modify penalties
+# - Only VAR operators can reopen decided incidents
 #
 class IncidentPolicy < ApplicationPolicy
   # List incidents
@@ -25,16 +26,17 @@ class IncidentPolicy < ApplicationPolicy
   end
 
   # View incident details
+  # VAR operators, referee managers, jury presidents, and referees can view
   # @return [Boolean]
   def show?
-    can_report?
+    var_operator? || referee_manager? || jury_president? || referee?
   end
 
   # Create incident (merge reports)
-  # Only admin and VAR operators can merge reports into incidents
+  # Only VAR operators can merge reports into incidents
   # @return [Boolean]
   def create?
-    admin_or_var?
+    var_operator?
   end
 
   # Same as create
@@ -43,9 +45,10 @@ class IncidentPolicy < ApplicationPolicy
   end
 
   # Update incident (general updates)
+  # VAR operators, referee managers, and jury presidents can update incidents
   # @return [Boolean]
   def update?
-    admin_or_var?
+    var_operator? || referee_manager? || jury_president?
   end
 
   # Same as update
@@ -54,21 +57,24 @@ class IncidentPolicy < ApplicationPolicy
   end
 
   # Make a decision on the incident (upheld/dismissed)
+  # VAR operators, referee managers, and jury presidents can decide incidents
   # @return [Boolean]
   def decide?
-    admin_or_var?
+    var_operator? || referee_manager? || jury_president?
   end
 
   # Attach or modify penalties on the incident
+  # Only VAR operators can attach penalties
   # @return [Boolean]
   def attach_penalties?
-    admin_or_var?
+    var_operator?
   end
 
   # Reopen a decided incident for further review
+  # Only VAR operators can reopen incidents
   # @return [Boolean]
   def reopen?
-    admin_or_var?
+    var_operator?
   end
 
   # Delete incident
@@ -90,7 +96,7 @@ class IncidentPolicy < ApplicationPolicy
   # Scope for listing incidents
   class Scope < ApplicationPolicy::Scope
     def resolve
-      if can_report?
+      if var_operator? || referee_manager? || jury_president? || referee?
         scope.all
       else
         scope.none

@@ -6,28 +6,28 @@
 # Only admins and VAR operators can manage race participations.
 #
 class RaceParticipationPolicy < ApplicationPolicy
-  # Only admins and VAR operators can destroy participations
+  # Only VAR operators can destroy participations
   def destroy?
-    user.admin? || user.var_operator?
+    var_operator?
   end
 
-  # Only admins and VAR operators can create participations
+  # Only VAR operators can create participations
   def create?
-    user.admin? || user.var_operator?
+    var_operator?
   end
 
-  # Only admins and VAR operators can update participations
+  # Only VAR operators can update participations
   def update?
-    user.admin? || user.var_operator?
+    var_operator?
   end
 
-  # Only admins and VAR operators can view participations list
+  # Only VAR operators can view participations list
   def index?
-    user.admin? || user.var_operator?
+    var_operator?
   end
 
-  # Only admins and VAR operators can copy participations from another race
+  # Only VAR operators can copy participations from another race
   def copy?
-    user.admin? || user.var_operator?
+    var_operator?
   end
 end
