@@ -2,8 +2,27 @@
 <%# Usage: render 'admin/races/races_by_type', races_by_type: @races_by_type, competition: @competition %>
 
 <% if races_by_type.any? %>
+  <%# Find the actual next upcoming race (not in progress) within 2 hours %>
+  <% all_races_touch = races_by_type.values.flatten %>
+  <% upcoming_races_touch = all_races_touch.select { |r| r.upcoming? && r.minutes_until_start <= 120 } %>
+  <% actual_next_up = upcoming_races_touch.reject { |r| r.in_progress? }.min_by(&:scheduled_at) %>
+  
+  <%# Sort race types by closest scheduled time %>
+  <% sorted_race_types = races_by_type.sort_by do |race_type_name, races|
+    next_scheduled = races.select { |r| r.scheduled_at.present? && !r.completed? }
+                          .min_by { |r| r.scheduled_at }
+    
+    if next_scheduled
+      # If there's an upcoming or in-progress race, sort by scheduled time
+      next_scheduled.scheduled_at
+    else
+      # If all races are completed or no schedule, put at the end
+      Time.new(9999)
+    end
+  end %>
+
   <div class="space-y-3">
-    <% races_by_type.each do |race_type_name, races| %>
+    <% sorted_race_types.each do |race_type_name, races| %>
       <div class="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200">
         <!-- Race Type Header -->
         <div class="bg-gray-50 px-3 py-2 border-b border-gray-200">
@@ -15,13 +34,18 @@
         <div class="overflow-x-auto">
           <div class="flex divide-x divide-gray-200">
             <% races.sort_by(&:position).each do |race| %>
-              <%= link_to admin_competition_race_path(competition, race), class: "flex-1 min-w-[180px] px-3 py-3 active:bg-gray-100 transition border-b border-gray-100 last:border-b-0" do %>
+              <% is_completed = race.completed? %>
+              <% is_cancelled = race.cancelled? %>
+              <% card_opacity = (is_completed || is_cancelled) ? "opacity-50" : "" %>
+              <% hover_class = (is_completed || is_cancelled) ? "active:bg-gray-100" : "active:bg-blue-50" %>
+              
+              <%= link_to admin_competition_race_path(competition, race), class: "flex-1 min-w-[180px] px-3 py-3 #{hover_class} transition border-b border-gray-100 last:border-b-0 #{card_opacity}" do %>
                 <div class="text-center">
-                  <h4 class="text-sm font-bold text-ismf-navy mb-1">
+                  <h4 class="text-sm font-bold <%= is_completed ? 'text-gray-500' : 'text-ismf-navy' %> mb-1">
                     <%= race.stage_name %>
                   </h4>
                   <% if race.scheduled_at.present? %>
-                    <div class="flex items-center justify-center gap-1 text-xs text-ismf-gray mb-2">
+                    <div class="flex items-center justify-center gap-1 text-xs <%= is_completed ? 'text-gray-400' : 'text-ismf-gray' %> mb-2">
                       <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
@@ -32,15 +56,22 @@
                     <% case race.status %>
                     <% when 'in_progress' %>
                       <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-green-100 text-green-800 border border-green-200">
+                        <span class="w-1.5 h-1.5 mr-1 bg-green-600 rounded-full animate-pulse"></span>
                         Live
                       </span>
                     <% when 'completed' %>
-                      <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-gray-100 text-gray-800 border border-gray-200">
+                      <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-gray-200 text-gray-600 border border-gray-300">
+                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
                         Done
                       </span>
                     <% when 'scheduled' %>
-                      <% if race.upcoming? && race.minutes_until_start <= 120 %>
-                        <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-yellow-100 text-yellow-800 border border-yellow-200">
+                      <% if actual_next_up && race.id == actual_next_up.id %>
+                        <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-orange-100 text-orange-800 border border-orange-300">
+                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
                           Next Up
                         </span>
                       <% else %>
@@ -48,6 +79,10 @@
                           Upcoming
                         </span>
                       <% end %>
+                    <% when 'cancelled' %>
+                      <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-red-100 text-red-800 border border-red-200">
+                        Cancelled
+                      </span>
                     <% else %>
                       <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-gray-100 text-gray-600 border border-gray-200">
                         <%= race.status.humanize %>

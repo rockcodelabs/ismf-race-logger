@@ -26,9 +26,11 @@
     <div class="flex-1 overflow-y-auto touch-scrollable px-3 pt-3 pb-3">
       <!-- Races Section -->
       <div class="space-y-3">
-        <%# Find next race within 2 hours %>
-        <% upcoming_races = @races_by_type.values.flatten.select { |r| r.upcoming? && r.minutes_until_start <= 120 } %>
-        <% next_race = upcoming_races.min_by(&:scheduled_at) if upcoming_races.any? %>
+        <%# Find next race (in progress or within 2 hours) %>
+        <% all_races = @races_by_type.values.flatten %>
+        <% in_progress_races = all_races.select { |r| r.in_progress? } %>
+        <% upcoming_races = all_races.select { |r| r.upcoming? && r.minutes_until_start <= 120 } %>
+        <% next_race = in_progress_races.min_by(&:scheduled_at) || upcoming_races.min_by(&:scheduled_at) %>
         <%= render 'admin/races/next_race_banner', next_race: next_race, competition: @competition_record %>
         
         <%= render 'admin/races/races_by_type', races_by_type: @races_by_type, competition: @competition_record %>

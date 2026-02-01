@@ -27,6 +27,7 @@ individual_type = RaceType.find_by(name: "Individual")
 sprint_type = RaceType.find_by(name: "Sprint")
 vertical_type = RaceType.find_by(name: "Vertical")
 mixed_relay_type = RaceType.find_by(name: "Mixed Relay")
+team_type = RaceType.find_by(name: "Team")
 
 # ============================================================================
 # ATHLETES
@@ -35,7 +36,7 @@ mixed_relay_type = RaceType.find_by(name: "Mixed Relay")
 puts "\nCreating athletes..."
 
 # ISMF countries with strong ski mountaineering traditions
-countries = %w[ITA FRA ESP CHE AUT USA CAN NOR SWE FIN DEU AND]
+countries = %w[ITA FRA ESP CHE AUT USA CAN NOR SWE FIN DEU AND AZE CHN KOR]
 
 # Common first names
 male_first_names = %w[
@@ -67,16 +68,19 @@ last_names = {
   "SWE" => %w[Andersson Johansson Karlsson Nilsson Eriksson Larsson],
   "FIN" => %w[Virtanen Mäkinen Nieminen Hämäläinen Laine Koskinen],
   "DEU" => %w[Müller Schmidt Schneider Fischer Weber Meyer Wagner],
-  "AND" => %w[Pujol Vila Serra Roca Font Torres Navarro]
+  "AND" => %w[Pujol Vila Serra Roca Font Torres Navarro],
+  "AZE" => %w[Aliyev Mammadov Huseynov Ismayilov Hasanov Rahimov],
+  "CHN" => %w[Wang Li Zhang Liu Chen Yang Huang Zhao Wu Zhou],
+  "KOR" => %w[Kim Lee Park Choi Jung Kang Cho Yoon Jang Lim]
 }
 
 athletes = { "M" => [], "F" => [] }
 
-# Create 60 male athletes
-60.times do |i|
+# Create 80 male athletes
+80.times do |i|
   country = countries.sample
   first_name = male_first_names.sample
-  last_name = last_names[country].sample
+  last_name = last_names[country]&.sample || "Smith"
   
   athlete = Athlete.create!(
     first_name: first_name,
@@ -88,11 +92,11 @@ athletes = { "M" => [], "F" => [] }
   athletes["M"] << athlete
 end
 
-# Create 60 female athletes
-60.times do |i|
+# Create 80 female athletes
+80.times do |i|
   country = countries.sample
   first_name = female_first_names.sample
-  last_name = last_names[country].sample
+  last_name = last_names[country]&.sample || "Johnson"
   
   athlete = Athlete.create!(
     first_name: first_name,
@@ -111,8 +115,7 @@ puts "✅ Created #{athletes['F'].count} female athletes"
 # HELPER METHODS
 # ============================================================================
 
-def create_race_with_participants(competition, race_type, stage_name, stage_type, gender_category, athletes, start_bib, scheduled_time)
-  # Get next position for this competition
+def create_race_with_participants(competition, race_type, stage_name, stage_type, gender_category, athletes, start_bib, scheduled_time, status = "scheduled")
   max_position = Race.where(competition_id: competition.id).maximum(:position) || -1
   next_position = max_position + 1
   
@@ -124,16 +127,17 @@ def create_race_with_participants(competition, race_type, stage_name, stage_type
     gender_category: gender_category,
     name: "#{race_type.name} #{stage_name} #{gender_category}",
     scheduled_at: scheduled_time,
-    status: "scheduled",
+    status: status,
     position: next_position
   )
   
-  # Add participants
   athletes.each_with_index do |athlete, index|
+    bib = start_bib + index
+    bib = ((bib - 1) % 200) + 1 if bib > 200  # Keep bibs between 1-200
     RaceParticipation.create!(
       race: race,
       athlete: athlete,
-      bib_number: start_bib + index,
+      bib_number: bib,
       status: "registered"
     )
   end
@@ -141,7 +145,7 @@ def create_race_with_participants(competition, race_type, stage_name, stage_type
   race
 end
 
-def create_relay_race_with_teams(competition, race_type, stage_name, stage_type, male_athletes, female_athletes, start_bib, scheduled_time, team_count)
+def create_relay_race_with_teams(competition, race_type, stage_name, stage_type, male_athletes, female_athletes, start_bib, scheduled_time, team_count, status = "scheduled")
   max_position = Race.where(competition_id: competition.id).maximum(:position) || -1
   next_position = max_position + 1
   
@@ -153,16 +157,18 @@ def create_relay_race_with_teams(competition, race_type, stage_name, stage_type,
     gender_category: "MW",
     name: "Mixed Relay #{stage_name}",
     scheduled_at: scheduled_time,
-    status: "scheduled",
+    status: status,
     position: next_position
   )
   
-  # Create teams
   team_count.times do |i|
     male_athlete = male_athletes[i]
     female_athlete = female_athletes[i]
     
     next unless male_athlete && female_athlete
+    
+    team_bib = start_bib + i
+    team_bib = ((team_bib - 1) % 200) + 1 if team_bib > 200  # Keep bibs between 1-200
     
     team = Team.create!(
       race: race,
@@ -170,15 +176,19 @@ def create_relay_race_with_teams(competition, race_type, stage_name, stage_type,
       athlete_2: female_athlete,
       name: "#{male_athlete.country} Mixed #{i + 1}",
       team_type: "relay_team",
-      bib_number: start_bib + i
+      bib_number: team_bib
     )
     
-    # Create participations for both athletes
+    # Each athlete gets unique bib for relay teams - male uses team bib, female adds 50
+    male_bib = team_bib
+    female_bib = team_bib + 50
+    female_bib = ((female_bib - 1) % 200) + 1 if female_bib > 200
+    
     RaceParticipation.create!(
       race: race,
       athlete: male_athlete,
       team: team,
-      bib_number: team.bib_number,
+      bib_number: male_bib,
       status: "registered"
     )
     
@@ -186,9 +196,61 @@ def create_relay_race_with_teams(competition, race_type, stage_name, stage_type,
       race: race,
       athlete: female_athlete,
       team: team,
-      bib_number: team.bib_number + 5000,
+      bib_number: female_bib,
       status: "registered"
     )
+  end
+  
+  race
+end
+
+def create_team_race(competition, race_type, stage_name, stage_type, gender_category, athletes, start_bib, scheduled_time, team_size = 2, status = "scheduled")
+  max_position = Race.where(competition_id: competition.id).maximum(:position) || -1
+  next_position = max_position + 1
+  
+  race = Race.create!(
+    competition: competition,
+    race_type: race_type,
+    stage_name: stage_name,
+    stage_type: stage_type,
+    gender_category: gender_category,
+    name: "Team #{stage_name} #{gender_category}",
+    scheduled_at: scheduled_time,
+    status: status,
+    position: next_position
+  )
+  
+  # Create teams
+  team_count = [athletes.count / team_size, 15].min
+  team_count.times do |i|
+    team_athletes = athletes[(i * team_size)...(i * team_size + team_size)]
+    next if team_athletes.count < team_size
+    
+    team_bib = start_bib + i
+    team_bib = ((team_bib - 1) % 200) + 1 if team_bib > 200  # Keep bibs between 1-200
+    
+    team = Team.create!(
+      race: race,
+      athlete_1: team_athletes[0],
+      athlete_2: team_athletes[1],
+      name: "#{team_athletes[0].country} Team #{i + 1}",
+      team_type: "race_team",
+      bib_number: team_bib
+    )
+    
+    # Each team member gets unique bib - use larger offset to avoid collisions
+    team_athletes.each_with_index do |athlete, idx|
+      athlete_bib = team_bib + (idx * 50)
+      athlete_bib = ((athlete_bib - 1) % 200) + 1 if athlete_bib > 200
+      
+      RaceParticipation.create!(
+        race: race,
+        athlete: athlete,
+        team: team,
+        bib_number: athlete_bib,
+        status: "registered"
+      )
+    end
   end
   
   race
@@ -198,673 +260,1254 @@ end
 # DYNAMIC DATE CALCULATION
 # ============================================================================
 
-# Base time: now (closest race starts immediately)
+# Base time: now (Boí Taüll sprint semi-finals are ongoing)
 base_datetime = Time.now
 
 # ============================================================================
-# COMPETITION 1: VAL THORENS - SPRINT RACES
+# COMPETITION 1: BOÍ TAÜLL - MIXED RELAY & SPRINT (ONGOING)
 # ============================================================================
 
 puts "\n" + "=" * 80
-puts "Competition 1: Val Thorens Sprint - #{base_datetime.strftime('%B %d, %Y')}"
+puts "Competition 1: Boí Taüll World Cup - #{base_datetime.strftime('%B %d, %Y')}"
 puts "=" * 80
 
-comp1_start = base_datetime.to_date
-comp1_end = comp1_start
+boi_taull_start = (base_datetime - 1.day).to_date
+boi_taull_end = base_datetime.to_date
 
-val_thorens = Competition.create!(
-  name: "ISMF World Cup Val Thorens 2026",
-  description: "Sprint race with full competition format",
-  start_date: comp1_start,
-  end_date: comp1_end,
-  city: "Val Thorens",
-  place: "Val Thorens Ski Resort",
-  country: "FRA",
+boi_taull = Competition.create!(
+  name: "ISMF Boí Taüll World Cup",
+  description: "Mixed Relay and Sprint races",
+  start_date: boi_taull_start,
+  end_date: boi_taull_end,
+  city: "Boí Taüll",
+  place: "Boí Taüll Ski Resort",
+  country: "ESP",
   webpage_url: "https://www.ismf-ski.org/world-cup-2026"
 )
 
 race_time = base_datetime
 
-# SPRINT WOMEN - Full competition format
-# Qualifications (all 60 women)
-create_race_with_participants(
-  val_thorens, sprint_type, "Qualifications", "qualification", "W",
-  athletes["F"], 1, race_time
+# Mixed Relay (yesterday - all completed)
+create_relay_race_with_teams(
+  boi_taull, mixed_relay_type, "Qualifications", "qualification",
+  athletes["M"][0..19], athletes["F"][0..19], 1, race_time - 1.day + 10.hours, 20, "completed"
+)
+create_relay_race_with_teams(
+  boi_taull, mixed_relay_type, "Semi-Final 1", "semi_final",
+  athletes["M"][0..5], athletes["F"][0..5], 1, race_time - 1.day + 11.hours, 6, "completed"
+)
+create_relay_race_with_teams(
+  boi_taull, mixed_relay_type, "Semi-Final 2", "semi_final",
+  athletes["M"][6..11], athletes["F"][6..11], 7, race_time - 1.day + 11.hours + 5.minutes, 6, "completed"
+)
+create_relay_race_with_teams(
+  boi_taull, mixed_relay_type, "Final", "final",
+  athletes["M"][0..5], athletes["F"][0..5], 1, race_time - 1.day + 12.hours, 6, "completed"
 )
 
-# Heats (top 30 from qualifications, 5 heats of 6)
+# Sprint Women (today - semi-finals ongoing)
 create_race_with_participants(
-  val_thorens, sprint_type, "Heat 1", "heat", "W",
-  athletes["F"][0..5], 1, race_time + 30.minutes
+  boi_taull, sprint_type, "Qualifications", "qualification", "W",
+  athletes["F"][20..79], 1, race_time - 30.minutes, "completed"
+)
+5.times do |i|
+  create_race_with_participants(
+    boi_taull, sprint_type, "Heat #{i + 1}", "heat", "W",
+    athletes["F"][20 + (i * 6)..20 + (i * 6) + 5], 1 + i * 6, race_time - 20.minutes + (i * 2).minutes, "completed"
+  )
+end
+create_race_with_participants(
+  boi_taull, sprint_type, "Semi-Final 1", "semi_final", "W",
+  athletes["F"][20..25], 1, race_time - 3.minutes, "in_progress"
 )
 create_race_with_participants(
-  val_thorens, sprint_type, "Heat 2", "heat", "W",
-  athletes["F"][6..11], 7, race_time + 35.minutes
+  boi_taull, sprint_type, "Semi-Final 2", "semi_final", "W",
+  athletes["F"][26..31], 7, race_time + 2.minutes, "scheduled"
 )
 create_race_with_participants(
-  val_thorens, sprint_type, "Heat 3", "heat", "W",
-  athletes["F"][12..17], 13, race_time + 40.minutes
-)
-create_race_with_participants(
-  val_thorens, sprint_type, "Heat 4", "heat", "W",
-  athletes["F"][18..23], 19, race_time + 45.minutes
-)
-create_race_with_participants(
-  val_thorens, sprint_type, "Heat 5", "heat", "W",
-  athletes["F"][24..29], 25, race_time + 50.minutes
-)
-
-# Semi-finals (top 12, 2 semis of 6)
-create_race_with_participants(
-  val_thorens, sprint_type, "Semi-Final 1", "semi_final", "W",
-  athletes["F"][0..5], 1, race_time + 1.hour
-)
-create_race_with_participants(
-  val_thorens, sprint_type, "Semi-Final 2", "semi_final", "W",
-  athletes["F"][6..11], 7, race_time + 1.hour + 5.minutes
+  boi_taull, sprint_type, "Final", "final", "W",
+  athletes["F"][20..25], 1, race_time + 30.minutes
 )
 
-# Final (top 6)
+# Sprint Men (today - upcoming)
 create_race_with_participants(
-  val_thorens, sprint_type, "Final", "final", "W",
-  athletes["F"][0..5], 1, race_time + 1.hour + 15.minutes
+  boi_taull, sprint_type, "Qualifications", "qualification", "M",
+  athletes["M"][20..79], 101, race_time + 1.hour
+)
+5.times do |i|
+  create_race_with_participants(
+    boi_taull, sprint_type, "Heat #{i + 1}", "heat", "M",
+    athletes["M"][20 + (i * 6)..20 + (i * 6) + 5], 101 + i * 6, race_time + 1.5.hours + (i * 2).minutes
+  )
+end
+create_race_with_participants(
+  boi_taull, sprint_type, "Semi-Final 1", "semi_final", "M",
+  athletes["M"][20..25], 101, race_time + 2.hours
+)
+create_race_with_participants(
+  boi_taull, sprint_type, "Semi-Final 2", "semi_final", "M",
+  athletes["M"][26..31], 107, race_time + 2.hours + 5.minutes
+)
+create_race_with_participants(
+  boi_taull, sprint_type, "Final", "final", "M",
+  athletes["M"][20..25], 101, race_time + 2.5.hours
 )
 
-# SPRINT MEN - Full competition format
-# Qualifications (all 60 men)
-create_race_with_participants(
-  val_thorens, sprint_type, "Qualifications", "qualification", "M",
-  athletes["M"], 101, race_time + 2.hours
+puts "✅ Created Boí Taüll races (Mixed Relay, Sprint)"
+
+# ============================================================================
+# COMPETITION 2: ALTITOY - TEAM RACE
+# ============================================================================
+
+puts "\n" + "=" * 80
+puts "Competition 2: Altitoy Series - #{base_datetime.strftime('%B %d, %Y')}"
+puts "=" * 80
+
+altitoy = Competition.create!(
+  name: "ISMF Series 1 – France / Altitoy",
+  description: "Team race competition",
+  start_date: boi_taull_start,
+  end_date: boi_taull_end,
+  city: "Luz-Saint-Sauveur",
+  place: "Luz-Saint-Sauveur",
+  country: "FRA",
+  webpage_url: "https://www.ismf-ski.org"
 )
 
-# Heats (top 30 from qualifications, 5 heats of 6)
-create_race_with_participants(
-  val_thorens, sprint_type, "Heat 1", "heat", "M",
-  athletes["M"][0..5], 101, race_time + 2.hours + 30.minutes
+# Team races (today - upcoming)
+create_team_race(
+  altitoy, team_type, "Final", "final", "MM",
+  athletes["M"][32..61], 101, race_time + 3.hours, 2
 )
-create_race_with_participants(
-  val_thorens, sprint_type, "Heat 2", "heat", "M",
-  athletes["M"][6..11], 107, race_time + 2.hours + 35.minutes
-)
-create_race_with_participants(
-  val_thorens, sprint_type, "Heat 3", "heat", "M",
-  athletes["M"][12..17], 113, race_time + 2.hours + 40.minutes
-)
-create_race_with_participants(
-  val_thorens, sprint_type, "Heat 4", "heat", "M",
-  athletes["M"][18..23], 119, race_time + 2.hours + 45.minutes
-)
-create_race_with_participants(
-  val_thorens, sprint_type, "Heat 5", "heat", "M",
-  athletes["M"][24..29], 125, race_time + 2.hours + 50.minutes
+create_team_race(
+  altitoy, team_type, "Final", "final", "WW",
+  athletes["F"][32..61], 151, race_time + 5.hours, 2
 )
 
-# Semi-finals (top 12, 2 semis of 6)
-create_race_with_participants(
-  val_thorens, sprint_type, "Semi-Final 1", "semi_final", "M",
-  athletes["M"][0..5], 101, race_time + 3.hours
-)
-create_race_with_participants(
-  val_thorens, sprint_type, "Semi-Final 2", "semi_final", "M",
-  athletes["M"][6..11], 107, race_time + 3.hours + 5.minutes
+puts "✅ Created Altitoy races (Team)"
+
+# ============================================================================
+# COMPETITION 3: BERCHTESGADEN YOUTH WORLD CUP
+# ============================================================================
+
+puts "\n" + "=" * 80
+puts "Competition 3: Berchtesgaden Youth World Cup - #{(base_datetime + 4.days).strftime('%B %d, %Y')}"
+puts "=" * 80
+
+berchtesgaden_start = (base_datetime + 4.days).to_date
+berchtesgaden_end = (base_datetime + 7.days).to_date
+
+berchtesgaden = Competition.create!(
+  name: "ISMF Berchtesgaden Youth World Cup",
+  description: "Youth competition with Sprint, Vertical, and Individual races",
+  start_date: berchtesgaden_start,
+  end_date: berchtesgaden_end,
+  city: "Berchtesgaden",
+  place: "Berchtesgaden",
+  country: "DEU",
+  webpage_url: "https://www.ismf-ski.org"
 )
 
-# Final (top 6)
+race_time_berch = base_datetime + 4.days + 10.hours
+
+# Sprint races
 create_race_with_participants(
-  val_thorens, sprint_type, "Final", "final", "M",
-  athletes["M"][0..5], 101, race_time + 3.hours + 15.minutes
+  berchtesgaden, sprint_type, "Qualifications", "qualification", "W",
+  athletes["F"][0..29], 1, race_time_berch
+)
+5.times do |i|
+  create_race_with_participants(
+    berchtesgaden, sprint_type, "Heat #{i + 1}", "heat", "W",
+    athletes["F"][(i * 6)...(i * 6 + 6)], i * 6 + 1, race_time_berch + 30.minutes + (i * 5).minutes
+  )
+end
+create_race_with_participants(
+  berchtesgaden, sprint_type, "Semi-Final 1", "semi_final", "W",
+  athletes["F"][0..5], 1, race_time_berch + 1.hour
+)
+create_race_with_participants(
+  berchtesgaden, sprint_type, "Semi-Final 2", "semi_final", "W",
+  athletes["F"][6..11], 7, race_time_berch + 1.hour + 5.minutes
+)
+create_race_with_participants(
+  berchtesgaden, sprint_type, "Final", "final", "W",
+  athletes["F"][0..5], 1, race_time_berch + 1.hour + 15.minutes
 )
 
-# Individual races
 create_race_with_participants(
-  val_thorens, individual_type, "Final", "final", "W",
-  athletes["F"][10..49], 201, race_time + 4.hours
+  berchtesgaden, sprint_type, "Qualifications", "qualification", "M",
+  athletes["M"][0..29], 101, race_time_berch + 2.hours
+)
+5.times do |i|
+  create_race_with_participants(
+    berchtesgaden, sprint_type, "Heat #{i + 1}", "heat", "M",
+    athletes["M"][(i * 6)...(i * 6 + 6)], 101 + i * 6, race_time_berch + 2.5.hours + (i * 5).minutes
+  )
+end
+create_race_with_participants(
+  berchtesgaden, sprint_type, "Semi-Final 1", "semi_final", "M",
+  athletes["M"][0..5], 101, race_time_berch + 3.hours
+)
+create_race_with_participants(
+  berchtesgaden, sprint_type, "Semi-Final 2", "semi_final", "M",
+  athletes["M"][6..11], 107, race_time_berch + 3.hours + 5.minutes
+)
+create_race_with_participants(
+  berchtesgaden, sprint_type, "Final", "final", "M",
+  athletes["M"][0..5], 101, race_time_berch + 3.hours + 15.minutes
+)
+
+# Vertical races (next day)
+race_time_berch_v = race_time_berch + 1.day
+create_race_with_participants(
+  berchtesgaden, vertical_type, "Final", "final", "W",
+  athletes["F"][10..49], 201, race_time_berch_v
+)
+create_race_with_participants(
+  berchtesgaden, vertical_type, "Final", "final", "M",
+  athletes["M"][10..49], 301, race_time_berch_v + 2.hours
+)
+
+# Individual races (day 3)
+race_time_berch_i = race_time_berch + 2.days
+create_race_with_participants(
+  berchtesgaden, individual_type, "Final", "final", "W",
+  athletes["F"][15..54], 401, race_time_berch_i
+)
+create_race_with_participants(
+  berchtesgaden, individual_type, "Final", "final", "M",
+  athletes["M"][15..54], 501, race_time_berch_i + 2.hours
+)
+
+puts "✅ Created Berchtesgaden races (Sprint, Vertical, Individual)"
+
+# ============================================================================
+# COMPETITION 4: OLYMPIC WINTER GAMES MILANO CORTINA 2026
+# ============================================================================
+
+puts "\n" + "=" * 80
+puts "Competition 4: Olympic Winter Games Milano Cortina 2026 - #{(base_datetime + 5.days).strftime('%B %d, %Y')}"
+puts "=" * 80
+
+olympics_start = (base_datetime + 5.days).to_date
+olympics_end = (base_datetime + 21.days).to_date
+
+olympics = Competition.create!(
+  name: "Olympic Winter Games Milano Cortina 2026",
+  description: "Olympic ski mountaineering competition",
+  start_date: olympics_start,
+  end_date: olympics_end,
+  city: "Bormio",
+  place: "Bormio",
+  country: "ITA",
+  webpage_url: "https://www.olympics.com"
+)
+
+race_time_oly = base_datetime + 7.days + 10.hours
+
+# Sprint races
+create_race_with_participants(
+  olympics, sprint_type, "Qualifications", "qualification", "W",
+  athletes["F"][0..39], 1, race_time_oly
+)
+5.times do |i|
+  create_race_with_participants(
+    olympics, sprint_type, "Heat #{i + 1}", "heat", "W",
+    athletes["F"][(i * 6)...(i * 6 + 6)], i * 6 + 1, race_time_oly + 30.minutes + (i * 5).minutes
+  )
+end
+create_race_with_participants(
+  olympics, sprint_type, "Semi-Final 1", "semi_final", "W",
+  athletes["F"][0..5], 1, race_time_oly + 1.hour
+)
+create_race_with_participants(
+  olympics, sprint_type, "Semi-Final 2", "semi_final", "W",
+  athletes["F"][6..11], 7, race_time_oly + 1.hour + 5.minutes
+)
+create_race_with_participants(
+  olympics, sprint_type, "Final", "final", "W",
+  athletes["F"][0..5], 1, race_time_oly + 1.hour + 15.minutes
 )
 
 create_race_with_participants(
-  val_thorens, individual_type, "Final", "final", "M",
-  athletes["M"][10..49], 301, race_time + 6.hours
+  olympics, sprint_type, "Qualifications", "qualification", "M",
+  athletes["M"][0..39], 101, race_time_oly + 2.hours
+)
+5.times do |i|
+  create_race_with_participants(
+    olympics, sprint_type, "Heat #{i + 1}", "heat", "M",
+    athletes["M"][(i * 6)...(i * 6 + 6)], 101 + i * 6, race_time_oly + 2.5.hours + (i * 5).minutes
+  )
+end
+create_race_with_participants(
+  olympics, sprint_type, "Semi-Final 1", "semi_final", "M",
+  athletes["M"][0..5], 101, race_time_oly + 3.hours
+)
+create_race_with_participants(
+  olympics, sprint_type, "Semi-Final 2", "semi_final", "M",
+  athletes["M"][6..11], 107, race_time_oly + 3.hours + 5.minutes
+)
+create_race_with_participants(
+  olympics, sprint_type, "Final", "final", "M",
+  athletes["M"][0..5], 101, race_time_oly + 3.hours + 15.minutes
+)
+
+# Mixed Relay (different day)
+race_time_oly_relay = race_time_oly + 3.days
+create_relay_race_with_teams(
+  olympics, mixed_relay_type, "Qualifications", "qualification",
+  athletes["M"][20..39], athletes["F"][20..39], 201, race_time_oly_relay, 20
+)
+create_relay_race_with_teams(
+  olympics, mixed_relay_type, "Semi-Final 1", "semi_final",
+  athletes["M"][20..25], athletes["F"][20..25], 201, race_time_oly_relay + 1.hour, 6
+)
+create_relay_race_with_teams(
+  olympics, mixed_relay_type, "Semi-Final 2", "semi_final",
+  athletes["M"][26..31], athletes["F"][26..31], 207, race_time_oly_relay + 1.hour + 5.minutes, 6
+)
+create_relay_race_with_teams(
+  olympics, mixed_relay_type, "Final", "final",
+  athletes["M"][20..25], athletes["F"][20..25], 201, race_time_oly_relay + 2.hours, 6
+)
+
+puts "✅ Created Olympic Games races (Mixed Relay, Sprint)"
+
+# ============================================================================
+# COMPETITION 5: SURNADAL YOUTH WORLD CUP
+# ============================================================================
+
+puts "\n" + "=" * 80
+puts "Competition 5: Surnadal Youth World Cup - #{(base_datetime + 11.days).strftime('%B %d, %Y')}"
+puts "=" * 80
+
+surnadal_start = (base_datetime + 11.days).to_date
+surnadal_end = (base_datetime + 14.days).to_date
+
+surnadal = Competition.create!(
+  name: "ISMF Surnadal Youth World Cup",
+  description: "Youth competition with Sprint, Vertical, and Individual races",
+  start_date: surnadal_start,
+  end_date: surnadal_end,
+  city: "Surnadal",
+  place: "Surnadal",
+  country: "NOR",
+  webpage_url: "https://www.ismf-ski.org"
+)
+
+race_time_sur = base_datetime + 11.days + 10.hours
+
+# Sprint races
+create_race_with_participants(
+  surnadal, sprint_type, "Qualifications", "qualification", "W",
+  athletes["F"][30..59], 1, race_time_sur
+)
+5.times do |i|
+  create_race_with_participants(
+    surnadal, sprint_type, "Heat #{i + 1}", "heat", "W",
+    athletes["F"][30 + (i * 6)..30 + (i * 6) + 5], i * 6 + 1, race_time_sur + 30.minutes + (i * 5).minutes
+  )
+end
+create_race_with_participants(
+  surnadal, sprint_type, "Semi-Final 1", "semi_final", "W",
+  athletes["F"][30..35], 1, race_time_sur + 1.hour
+)
+create_race_with_participants(
+  surnadal, sprint_type, "Semi-Final 2", "semi_final", "W",
+  athletes["F"][36..41], 7, race_time_sur + 1.hour + 5.minutes
+)
+create_race_with_participants(
+  surnadal, sprint_type, "Final", "final", "W",
+  athletes["F"][30..35], 1, race_time_sur + 1.hour + 15.minutes
+)
+
+create_race_with_participants(
+  surnadal, sprint_type, "Qualifications", "qualification", "M",
+  athletes["M"][30..59], 101, race_time_sur + 2.hours
+)
+5.times do |i|
+  create_race_with_participants(
+    surnadal, sprint_type, "Heat #{i + 1}", "heat", "M",
+    athletes["M"][30 + (i * 6)..30 + (i * 6) + 5], 101 + i * 6, race_time_sur + 2.5.hours + (i * 5).minutes
+  )
+end
+create_race_with_participants(
+  surnadal, sprint_type, "Semi-Final 1", "semi_final", "M",
+  athletes["M"][30..35], 101, race_time_sur + 3.hours
+)
+create_race_with_participants(
+  surnadal, sprint_type, "Semi-Final 2", "semi_final", "M",
+  athletes["M"][36..41], 107, race_time_sur + 3.hours + 5.minutes
+)
+create_race_with_participants(
+  surnadal, sprint_type, "Final", "final", "M",
+  athletes["M"][30..35], 101, race_time_sur + 3.hours + 15.minutes
+)
+
+# Vertical & Individual races
+race_time_sur_v = race_time_sur + 1.day
+create_race_with_participants(
+  surnadal, vertical_type, "Final", "final", "W",
+  athletes["F"][35..64], 201, race_time_sur_v
+)
+create_race_with_participants(
+  surnadal, vertical_type, "Final", "final", "M",
+  athletes["M"][35..64], 301, race_time_sur_v + 2.hours
+)
+
+race_time_sur_i = race_time_sur + 2.days
+create_race_with_participants(
+  surnadal, individual_type, "Final", "final", "W",
+  athletes["F"][40..69], 401, race_time_sur_i
+)
+create_race_with_participants(
+  surnadal, individual_type, "Final", "final", "M",
+  athletes["M"][40..69], 501, race_time_sur_i + 2.hours
+)
+
+puts "✅ Created Surnadal races (Sprint, Vertical, Individual)"
+
+# ============================================================================
+# COMPETITION 6: TRANSCAVALLO SERIES
+# ============================================================================
+
+puts "\n" + "=" * 80
+puts "Competition 6: Transcavallo Series - #{(base_datetime + 26.days).strftime('%B %d, %Y')}"
+puts "=" * 80
+
+transcavallo_start = (base_datetime + 26.days).to_date
+transcavallo_end = (base_datetime + 28.days).to_date
+
+transcavallo = Competition.create!(
+  name: "ISMF Series 2 – Italy / Transcavallo",
+  description: "Team and Individual races",
+  start_date: transcavallo_start,
+  end_date: transcavallo_end,
+  city: "Friuli Venezia Giulia",
+  place: "Friuli Venezia Giulia",
+  country: "ITA",
+  webpage_url: "https://www.ismf-ski.org"
+)
+
+race_time_tc = base_datetime + 26.days + 10.hours
+
+create_race_with_participants(
+  transcavallo, individual_type, "Final", "final", "W",
+  athletes["F"][0..39], 1, race_time_tc
+)
+create_race_with_participants(
+  transcavallo, individual_type, "Final", "final", "M",
+  athletes["M"][0..39], 101, race_time_tc + 2.hours
+)
+create_team_race(
+  transcavallo, team_type, "Final", "final", "MM",
+  athletes["M"][40..69], 201, race_time_tc + 4.hours, 2
+)
+create_team_race(
+  transcavallo, team_type, "Final", "final", "WW",
+  athletes["F"][40..69], 301, race_time_tc + 6.hours, 2
+)
+
+puts "✅ Created Transcavallo races (Individual, Team)"
+
+# ============================================================================
+# COMPETITION 7: EUROPEAN CHAMPIONSHIPS SHAHDAG
+# ============================================================================
+
+puts "\n" + "=" * 80
+puts "Competition 7: European Championships Shahdag - #{(base_datetime + 31.days).strftime('%B %d, %Y')}"
+puts "=" * 80
+
+euro_start = (base_datetime + 31.days).to_date
+euro_end = (base_datetime + 35.days).to_date
+
+euro = Competition.create!(
+  name: "ISMF European Championships",
+  description: "Major championship with all race types",
+  start_date: euro_start,
+  end_date: euro_end,
+  city: "Shahdag",
+  place: "Shahdag Mountain Resort",
+  country: "AZE",
+  webpage_url: "https://www.ismf-ski.org"
+)
+
+race_time_euro = base_datetime + 31.days + 10.hours
+
+# Sprint races (Day 1)
+create_race_with_participants(
+  euro, sprint_type, "Qualifications", "qualification", "W",
+  athletes["F"][0..49], 1, race_time_euro
+)
+5.times do |i|
+  create_race_with_participants(
+    euro, sprint_type, "Heat #{i + 1}", "heat", "W",
+    athletes["F"][(i * 6)...(i * 6 + 6)], i * 6 + 1, race_time_euro + 30.minutes + (i * 5).minutes
+  )
+end
+create_race_with_participants(
+  euro, sprint_type, "Semi-Final 1", "semi_final", "W",
+  athletes["F"][0..5], 1, race_time_euro + 1.hour
+)
+create_race_with_participants(
+  euro, sprint_type, "Semi-Final 2", "semi_final", "W",
+  athletes["F"][6..11], 7, race_time_euro + 1.hour + 5.minutes
+)
+create_race_with_participants(
+  euro, sprint_type, "Final", "final", "W",
+  athletes["F"][0..5], 1, race_time_euro + 1.hour + 15.minutes
+)
+
+create_race_with_participants(
+  euro, sprint_type, "Qualifications", "qualification", "M",
+  athletes["M"][0..49], 101, race_time_euro + 2.hours
+)
+5.times do |i|
+  create_race_with_participants(
+    euro, sprint_type, "Heat #{i + 1}", "heat", "M",
+    athletes["M"][(i * 6)...(i * 6 + 6)], 101 + i * 6, race_time_euro + 2.5.hours + (i * 5).minutes
+  )
+end
+create_race_with_participants(
+  euro, sprint_type, "Semi-Final 1", "semi_final", "M",
+  athletes["M"][0..5], 101, race_time_euro + 3.hours
+)
+create_race_with_participants(
+  euro, sprint_type, "Semi-Final 2", "semi_final", "M",
+  athletes["M"][6..11], 107, race_time_euro + 3.hours + 5.minutes
+)
+create_race_with_participants(
+  euro, sprint_type, "Final", "final", "M",
+  athletes["M"][0..5], 101, race_time_euro + 3.hours + 15.minutes
+)
+
+# Vertical races (Day 2)
+race_time_euro_v = race_time_euro + 1.day
+create_race_with_participants(
+  euro, vertical_type, "Final", "final", "W",
+  athletes["F"][10..59], 201, race_time_euro_v
+)
+create_race_with_participants(
+  euro, vertical_type, "Final", "final", "M",
+  athletes["M"][10..59], 301, race_time_euro_v + 2.hours
+)
+
+# Individual races (Day 3)
+race_time_euro_i = race_time_euro + 2.days
+create_race_with_participants(
+  euro, individual_type, "Final", "final", "W",
+  athletes["F"][15..64], 401, race_time_euro_i
+)
+create_race_with_participants(
+  euro, individual_type, "Final", "final", "M",
+  athletes["M"][15..64], 501, race_time_euro_i + 2.hours
+)
+
+# Mixed Relay (Day 4)
+race_time_euro_mr = race_time_euro + 3.days
+create_relay_race_with_teams(
+  euro, mixed_relay_type, "Qualifications", "qualification",
+  athletes["M"][20..39], athletes["F"][20..39], 601, race_time_euro_mr, 20
+)
+create_relay_race_with_teams(
+  euro, mixed_relay_type, "Semi-Final 1", "semi_final",
+  athletes["M"][20..25], athletes["F"][20..25], 601, race_time_euro_mr + 1.hour, 6
+)
+create_relay_race_with_teams(
+  euro, mixed_relay_type, "Semi-Final 2", "semi_final",
+  athletes["M"][26..31], athletes["F"][26..31], 607, race_time_euro_mr + 1.hour + 5.minutes, 6
+)
+create_relay_race_with_teams(
+  euro, mixed_relay_type, "Final", "final",
+  athletes["M"][20..25], athletes["F"][20..25], 601, race_time_euro_mr + 2.hours, 6
+)
+
+puts "✅ Created European Championships races (Mixed Relay, Sprint, Vertical, Individual)"
+
+# ============================================================================
+# COMPETITION 8: SHAHDAG WORLD CUP
+# ============================================================================
+
+puts "\n" + "=" * 80
+puts "Competition 8: Shahdag World Cup - #{(base_datetime + 33.days).strftime('%B %d, %Y')}"
+puts "=" * 80
+
+shahdag_start = (base_datetime + 33.days).to_date
+shahdag_end = (base_datetime + 35.days).to_date
+
+shahdag = Competition.create!(
+  name: "ISMF Shahdag World Cup",
+  description: "Vertical and Individual races",
+  start_date: shahdag_start,
+  end_date: shahdag_end,
+  city: "Shahdag",
+  place: "Shahdag Mountain Resort",
+  country: "AZE",
+  webpage_url: "https://www.ismf-ski.org"
+)
+
+race_time_shah = base_datetime + 33.days + 10.hours
+
+create_race_with_participants(
+  shahdag, vertical_type, "Final", "final", "W",
+  athletes["F"][20..59], 1, race_time_shah
+)
+create_race_with_participants(
+  shahdag, vertical_type, "Final", "final", "M",
+  athletes["M"][20..59], 101, race_time_shah + 2.hours
+)
+
+race_time_shah_i = race_time_shah + 1.day
+create_race_with_participants(
+  shahdag, individual_type, "Final", "final", "W",
+  athletes["F"][25..64], 201, race_time_shah_i
+)
+create_race_with_participants(
+  shahdag, individual_type, "Final", "final", "M",
+  athletes["M"][25..64], 301, race_time_shah_i + 2.hours
+)
+
+puts "✅ Created Shahdag World Cup races (Vertical, Individual)"
+
+# ============================================================================
+# COMPETITION 9: SOUTH KOREA SERIES
+# ============================================================================
+
+puts "\n" + "=" * 80
+puts "Competition 9: South Korea Series - #{(base_datetime + 34.days).strftime('%B %d, %Y')}"
+puts "=" * 80
+
+korea_start = (base_datetime + 34.days).to_date
+korea_end = (base_datetime + 35.days).to_date
+
+korea = Competition.create!(
+  name: "ISMF Series 3 – South Korea",
+  description: "Sprint and Vertical races",
+  start_date: korea_start,
+  end_date: korea_end,
+  city: "Gangwon State",
+  place: "Gangwon State",
+  country: "KOR",
+  webpage_url: "https://www.ismf-ski.org"
+)
+
+race_time_kor = base_datetime + 34.days + 10.hours
+
+# Sprint races
+create_race_with_participants(
+  korea, sprint_type, "Qualifications", "qualification", "W",
+  athletes["F"][30..59], 1, race_time_kor
+)
+5.times do |i|
+  create_race_with_participants(
+    korea, sprint_type, "Heat #{i + 1}", "heat", "W",
+    athletes["F"][30 + (i * 6)..30 + (i * 6) + 5], i * 6 + 1, race_time_kor + 30.minutes + (i * 5).minutes
+  )
+end
+create_race_with_participants(
+  korea, sprint_type, "Semi-Final 1", "semi_final", "W",
+  athletes["F"][30..35], 1, race_time_kor + 1.hour
+)
+create_race_with_participants(
+  korea, sprint_type, "Semi-Final 2", "semi_final", "W",
+  athletes["F"][36..41], 7, race_time_kor + 1.hour + 5.minutes
+)
+create_race_with_participants(
+  korea, sprint_type, "Final", "final", "W",
+  athletes["F"][30..35], 1, race_time_kor + 1.hour + 15.minutes
+)
+
+create_race_with_participants(
+  korea, sprint_type, "Qualifications", "qualification", "M",
+  athletes["M"][30..59], 101, race_time_kor + 2.hours
+)
+5.times do |i|
+  create_race_with_participants(
+    korea, sprint_type, "Heat #{i + 1}", "heat", "M",
+    athletes["M"][30 + (i * 6)..30 + (i * 6) + 5], 101 + i * 6, race_time_kor + 2.5.hours + (i * 5).minutes
+  )
+end
+create_race_with_participants(
+  korea, sprint_type, "Semi-Final 1", "semi_final", "M",
+  athletes["M"][30..35], 101, race_time_kor + 3.hours
+)
+create_race_with_participants(
+  korea, sprint_type, "Semi-Final 2", "semi_final", "M",
+  athletes["M"][36..41], 107, race_time_kor + 3.hours + 5.minutes
+)
+create_race_with_participants(
+  korea, sprint_type, "Final", "final", "M",
+  athletes["M"][30..35], 101, race_time_kor + 3.hours + 15.minutes
+)
+
+# Vertical races (next day)
+race_time_kor_v = race_time_kor + 1.day
+create_race_with_participants(
+  korea, vertical_type, "Final", "final", "W",
+  athletes["F"][35..64], 201, race_time_kor_v
+)
+create_race_with_participants(
+  korea, vertical_type, "Final", "final", "M",
+  athletes["M"][35..64], 301, race_time_kor_v + 2.hours
+)
+
+puts "✅ Created South Korea Series races (Sprint, Vertical)"
+
+# ============================================================================
+# COMPETITION 10: WORLD CHAMPIONSHIPS LONG DISTANCE TEAM
+# ============================================================================
+
+puts "\n" + "=" * 80
+puts "Competition 10: World Championships Long Distance Team - #{(base_datetime + 38.days).strftime('%B %d, %Y')}"
+puts "=" * 80
+
+wc_ld_start = (base_datetime + 38.days).to_date
+wc_ld_end = (base_datetime + 41.days).to_date
+
+wc_ld = Competition.create!(
+  name: "ISMF World Championships Long Distance Team",
+  description: "Long distance team race",
+  start_date: wc_ld_start,
+  end_date: wc_ld_end,
+  city: "Areches-Beaufort",
+  place: "Areches-Beaufort",
+  country: "FRA",
+  webpage_url: "https://www.ismf-ski.org"
+)
+
+race_time_wcld = base_datetime + 38.days + 9.hours
+
+create_team_race(
+  wc_ld, team_type, "Final", "final", "MM",
+  athletes["M"][0..39], 1, race_time_wcld, 2
+)
+create_team_race(
+  wc_ld, team_type, "Final", "final", "WW",
+  athletes["F"][0..39], 101, race_time_wcld + 4.hours, 2
+)
+
+puts "✅ Created World Championships Long Distance Team races (Team)"
+
+# ============================================================================
+# COMPETITION 11: ASIAN CHAMPIONSHIPS
+# ============================================================================
+
+puts "\n" + "=" * 80
+puts "Competition 11: Asian Championships - #{(base_datetime + 43.days).strftime('%B %d, %Y')}"
+puts "=" * 80
+
+asian_start = (base_datetime + 43.days).to_date
+asian_end = (base_datetime + 47.days).to_date
+
+asian = Competition.create!(
+  name: "ISMF Asian Championships",
+  description: "Asian Championships with all disciplines",
+  start_date: asian_start,
+  end_date: asian_end,
+  city: "Yabuli",
+  place: "Yabuli Ski resort, Haerbin, Heilongjiang province",
+  country: "CHN",
+  webpage_url: "https://www.ismf-ski.org"
+)
+
+race_time_asia = base_datetime + 43.days + 10.hours
+
+# Sprint
+create_race_with_participants(
+  asian, sprint_type, "Qualifications", "qualification", "W",
+  athletes["F"][0..39], 1, race_time_asia
+)
+5.times do |i|
+  create_race_with_participants(
+    asian, sprint_type, "Heat #{i + 1}", "heat", "W",
+    athletes["F"][(i * 6)...(i * 6 + 6)], i * 6 + 1, race_time_asia + 30.minutes + (i * 5).minutes
+  )
+end
+create_race_with_participants(
+  asian, sprint_type, "Semi-Final 1", "semi_final", "W",
+  athletes["F"][0..5], 1, race_time_asia + 1.hour
+)
+create_race_with_participants(
+  asian, sprint_type, "Semi-Final 2", "semi_final", "W",
+  athletes["F"][6..11], 7, race_time_asia + 1.hour + 5.minutes
+)
+create_race_with_participants(
+  asian, sprint_type, "Final", "final", "W",
+  athletes["F"][0..5], 1, race_time_asia + 1.hour + 15.minutes
+)
+
+create_race_with_participants(
+  asian, sprint_type, "Qualifications", "qualification", "M",
+  athletes["M"][0..39], 101, race_time_asia + 2.hours
+)
+5.times do |i|
+  create_race_with_participants(
+    asian, sprint_type, "Heat #{i + 1}", "heat", "M",
+    athletes["M"][(i * 6)...(i * 6 + 6)], 101 + i * 6, race_time_asia + 2.5.hours + (i * 5).minutes
+  )
+end
+create_race_with_participants(
+  asian, sprint_type, "Semi-Final 1", "semi_final", "M",
+  athletes["M"][0..5], 101, race_time_asia + 3.hours
+)
+create_race_with_participants(
+  asian, sprint_type, "Semi-Final 2", "semi_final", "M",
+  athletes["M"][6..11], 107, race_time_asia + 3.hours + 5.minutes
+)
+create_race_with_participants(
+  asian, sprint_type, "Final", "final", "M",
+  athletes["M"][0..5], 101, race_time_asia + 3.hours + 15.minutes
+)
+
+# Vertical, Individual, Mixed Relay
+race_time_asia_v = race_time_asia + 1.day
+create_race_with_participants(
+  asian, vertical_type, "Final", "final", "W",
+  athletes["F"][10..49], 201, race_time_asia_v
+)
+create_race_with_participants(
+  asian, vertical_type, "Final", "final", "M",
+  athletes["M"][10..49], 301, race_time_asia_v + 2.hours
+)
+
+race_time_asia_i = race_time_asia + 2.days
+create_race_with_participants(
+  asian, individual_type, "Final", "final", "W",
+  athletes["F"][15..54], 401, race_time_asia_i
+)
+create_race_with_participants(
+  asian, individual_type, "Final", "final", "M",
+  athletes["M"][15..54], 501, race_time_asia_i + 2.hours
+)
+
+race_time_asia_mr = race_time_asia + 3.days
+create_relay_race_with_teams(
+  asian, mixed_relay_type, "Qualifications", "qualification",
+  athletes["M"][20..39], athletes["F"][20..39], 601, race_time_asia_mr, 20
+)
+create_relay_race_with_teams(
+  asian, mixed_relay_type, "Semi-Final 1", "semi_final",
+  athletes["M"][20..25], athletes["F"][20..25], 601, race_time_asia_mr + 1.hour, 6
+)
+create_relay_race_with_teams(
+  asian, mixed_relay_type, "Semi-Final 2", "semi_final",
+  athletes["M"][26..31], athletes["F"][26..31], 607, race_time_asia_mr + 1.hour + 5.minutes, 6
+)
+create_relay_race_with_teams(
+  asian, mixed_relay_type, "Final", "final",
+  athletes["M"][20..25], athletes["F"][20..25], 601, race_time_asia_mr + 2.hours, 6
+)
+
+puts "✅ Created Asian Championships races (Mixed Relay, Sprint, Vertical, Individual)"
+
+# ============================================================================
+# COMPETITION 12: VAL MARTELLO WORLD CUP
+# ============================================================================
+
+puts "\n" + "=" * 80
+puts "Competition 12: Val Martello World Cup - #{(base_datetime + 46.days).strftime('%B %d, %Y')}"
+puts "=" * 80
+
+martello_start = (base_datetime + 46.days).to_date
+martello_end = (base_datetime + 49.days).to_date
+
+martello = Competition.create!(
+  name: "ISMF Val Martello World Cup",
+  description: "Mixed Relay, Sprint, and Individual races",
+  start_date: martello_start,
+  end_date: martello_end,
+  city: "Val Martello",
+  place: "Val Martello",
+  country: "ITA",
+  webpage_url: "https://www.ismf-ski.org"
+)
+
+race_time_mart = base_datetime + 46.days + 10.hours
+
+# Sprint
+create_race_with_participants(
+  martello, sprint_type, "Qualifications", "qualification", "W",
+  athletes["F"][20..59], 1, race_time_mart
+)
+5.times do |i|
+  create_race_with_participants(
+    martello, sprint_type, "Heat #{i + 1}", "heat", "W",
+    athletes["F"][20 + (i * 6)..20 + (i * 6) + 5], i * 6 + 1, race_time_mart + 30.minutes + (i * 5).minutes
+  )
+end
+create_race_with_participants(
+  martello, sprint_type, "Semi-Final 1", "semi_final", "W",
+  athletes["F"][20..25], 1, race_time_mart + 1.hour
+)
+create_race_with_participants(
+  martello, sprint_type, "Semi-Final 2", "semi_final", "W",
+  athletes["F"][26..31], 7, race_time_mart + 1.hour + 5.minutes
+)
+create_race_with_participants(
+  martello, sprint_type, "Final", "final", "W",
+  athletes["F"][20..25], 1, race_time_mart + 1.hour + 15.minutes
+)
+
+create_race_with_participants(
+  martello, sprint_type, "Qualifications", "qualification", "M",
+  athletes["M"][20..59], 101, race_time_mart + 2.hours
+)
+5.times do |i|
+  create_race_with_participants(
+    martello, sprint_type, "Heat #{i + 1}", "heat", "M",
+    athletes["M"][20 + (i * 6)..20 + (i * 6) + 5], 101 + i * 6, race_time_mart + 2.5.hours + (i * 5).minutes
+  )
+end
+create_race_with_participants(
+  martello, sprint_type, "Semi-Final 1", "semi_final", "M",
+  athletes["M"][20..25], 101, race_time_mart + 3.hours
+)
+create_race_with_participants(
+  martello, sprint_type, "Semi-Final 2", "semi_final", "M",
+  athletes["M"][26..31], 107, race_time_mart + 3.hours + 5.minutes
+)
+create_race_with_participants(
+  martello, sprint_type, "Final", "final", "M",
+  athletes["M"][20..25], 101, race_time_mart + 3.hours + 15.minutes
+)
+
+# Individual
+race_time_mart_i = race_time_mart + 1.day
+create_race_with_participants(
+  martello, individual_type, "Final", "final", "W",
+  athletes["F"][25..64], 201, race_time_mart_i
+)
+create_race_with_participants(
+  martello, individual_type, "Final", "final", "M",
+  athletes["M"][25..64], 301, race_time_mart_i + 2.hours
 )
 
 # Mixed Relay
-# MIXED RELAY - Full competition format
-# Qualifications (20 teams)
+race_time_mart_mr = race_time_mart + 2.days
 create_relay_race_with_teams(
-  val_thorens, mixed_relay_type, "Qualifications", "qualification",
-  athletes["M"][30..49], athletes["F"][30..49], 501, race_time + 8.hours, 20
+  martello, mixed_relay_type, "Qualifications", "qualification",
+  athletes["M"][30..49], athletes["F"][30..49], 401, race_time_mart_mr, 20
+)
+create_relay_race_with_teams(
+  martello, mixed_relay_type, "Semi-Final 1", "semi_final",
+  athletes["M"][30..35], athletes["F"][30..35], 401, race_time_mart_mr + 1.hour, 6
+)
+create_relay_race_with_teams(
+  martello, mixed_relay_type, "Semi-Final 2", "semi_final",
+  athletes["M"][36..41], athletes["F"][36..41], 407, race_time_mart_mr + 1.hour + 5.minutes, 6
+)
+create_relay_race_with_teams(
+  martello, mixed_relay_type, "Final", "final",
+  athletes["M"][30..35], athletes["F"][30..35], 401, race_time_mart_mr + 2.hours, 6
 )
 
-# Semi-finals (top 12 teams, 2 semis of 6)
-create_relay_race_with_teams(
-  val_thorens, mixed_relay_type, "Semi-Final 1", "semi_final",
-  athletes["M"][30..35], athletes["F"][30..35], 501, race_time + 8.hours + 30.minutes, 6
-)
-create_relay_race_with_teams(
-  val_thorens, mixed_relay_type, "Semi-Final 2", "semi_final",
-  athletes["M"][36..41], athletes["F"][36..41], 507, race_time + 8.hours + 35.minutes, 6
-)
-
-# Final (top 6 teams)
-create_relay_race_with_teams(
-  val_thorens, mixed_relay_type, "Final", "final",
-  athletes["M"][30..35], athletes["F"][30..35], 501, race_time + 9.hours, 6
-)
-
-puts "✅ Created Val Thorens races (Sprint, Individual, Mixed Relay)"
+puts "✅ Created Val Martello World Cup races (Mixed Relay, Sprint, Individual)"
 
 # ============================================================================
-# COMPETITION 2: FLAINE - MIXED RELAY
+# COMPETITION 13: PUY-SAINT-VINCENT WORLD CUP
 # ============================================================================
 
 puts "\n" + "=" * 80
-puts "Competition 2: Flaine Mixed Relay - #{(base_datetime + 1.day).strftime('%B %d, %Y')}"
+puts "Competition 13: Puy-Saint-Vincent World Cup - #{(base_datetime + 52.days).strftime('%B %d, %Y')}"
 puts "=" * 80
 
-comp2_start = (base_datetime + 1.day).to_date
-comp2_end = comp2_start
+puy_wc_start = (base_datetime + 52.days).to_date
+puy_wc_end = (base_datetime + 53.days).to_date
 
-flaine = Competition.create!(
-  name: "ISMF World Cup Flaine 2026",
-  description: "Mixed Relay race with full competition format",
-  start_date: comp2_start,
-  end_date: comp2_end,
-  city: "Flaine",
-  place: "Flaine Ski Resort",
+puy_wc = Competition.create!(
+  name: "ISMF Puy-Saint-Vincent World Cup",
+  description: "Vertical and Individual races",
+  start_date: puy_wc_start,
+  end_date: puy_wc_end,
+  city: "Puy-Saint-Vincent",
+  place: "Puy-Saint-Vincent",
   country: "FRA",
-  webpage_url: "https://www.ismf-ski.org/world-cup-2026"
+  webpage_url: "https://www.ismf-ski.org"
 )
 
-race_time = base_datetime + 1.day
-
-# SPRINT WOMEN - Full competition format
-create_race_with_participants(
-  flaine, sprint_type, "Qualifications", "qualification", "W",
-  athletes["F"], 1, race_time
-)
-5.times do |i|
-  create_race_with_participants(
-    flaine, sprint_type, "Heat #{i + 1}", "heat", "W",
-    athletes["F"][(i * 6)...(i * 6 + 6)], i * 6 + 1, race_time + 30.minutes + (i * 5).minutes
-  )
-end
-2.times do |i|
-  create_race_with_participants(
-    flaine, sprint_type, "Semi-Final #{i + 1}", "semi_final", "W",
-    athletes["F"][(i * 6)...(i * 6 + 6)], i * 6 + 1, race_time + 1.hour + (i * 5).minutes
-  )
-end
-create_race_with_participants(
-  flaine, sprint_type, "Final", "final", "W",
-  athletes["F"][0..5], 1, race_time + 1.hour + 15.minutes
-)
-
-# SPRINT MEN - Full competition format
-create_race_with_participants(
-  flaine, sprint_type, "Qualifications", "qualification", "M",
-  athletes["M"], 101, race_time + 2.hours
-)
-5.times do |i|
-  create_race_with_participants(
-    flaine, sprint_type, "Heat #{i + 1}", "heat", "M",
-    athletes["M"][(i * 6)...(i * 6 + 6)], 101 + i * 6, race_time + 2.hours + 30.minutes + (i * 5).minutes
-  )
-end
-2.times do |i|
-  create_race_with_participants(
-    flaine, sprint_type, "Semi-Final #{i + 1}", "semi_final", "M",
-    athletes["M"][(i * 6)...(i * 6 + 6)], 101 + i * 6, race_time + 3.hours + (i * 5).minutes
-  )
-end
-create_race_with_participants(
-  flaine, sprint_type, "Final", "final", "M",
-  athletes["M"][0..5], 101, race_time + 3.hours + 15.minutes
-)
-
-# Vertical races
-create_race_with_participants(
-  flaine, vertical_type, "Final", "final", "W",
-  athletes["F"][15..54], 201, race_time + 4.hours
-)
+race_time_puy = base_datetime + 52.days + 10.hours
 
 create_race_with_participants(
-  flaine, vertical_type, "Final", "final", "M",
-  athletes["M"][15..54], 301, race_time + 6.hours
+  puy_wc, vertical_type, "Final", "final", "W",
+  athletes["F"][0..39], 1, race_time_puy
+)
+create_race_with_participants(
+  puy_wc, vertical_type, "Final", "final", "M",
+  athletes["M"][0..39], 101, race_time_puy + 2.hours
 )
 
-# MIXED RELAY - Full competition format
-create_relay_race_with_teams(
-  flaine, mixed_relay_type, "Qualifications", "qualification",
-  athletes["M"][25..44], athletes["F"][25..44], 501, race_time + 8.hours, 20
+race_time_puy_i = race_time_puy + 1.day
+create_race_with_participants(
+  puy_wc, individual_type, "Final", "final", "W",
+  athletes["F"][5..44], 201, race_time_puy_i
 )
-2.times do |i|
-  create_relay_race_with_teams(
-    flaine, mixed_relay_type, "Semi-Final #{i + 1}", "semi_final",
-    athletes["M"][(25 + i * 6)..(25 + i * 6 + 5)], athletes["F"][(25 + i * 6)..(25 + i * 6 + 5)], 
-    501 + i * 6, race_time + 8.hours + 30.minutes + (i * 5).minutes, 6
-  )
-end
-create_relay_race_with_teams(
-  flaine, mixed_relay_type, "Final", "final",
-  athletes["M"][25..30], athletes["F"][25..30], 501, race_time + 9.hours, 6
+create_race_with_participants(
+  puy_wc, individual_type, "Final", "final", "M",
+  athletes["M"][5..44], 301, race_time_puy_i + 2.hours
 )
 
-puts "✅ Created Flaine races (Sprint, Vertical, Mixed Relay)"
+puts "✅ Created Puy-Saint-Vincent World Cup races (Vertical, Individual)"
 
 # ============================================================================
-# COMPETITION 3: KRANJSKA GORA - VERTICAL RACE
+# COMPETITION 14: YOUTH WORLD CHAMPIONSHIPS
 # ============================================================================
 
 puts "\n" + "=" * 80
-puts "Competition 3: Kranjska Gora Vertical - #{(base_datetime + 2.days).strftime('%B %d, %Y')}"
+puts "Competition 14: Youth World Championships - #{(base_datetime + 52.days).strftime('%B %d, %Y')}"
 puts "=" * 80
 
-comp3_start = (base_datetime + 2.days).to_date
-comp3_end = comp3_start
+youth_wc_start = (base_datetime + 52.days).to_date
+youth_wc_end = (base_datetime + 56.days).to_date
 
-kranjska = Competition.create!(
-  name: "ISMF World Cup Kranjska Gora 2026",
-  description: "Vertical race with full competition format",
-  start_date: comp3_start,
-  end_date: comp3_end,
-  city: "Kranjska Gora",
-  place: "Kranjska Gora Ski Resort",
-  country: "AND",
-  webpage_url: "https://www.ismf-ski.org/world-cup-2026"
+youth_wc = Competition.create!(
+  name: "ISMF Youth World Championships",
+  description: "Youth World Championships with all disciplines",
+  start_date: youth_wc_start,
+  end_date: youth_wc_end,
+  city: "Puy-Saint-Vincent",
+  place: "Puy-Saint-Vincent",
+  country: "FRA",
+  webpage_url: "https://www.ismf-ski.org"
 )
 
-race_time = base_datetime + 2.days
+race_time_youth = base_datetime + 53.days + 10.hours
 
-# SPRINT WOMEN - Full competition format
+# Sprint
 create_race_with_participants(
-  kranjska, sprint_type, "Qualifications", "qualification", "W",
-  athletes["F"], 1, race_time
+  youth_wc, sprint_type, "Qualifications", "qualification", "W",
+  athletes["F"][40..69], 1, race_time_youth
 )
 5.times do |i|
   create_race_with_participants(
-    kranjska, sprint_type, "Heat #{i + 1}", "heat", "W",
-    athletes["F"][(i * 6)...(i * 6 + 6)], i * 6 + 1, race_time + 30.minutes + (i * 5).minutes
-  )
-end
-2.times do |i|
-  create_race_with_participants(
-    kranjska, sprint_type, "Semi-Final #{i + 1}", "semi_final", "W",
-    athletes["F"][(i * 6)...(i * 6 + 6)], i * 6 + 1, race_time + 1.hour + (i * 5).minutes
+    youth_wc, sprint_type, "Heat #{i + 1}", "heat", "W",
+    athletes["F"][40 + (i * 6)..40 + (i * 6) + 5], i * 6 + 1, race_time_youth + 30.minutes + (i * 5).minutes
   )
 end
 create_race_with_participants(
-  kranjska, sprint_type, "Final", "final", "W",
-  athletes["F"][0..5], 1, race_time + 1.hour + 15.minutes
+  youth_wc, sprint_type, "Semi-Final 1", "semi_final", "W",
+  athletes["F"][40..45], 1, race_time_youth + 1.hour
+)
+create_race_with_participants(
+  youth_wc, sprint_type, "Semi-Final 2", "semi_final", "W",
+  athletes["F"][46..51], 7, race_time_youth + 1.hour + 5.minutes
+)
+create_race_with_participants(
+  youth_wc, sprint_type, "Final", "final", "W",
+  athletes["F"][40..45], 1, race_time_youth + 1.hour + 15.minutes
 )
 
-# SPRINT MEN - Full competition format
 create_race_with_participants(
-  kranjska, sprint_type, "Qualifications", "qualification", "M",
-  athletes["M"], 101, race_time + 2.hours
+  youth_wc, sprint_type, "Qualifications", "qualification", "M",
+  athletes["M"][40..69], 101, race_time_youth + 2.hours
 )
 5.times do |i|
   create_race_with_participants(
-    kranjska, sprint_type, "Heat #{i + 1}", "heat", "M",
-    athletes["M"][(i * 6)...(i * 6 + 6)], 101 + i * 6, race_time + 2.hours + 30.minutes + (i * 5).minutes
-  )
-end
-2.times do |i|
-  create_race_with_participants(
-    kranjska, sprint_type, "Semi-Final #{i + 1}", "semi_final", "M",
-    athletes["M"][(i * 6)...(i * 6 + 6)], 101 + i * 6, race_time + 3.hours + (i * 5).minutes
+    youth_wc, sprint_type, "Heat #{i + 1}", "heat", "M",
+    athletes["M"][40 + (i * 6)..40 + (i * 6) + 5], 101 + i * 6, race_time_youth + 2.5.hours + (i * 5).minutes
   )
 end
 create_race_with_participants(
-  kranjska, sprint_type, "Final", "final", "M",
-  athletes["M"][0..5], 101, race_time + 3.hours + 15.minutes
+  youth_wc, sprint_type, "Semi-Final 1", "semi_final", "M",
+  athletes["M"][40..45], 101, race_time_youth + 3.hours
 )
-
-# Women Vertical Final
 create_race_with_participants(
-  kranjska, vertical_type, "Final", "final", "W",
-  athletes["F"].first(40), 501, race_time + 4.hours
+  youth_wc, sprint_type, "Semi-Final 2", "semi_final", "M",
+  athletes["M"][46..51], 107, race_time_youth + 3.hours + 5.minutes
 )
-
-# Men Vertical Final
 create_race_with_participants(
-  kranjska, vertical_type, "Final", "final", "M",
-  athletes["M"].first(40), 601, race_time + 6.hours
+  youth_wc, sprint_type, "Final", "final", "M",
+  athletes["M"][40..45], 101, race_time_youth + 3.hours + 15.minutes
 )
 
-# Individual races
+# Vertical, Individual, Mixed Relay
+race_time_youth_v = race_time_youth + 1.day
 create_race_with_participants(
-  kranjska, individual_type, "Final", "final", "W",
-  athletes["F"][5..44], 701, race_time + 8.hours
+  youth_wc, vertical_type, "Final", "final", "W",
+  athletes["F"][45..74], 201, race_time_youth_v
 )
-
 create_race_with_participants(
-  kranjska, individual_type, "Final", "final", "M",
-  athletes["M"][5..44], 801, race_time + 10.hours
+  youth_wc, vertical_type, "Final", "final", "M",
+  athletes["M"][45..74], 301, race_time_youth_v + 2.hours
 )
 
-# MIXED RELAY - Full competition format
+race_time_youth_i = race_time_youth + 2.days
+create_race_with_participants(
+  youth_wc, individual_type, "Final", "final", "W",
+  athletes["F"][50..79], 401, race_time_youth_i
+)
+create_race_with_participants(
+  youth_wc, individual_type, "Final", "final", "M",
+  athletes["M"][50..79], 501, race_time_youth_i + 2.hours
+)
+
+race_time_youth_mr = race_time_youth + 3.days
 create_relay_race_with_teams(
-  kranjska, mixed_relay_type, "Qualifications", "qualification",
-  athletes["M"][30..49], athletes["F"][30..49], 901, race_time + 12.hours, 20
+  youth_wc, mixed_relay_type, "Qualifications", "qualification",
+  athletes["M"][50..69], athletes["F"][50..69], 601, race_time_youth_mr, 20
 )
-2.times do |i|
-  create_relay_race_with_teams(
-    kranjska, mixed_relay_type, "Semi-Final #{i + 1}", "semi_final",
-    athletes["M"][(30 + i * 6)..(30 + i * 6 + 5)], athletes["F"][(30 + i * 6)..(30 + i * 6 + 5)], 
-    901 + i * 6, race_time + 12.hours + 30.minutes + (i * 5).minutes, 6
-  )
-end
 create_relay_race_with_teams(
-  kranjska, mixed_relay_type, "Final", "final",
-  athletes["M"][30..35], athletes["F"][30..35], 901, race_time + 13.hours, 6
+  youth_wc, mixed_relay_type, "Semi-Final 1", "semi_final",
+  athletes["M"][50..55], athletes["F"][50..55], 601, race_time_youth_mr + 1.hour, 6
+)
+create_relay_race_with_teams(
+  youth_wc, mixed_relay_type, "Semi-Final 2", "semi_final",
+  athletes["M"][56..61], athletes["F"][56..61], 607, race_time_youth_mr + 1.hour + 5.minutes, 6
+)
+create_relay_race_with_teams(
+  youth_wc, mixed_relay_type, "Final", "final",
+  athletes["M"][50..55], athletes["F"][50..55], 601, race_time_youth_mr + 2.hours, 6
 )
 
-puts "✅ Created Kranjska Gora races (Sprint, Vertical, Individual, Mixed Relay)"
+puts "✅ Created Youth World Championships races (Mixed Relay, Sprint, Vertical, Individual)"
 
 # ============================================================================
-# COMPETITION 4: WORLD CUP SPRINT - DAY 3
+# COMPETITION 15: TOUR DU RUTOR EXTREME
 # ============================================================================
 
 puts "\n" + "=" * 80
-puts "Competition 4: World Cup Sprint - #{(base_datetime + 3.days).strftime('%B %d, %Y')}"
+puts "Competition 15: Tour du Rutor Extreme - #{(base_datetime + 55.days).strftime('%B %d, %Y')}"
 puts "=" * 80
 
-comp4_start = (base_datetime + 3.days).to_date
-comp4_end = comp4_start
+rutor_start = (base_datetime + 55.days).to_date
+rutor_end = (base_datetime + 56.days).to_date
 
-wc_sprint_feb = Competition.create!(
-  name: "ISMF World Cup Sprint February 2026",
-  description: "Sprint race with full competition format",
-  start_date: comp4_start,
-  end_date: comp4_end,
-  city: "TBD",
-  place: "TBD",
-  country: "TBD",
-  webpage_url: "https://www.ismf-ski.org/world-cup-2026"
-)
-
-race_time = base_datetime + 3.days
-
-# SPRINT WOMEN - Full competition format
-create_race_with_participants(
-  wc_sprint_feb, sprint_type, "Qualifications", "qualification", "W",
-  athletes["F"], 1, race_time
-)
-5.times do |i|
-  create_race_with_participants(
-    wc_sprint_feb, sprint_type, "Heat #{i + 1}", "heat", "W",
-    athletes["F"][(i * 6)...(i * 6 + 6)], i * 6 + 1, race_time + 30.minutes + (i * 5).minutes
-  )
-end
-2.times do |i|
-  create_race_with_participants(
-    wc_sprint_feb, sprint_type, "Semi-Final #{i + 1}", "semi_final", "W",
-    athletes["F"][(i * 6)...(i * 6 + 6)], i * 6 + 1, race_time + 1.hour + (i * 5).minutes
-  )
-end
-create_race_with_participants(
-  wc_sprint_feb, sprint_type, "Final", "final", "W",
-  athletes["F"][0..5], 1, race_time + 1.hour + 15.minutes
+rutor = Competition.create!(
+  name: "ISMF Series 4 – Italy / Tour du Rutor Extreme",
+  description: "Team race",
+  start_date: rutor_start,
+  end_date: rutor_end,
+  city: "La Thuile",
+  place: "La Thuile, Arvier, Valgrisenche - Aosta Valley",
+  country: "ITA",
+  webpage_url: "https://www.ismf-ski.org"
 )
 
-# SPRINT MEN - Full competition format
-create_race_with_participants(
-  wc_sprint_feb, sprint_type, "Qualifications", "qualification", "M",
-  athletes["M"], 101, race_time + 2.hours
+race_time_rutor = base_datetime + 55.days + 9.hours
+
+create_team_race(
+  rutor, team_type, "Final", "final", "MM",
+  athletes["M"][40..69], 1, race_time_rutor, 2
 )
-5.times do |i|
-  create_race_with_participants(
-    wc_sprint_feb, sprint_type, "Heat #{i + 1}", "heat", "M",
-    athletes["M"][(i * 6)...(i * 6 + 6)], 101 + i * 6, race_time + 2.hours + 30.minutes + (i * 5).minutes
-  )
-end
-2.times do |i|
-  create_race_with_participants(
-    wc_sprint_feb, sprint_type, "Semi-Final #{i + 1}", "semi_final", "M",
-    athletes["M"][(i * 6)...(i * 6 + 6)], 101 + i * 6, race_time + 3.hours + (i * 5).minutes
-  )
-end
-create_race_with_participants(
-  wc_sprint_feb, sprint_type, "Final", "final", "M",
-  athletes["M"][0..5], 101, race_time + 3.hours + 15.minutes
+create_team_race(
+  rutor, team_type, "Final", "final", "WW",
+  athletes["F"][40..69], 101, race_time_rutor + 4.hours, 2
 )
 
-# Vertical races
-create_race_with_participants(
-  wc_sprint_feb, vertical_type, "Final", "final", "W",
-  athletes["F"][20..59], 201, race_time + 4.hours
-)
-
-create_race_with_participants(
-  wc_sprint_feb, vertical_type, "Final", "final", "M",
-  athletes["M"][20..59], 301, race_time + 6.hours
-)
-
-# MIXED RELAY - Full competition format
-create_relay_race_with_teams(
-  wc_sprint_feb, mixed_relay_type, "Qualifications", "qualification",
-  athletes["M"][35..54], athletes["F"][35..54], 501, race_time + 8.hours, 20
-)
-2.times do |i|
-  create_relay_race_with_teams(
-    wc_sprint_feb, mixed_relay_type, "Semi-Final #{i + 1}", "semi_final",
-    athletes["M"][(35 + i * 6)..(35 + i * 6 + 5)], athletes["F"][(35 + i * 6)..(35 + i * 6 + 5)], 
-    501 + i * 6, race_time + 8.hours + 30.minutes + (i * 5).minutes, 6
-  )
-end
-create_relay_race_with_teams(
-  wc_sprint_feb, mixed_relay_type, "Final", "final",
-  athletes["M"][35..40], athletes["F"][35..40], 501, race_time + 9.hours, 6
-)
-
-puts "✅ Created World Cup races (Sprint, Vertical, Mixed Relay)"
+puts "✅ Created Tour du Rutor Extreme races (Team)"
 
 # ============================================================================
-# COMPETITION 5: WORLD CUP SPRINT - DAY 4
+# COMPETITION 16: VILLARS-SUR-OLLON WORLD CUP
 # ============================================================================
 
 puts "\n" + "=" * 80
-puts "Competition 5: World Cup Sprint - #{(base_datetime + 4.days).strftime('%B %d, %Y')}"
+puts "Competition 16: Villars-sur-Ollon World Cup - #{(base_datetime + 59.days).strftime('%B %d, %Y')}"
 puts "=" * 80
 
-comp5_start = (base_datetime + 4.days).to_date
-comp5_end = comp5_start
+villars_start = (base_datetime + 59.days).to_date
+villars_end = (base_datetime + 63.days).to_date
 
-wc_sprint_mar = Competition.create!(
-  name: "ISMF World Cup Sprint March 2026",
-  description: "Sprint race with full competition format",
-  start_date: comp5_start,
-  end_date: comp5_end,
-  city: "TBD",
-  place: "TBD",
-  country: "TBD",
-  webpage_url: "https://www.ismf-ski.org/world-cup-2026"
+villars = Competition.create!(
+  name: "ISMF Villars-sur-Ollon World Cup",
+  description: "Final World Cup with all disciplines",
+  start_date: villars_start,
+  end_date: villars_end,
+  city: "Villars-sur-Ollon",
+  place: "Villars-sur-Ollon",
+  country: "CHE",
+  webpage_url: "https://www.ismf-ski.org"
 )
 
-race_time = base_datetime + 4.days
+race_time_vil = base_datetime + 59.days + 10.hours
 
-# SPRINT WOMEN - Full competition format
+# Sprint
 create_race_with_participants(
-  wc_sprint_mar, sprint_type, "Qualifications", "qualification", "W",
-  athletes["F"], 1, race_time
+  villars, sprint_type, "Qualifications", "qualification", "W",
+  athletes["F"][0..49], 1, race_time_vil
 )
 5.times do |i|
   create_race_with_participants(
-    wc_sprint_mar, sprint_type, "Heat #{i + 1}", "heat", "W",
-    athletes["F"][(i * 6)...(i * 6 + 6)], i * 6 + 1, race_time + 30.minutes + (i * 5).minutes
-  )
-end
-2.times do |i|
-  create_race_with_participants(
-    wc_sprint_mar, sprint_type, "Semi-Final #{i + 1}", "semi_final", "W",
-    athletes["F"][(i * 6)...(i * 6 + 6)], i * 6 + 1, race_time + 1.hour + (i * 5).minutes
+    villars, sprint_type, "Heat #{i + 1}", "heat", "W",
+    athletes["F"][(i * 6)...(i * 6 + 6)], i * 6 + 1, race_time_vil + 30.minutes + (i * 5).minutes
   )
 end
 create_race_with_participants(
-  wc_sprint_mar, sprint_type, "Final", "final", "W",
-  athletes["F"][0..5], 1, race_time + 1.hour + 15.minutes
+  villars, sprint_type, "Semi-Final 1", "semi_final", "W",
+  athletes["F"][0..5], 1, race_time_vil + 1.hour
+)
+create_race_with_participants(
+  villars, sprint_type, "Semi-Final 2", "semi_final", "W",
+  athletes["F"][6..11], 7, race_time_vil + 1.hour + 5.minutes
+)
+create_race_with_participants(
+  villars, sprint_type, "Final", "final", "W",
+  athletes["F"][0..5], 1, race_time_vil + 1.hour + 15.minutes
 )
 
-# SPRINT MEN - Full competition format
 create_race_with_participants(
-  wc_sprint_mar, sprint_type, "Qualifications", "qualification", "M",
-  athletes["M"], 101, race_time + 2.hours
+  villars, sprint_type, "Qualifications", "qualification", "M",
+  athletes["M"][0..49], 101, race_time_vil + 2.hours
 )
 5.times do |i|
   create_race_with_participants(
-    wc_sprint_mar, sprint_type, "Heat #{i + 1}", "heat", "M",
-    athletes["M"][(i * 6)...(i * 6 + 6)], 101 + i * 6, race_time + 2.hours + 30.minutes + (i * 5).minutes
-  )
-end
-2.times do |i|
-  create_race_with_participants(
-    wc_sprint_mar, sprint_type, "Semi-Final #{i + 1}", "semi_final", "M",
-    athletes["M"][(i * 6)...(i * 6 + 6)], 101 + i * 6, race_time + 3.hours + (i * 5).minutes
+    villars, sprint_type, "Heat #{i + 1}", "heat", "M",
+    athletes["M"][(i * 6)...(i * 6 + 6)], 101 + i * 6, race_time_vil + 2.5.hours + (i * 5).minutes
   )
 end
 create_race_with_participants(
-  wc_sprint_mar, sprint_type, "Final", "final", "M",
-  athletes["M"][0..5], 101, race_time + 3.hours + 15.minutes
+  villars, sprint_type, "Semi-Final 1", "semi_final", "M",
+  athletes["M"][0..5], 101, race_time_vil + 3.hours
 )
-
-# Individual races
 create_race_with_participants(
-  wc_sprint_mar, individual_type, "Final", "final", "W",
-  athletes["F"][10..49], 201, race_time + 4.hours
+  villars, sprint_type, "Semi-Final 2", "semi_final", "M",
+  athletes["M"][6..11], 107, race_time_vil + 3.hours + 5.minutes
 )
-
 create_race_with_participants(
-  wc_sprint_mar, individual_type, "Final", "final", "M",
-  athletes["M"][10..49], 301, race_time + 6.hours
+  villars, sprint_type, "Final", "final", "M",
+  athletes["M"][0..5], 101, race_time_vil + 3.hours + 15.minutes
 )
 
-# Vertical races
+# Vertical
+race_time_vil_v = race_time_vil + 1.day
 create_race_with_participants(
-  wc_sprint_mar, vertical_type, "Final", "final", "W",
-  athletes["F"][25..59], 401, race_time + 8.hours
+  villars, vertical_type, "Final", "final", "W",
+  athletes["F"][10..59], 201, race_time_vil_v
 )
-
 create_race_with_participants(
-  wc_sprint_mar, vertical_type, "Final", "final", "M",
-  athletes["M"][25..59], 501, race_time + 10.hours
+  villars, vertical_type, "Final", "final", "M",
+  athletes["M"][10..59], 301, race_time_vil_v + 2.hours
 )
 
-# MIXED RELAY - Full competition format
+# Individual
+race_time_vil_i = race_time_vil + 2.days
+create_race_with_participants(
+  villars, individual_type, "Final", "final", "W",
+  athletes["F"][15..64], 401, race_time_vil_i
+)
+create_race_with_participants(
+  villars, individual_type, "Final", "final", "M",
+  athletes["M"][15..64], 501, race_time_vil_i + 2.hours
+)
+
+# Mixed Relay
+race_time_vil_mr = race_time_vil + 3.days
 create_relay_race_with_teams(
-  wc_sprint_mar, mixed_relay_type, "Qualifications", "qualification",
-  athletes["M"][40..59], athletes["F"][40..59], 601, race_time + 12.hours, 20
+  villars, mixed_relay_type, "Qualifications", "qualification",
+  athletes["M"][20..39], athletes["F"][20..39], 601, race_time_vil_mr, 20
 )
-2.times do |i|
-  create_relay_race_with_teams(
-    wc_sprint_mar, mixed_relay_type, "Semi-Final #{i + 1}", "semi_final",
-    athletes["M"][(40 + i * 6)..(40 + i * 6 + 5)], athletes["F"][(40 + i * 6)..(40 + i * 6 + 5)], 
-    601 + i * 6, race_time + 12.hours + 30.minutes + (i * 5).minutes, 6
-  )
-end
 create_relay_race_with_teams(
-  wc_sprint_mar, mixed_relay_type, "Final", "final",
-  athletes["M"][40..45], athletes["F"][40..45], 601, race_time + 13.hours, 6
+  villars, mixed_relay_type, "Semi-Final 1", "semi_final",
+  athletes["M"][20..25], athletes["F"][20..25], 601, race_time_vil_mr + 1.hour, 6
 )
-
-puts "✅ Created World Cup races (Sprint, Individual, Vertical, Mixed Relay)"
-
-# ============================================================================
-# COMPETITION 6: WORLD CUP MIXED RELAY - DAY 5
-# ============================================================================
-
-puts "\n" + "=" * 80
-puts "Competition 6: World Cup Mixed Relay - #{(base_datetime + 5.days).strftime('%B %d, %Y')}"
-puts "=" * 80
-
-comp6_start = (base_datetime + 5.days).to_date
-comp6_end = comp6_start
-
-wc_relay_mar = Competition.create!(
-  name: "ISMF World Cup Mixed Relay March 2026",
-  description: "Mixed Relay race with full competition format",
-  start_date: comp6_start,
-  end_date: comp6_end,
-  city: "TBD",
-  place: "TBD",
-  country: "TBD",
-  webpage_url: "https://www.ismf-ski.org/world-cup-2026"
-)
-
-race_time = base_datetime + 5.days
-
-# SPRINT WOMEN - Full competition format
-create_race_with_participants(
-  wc_relay_mar, sprint_type, "Qualifications", "qualification", "W",
-  athletes["F"], 1, race_time
-)
-5.times do |i|
-  create_race_with_participants(
-    wc_relay_mar, sprint_type, "Heat #{i + 1}", "heat", "W",
-    athletes["F"][(i * 6)...(i * 6 + 6)], i * 6 + 1, race_time + 30.minutes + (i * 5).minutes
-  )
-end
-2.times do |i|
-  create_race_with_participants(
-    wc_relay_mar, sprint_type, "Semi-Final #{i + 1}", "semi_final", "W",
-    athletes["F"][(i * 6)...(i * 6 + 6)], i * 6 + 1, race_time + 1.hour + (i * 5).minutes
-  )
-end
-create_race_with_participants(
-  wc_relay_mar, sprint_type, "Final", "final", "W",
-  athletes["F"][0..5], 1, race_time + 1.hour + 15.minutes
-)
-
-# SPRINT MEN - Full competition format
-create_race_with_participants(
-  wc_relay_mar, sprint_type, "Qualifications", "qualification", "M",
-  athletes["M"], 101, race_time + 2.hours
-)
-5.times do |i|
-  create_race_with_participants(
-    wc_relay_mar, sprint_type, "Heat #{i + 1}", "heat", "M",
-    athletes["M"][(i * 6)...(i * 6 + 6)], 101 + i * 6, race_time + 2.hours + 30.minutes + (i * 5).minutes
-  )
-end
-2.times do |i|
-  create_race_with_participants(
-    wc_relay_mar, sprint_type, "Semi-Final #{i + 1}", "semi_final", "M",
-    athletes["M"][(i * 6)...(i * 6 + 6)], 101 + i * 6, race_time + 3.hours + (i * 5).minutes
-  )
-end
-create_race_with_participants(
-  wc_relay_mar, sprint_type, "Final", "final", "M",
-  athletes["M"][0..5], 101, race_time + 3.hours + 15.minutes
-)
-
-# Individual races
-create_race_with_participants(
-  wc_relay_mar, individual_type, "Final", "final", "W",
-  athletes["F"][5..44], 201, race_time + 4.hours
-)
-
-create_race_with_participants(
-  wc_relay_mar, individual_type, "Final", "final", "M",
-  athletes["M"][5..44], 301, race_time + 6.hours
-)
-
-# MIXED RELAY - Full competition format
 create_relay_race_with_teams(
-  wc_relay_mar, mixed_relay_type, "Qualifications", "qualification",
-  athletes["M"][45..59] + athletes["M"][0..4], athletes["F"][45..59] + athletes["F"][0..4], 
-  501, race_time + 8.hours, 20
+  villars, mixed_relay_type, "Semi-Final 2", "semi_final",
+  athletes["M"][26..31], athletes["F"][26..31], 607, race_time_vil_mr + 1.hour + 5.minutes, 6
 )
-2.times do |i|
-  create_relay_race_with_teams(
-    wc_relay_mar, mixed_relay_type, "Semi-Final #{i + 1}", "semi_final",
-    athletes["M"][(45 + i * 6)..(45 + i * 6 + 5)], athletes["F"][(45 + i * 6)..(45 + i * 6 + 5)], 
-    501 + i * 6, race_time + 8.hours + 30.minutes + (i * 5).minutes, 6
-  )
-end
 create_relay_race_with_teams(
-  wc_relay_mar, mixed_relay_type, "Final", "final",
-  athletes["M"][45..50], athletes["F"][45..50], 501, race_time + 9.hours, 6
+  villars, mixed_relay_type, "Final", "final",
+  athletes["M"][20..25], athletes["F"][20..25], 601, race_time_vil_mr + 2.hours, 6
 )
 
-puts "✅ Created World Cup races (Sprint, Individual, Mixed Relay)"
+puts "✅ Created Villars-sur-Ollon World Cup races (Mixed Relay, Sprint, Vertical, Individual)"
 
 # ============================================================================
 # SUMMARY
@@ -872,7 +1515,7 @@ puts "✅ Created World Cup races (Sprint, Individual, Mixed Relay)"
 
 puts ""
 puts "=" * 80
-puts "2026 World Cup Competitions Summary"
+puts "2026 ISMF World Cup Competitions Summary"
 puts "=" * 80
 puts "  Total Competitions: #{Competition.count}"
 puts "  Total Athletes: #{Athlete.count} (#{athletes['M'].count}M / #{athletes['F'].count}F)"
@@ -885,8 +1528,14 @@ Competition.order(:start_date).each do |comp|
   puts "#{comp.start_date.strftime('%b %d, %Y')}: #{comp.name}"
   puts "  Location: #{comp.city}, #{comp.country}"
   puts "  Races: #{comp.races.count}"
-  comp.races.order(:position).each do |race|
-    puts "    #{race.position + 1}. #{race.name} at #{race.scheduled_at.strftime('%H:%M')}"
-  end
+  
+  completed = comp.races.where(status: "completed").count
+  in_progress = comp.races.where(status: "in_progress").count
+  scheduled = comp.races.where(status: "scheduled").count
+  
+  puts "  Status: #{completed} completed, #{in_progress} in progress, #{scheduled} upcoming"
   puts ""
 end
+
+puts "✅ Seed data created successfully!"
+puts ""
