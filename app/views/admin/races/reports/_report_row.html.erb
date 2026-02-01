@@ -12,7 +12,7 @@
                  drop->video-upload#drop"
     onclick="if (!event.target.closest('a, button, input, select, textarea')) { Turbo.visit('<%= admin_race_report_path(race, report) %>'); }"
     title="Click to view report details">
-  <% if policy(report).create? %>
+  <% if policy(report).select? %>
     <td>
       <input type="checkbox" 
              data-report-selection-target="checkbox" 

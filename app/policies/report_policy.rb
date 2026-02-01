@@ -54,6 +54,10 @@ class ReportPolicy < ApplicationPolicy
   def reject?
     var_operator?
   end
+  
+  def select?
+    var_operator?
+  end
 
   # Reopen a rejected report
   # @return [Boolean]
