@@ -139,11 +139,29 @@ module Web
 
           case result
           in Dry::Monads::Success(race)
+            success_message = "Race '#{race.name}' was cancelled."
+            
+            # Broadcast flash message to all connected clients on reports and incidents streams
+            report_broadcaster = AppContainer["broadcasters.report"]
+            report_broadcaster.broadcast_flash_notice(@race.id, success_message)
+            
+            incident_broadcaster = AppContainer["broadcasters.incident"]
+            incident_broadcaster.broadcast_flash_notice(@race.id, success_message)
+            
             redirect_to admin_competition_race_path(@competition, @race),
-                       notice: "Race '#{race.name}' was cancelled."
+                       notice: success_message
           in Dry::Monads::Failure(errors)
+            error_message = "Failed to cancel race: #{format_errors(errors)}"
+            
+            # Broadcast error flash message to all connected clients
+            report_broadcaster = AppContainer["broadcasters.report"]
+            report_broadcaster.broadcast_flash_alert(@race.id, error_message)
+            
+            incident_broadcaster = AppContainer["broadcasters.incident"]
+            incident_broadcaster.broadcast_flash_alert(@race.id, error_message)
+            
             redirect_to admin_competition_race_path(@competition, @race),
-                       alert: "Failed to cancel race: #{format_errors(errors)}"
+                       alert: error_message
           end
         end
 
@@ -154,11 +172,29 @@ module Web
 
           case result
           in Dry::Monads::Success(race)
+            success_message = "Race '#{race.name}' was marked as completed."
+            
+            # Broadcast flash message to all connected clients on reports and incidents streams
+            report_broadcaster = AppContainer["broadcasters.report"]
+            report_broadcaster.broadcast_flash_notice(@race.id, success_message)
+            
+            incident_broadcaster = AppContainer["broadcasters.incident"]
+            incident_broadcaster.broadcast_flash_notice(@race.id, success_message)
+            
             redirect_to admin_competition_race_path(@competition, @race),
-                       notice: "Race '#{race.name}' was marked as completed."
+                       notice: success_message
           in Dry::Monads::Failure(errors)
+            error_message = "Failed to complete race: #{format_errors(errors)}"
+            
+            # Broadcast error flash message to all connected clients
+            report_broadcaster = AppContainer["broadcasters.report"]
+            report_broadcaster.broadcast_flash_alert(@race.id, error_message)
+            
+            incident_broadcaster = AppContainer["broadcasters.incident"]
+            incident_broadcaster.broadcast_flash_alert(@race.id, error_message)
+            
             redirect_to admin_competition_race_path(@competition, @race),
-                       alert: "Failed to complete race: #{format_errors(errors)}"
+                       alert: error_message
           end
         end
 
