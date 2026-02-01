@@ -147,16 +147,54 @@ module Web
             if result.success?
               incident = result.value!
               status_label = incident.status == "approved" ? "approved" : "rejected"
-              redirect_to admin_race_incident_path(@race, incident),
-                          notice: "Incident #{status_label}."
+              
+              # Broadcast removal of all reports that were confirmed/rejected
+              # This updates touch displays by removing them from pending queue
+              affected_reports = Report.where(incident_id: incident.id)
+              affected_reports.each do |report|
+                Turbo::StreamsChannel.broadcast_remove_to(
+                  "race_#{@race.id}_reports",
+                  target: "report_#{report.id}"
+                )
+              end
+              
+              # Broadcast updated report counters since reports were confirmed/rejected
+              report_repo = AppContainer["repos.report"]
+              status_counts = report_repo.count_by_status(@race.id)
+              
+              # Update report counters on touch displays
+              Turbo::StreamsChannel.broadcast_action_to(
+                "race_#{@race.id}_reports",
+                action: :update,
+                target: "pending-count-badge",
+                html: status_counts["pending_review"] || 0
+              )
+              
+              # Check if request came from report page
+              if params[:redirect_to_reports] == "true"
+                redirect_to admin_race_reports_path(@race),
+                            notice: "Incident #{status_label}."
+              else
+                redirect_to admin_race_incident_path(@race, incident),
+                            notice: "Incident #{status_label}."
+              end
             else
               error = result.failure
-              if error.is_a?(Array) && error.first == :validation_failed
-                redirect_to admin_race_incident_path(@race, @incident),
-                            alert: "Validation failed: #{error.last.values.flatten.join(', ')}"
+              error_message = if error.is_a?(Array) && error.first == :validation_failed
+                "Validation failed: #{error.last.values.flatten.join(', ')}"
               else
-                redirect_to admin_race_incident_path(@race, @incident),
-                            alert: "Error deciding incident: #{error.inspect}"
+                "Error deciding incident: #{error.inspect}"
+              end
+              
+              # Check if request came from report page
+              if params[:redirect_to_reports] == "true" && params[:report_id].present?
+                # Redirect back to the report page on error so user can fix validation
+                redirect_to admin_race_report_path(@race, params[:report_id]), alert: error_message
+              elsif params[:redirect_to_reports] == "true"
+                # Fallback to reports index if report_id not provided
+                redirect_to admin_race_reports_path(@race), alert: error_message
+              else
+                redirect_to admin_race_incident_path(@race, @incident), alert: error_message
               end
             end
           end

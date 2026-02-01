@@ -52,6 +52,7 @@ Rails.application.routes.draw do
         member do
           post :confirm
           post :reject
+          post :reject_with_incident
           post :reopen
           get :video_thumbnails
         end

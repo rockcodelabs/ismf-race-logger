@@ -23,7 +23,7 @@ module Web
           include Dry::Monads[:result]
 
           before_action :set_race
-          before_action :set_report, only: [ :show, :confirm, :reject, :reopen, :video_thumbnails ]
+          before_action :set_report, only: [ :show, :confirm, :reject, :reject_with_incident, :reopen, :video_thumbnails ]
 
           def index
             authorize Report, :index?
@@ -51,6 +51,16 @@ module Web
           def show
             authorize @report, :show?
             @report = parts_factory.wrap(@report)
+            
+            # Load incident data if report is linked to an incident
+            if @report.incident_id.present?
+              @incident = incident_repo.find(@report.incident_id)
+              @penalties = penalty_repo.all
+              
+              # Get attached penalty IDs for pre-selecting in the form
+              incident_model = Incident.includes(incident_penalties: :penalty).find(@report.incident_id)
+              @attached_penalty_ids = incident_model.incident_penalties.map(&:penalty_id)
+            end
           end
 
           def new
@@ -225,6 +235,75 @@ module Web
             end
           end
 
+          def reject_with_incident
+            authorize @report, :reject?
+            
+            # Report must be linked to an incident
+            unless @report.incident_id.present?
+              redirect_to admin_race_report_path(@race, @report),
+                          alert: "Report is not linked to an incident."
+              return
+            end
+            
+            # Load the incident
+            incident = Incident.find_by(id: @report.incident_id)
+            unless incident
+              redirect_to admin_race_report_path(@race, @report),
+                          alert: "Associated incident not found."
+              return
+            end
+            
+            # Call the incident decide operation with rejected status
+            # This will reject the incident AND all associated pending reports
+            result = Operations::Incidents::Decide.new.call(
+              id: incident.id,
+              status: "rejected",
+              user_id: Current.user.id,
+              description: params[:description],
+              penalty_ids: []
+            )
+            
+            if result.success?
+              # Broadcast removal of all reports that were rejected
+              # This updates touch displays by removing them from pending queue
+              incident = Incident.find_by(id: incident.id)
+              if incident
+                affected_reports = Report.where(incident_id: incident.id)
+                affected_reports.each do |report|
+                  Turbo::StreamsChannel.broadcast_remove_to(
+                    "race_#{@race.id}_reports",
+                    target: "report_#{report.id}"
+                  )
+                end
+              end
+              
+              # Broadcast updated report counters since reports were rejected
+              status_counts = report_repo.count_by_status(@race.id)
+              
+              # Update report counters on touch displays
+              Turbo::StreamsChannel.broadcast_action_to(
+                "race_#{@race.id}_reports",
+                action: :update,
+                target: "pending-count-badge",
+                html: status_counts["pending_review"] || 0
+              )
+              
+              redirect_to admin_race_reports_path(@race),
+                          notice: "Report and incident rejected.",
+                          status: :see_other
+            else
+              error = result.failure
+              error_message = if error.is_a?(Array) && error.first == :validation_failed
+                "Validation failed: #{error.last.values.flatten.join(', ')}"
+              else
+                "Error rejecting incident: #{error.inspect}"
+              end
+              
+              redirect_to admin_race_report_path(@race, @report),
+                          alert: error_message
+            end
+          end
+
           def reopen
             authorize @report, :reopen?
             result = Operations::Reports::Reopen.new.call(id: @report.id)
@@ -369,6 +448,14 @@ module Web
 
           def report_broadcaster
             @report_broadcaster ||= AppContainer["broadcasters.report"]
+          end
+
+          def incident_repo
+            @incident_repo ||= AppContainer["repos.incident"]
+          end
+
+          def penalty_repo
+            @penalty_repo ||= AppContainer["repos.penalty"]
           end
         end
       end

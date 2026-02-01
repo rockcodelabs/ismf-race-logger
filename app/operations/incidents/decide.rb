@@ -13,7 +13,9 @@ module Operations
     # 3. Updates the incident status (approved/rejected)
     # 4. Records who made the decision and when
     # 5. Optionally attaches penalties
-    # 6. Returns the updated struct
+    # 6. When approving, confirms all associated pending reports
+    # 7. When rejecting, rejects all associated pending reports
+    # 8. Returns the updated struct
     #
     # Returns:
     # - Success(Structs::Incident) if incident decided
@@ -74,6 +76,15 @@ module Operations
                 penalty_id: penalty_id
               )
             end
+          end
+
+          # Update associated reports based on decision
+          if validated[:status] == "approved"
+            # When approving, confirm all associated pending reports
+            Report.where(incident_id: incident.id, status: "pending_review").update_all(status: "confirmed")
+          elsif validated[:status] == "rejected"
+            # When rejecting, reject all associated pending reports
+            Report.where(incident_id: incident.id, status: "pending_review").update_all(status: "rejected")
           end
         end
 

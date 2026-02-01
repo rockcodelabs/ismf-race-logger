@@ -79,11 +79,17 @@
                 </div>
               <% end %>
               <% if @report.linked_to_incident? %>
-                <div>
-                  <dt class="text-xs font-medium text-ismf-gray">Linked Incident</dt>
-                  <dd class="text-sm">
-                    <%= link_to admin_race_incident_path(@race, @report.incident_id), class: "text-ismf-blue hover:underline font-medium" do %>
+                <div class="col-span-2">
+                  <dt class="text-xs font-medium text-ismf-gray mb-1">Linked Incident</dt>
+                  <dd class="flex items-center gap-2">
+                    <%= link_to admin_race_incident_path(@race, @report.incident_id), class: "text-ismf-blue hover:underline font-medium text-sm" do %>
                       Incident #<%= @report.incident_id %>
+                    <% end %>
+                    <% if defined?(@incident) && @incident.present? %>
+                      <% incident_part = AppContainer["parts.factory"].wrap(@incident) %>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium <%= incident_part.status_badge[:class] %>">
+                        <%= incident_part.status_badge[:label] %>
+                      </span>
                     <% end %>
                   </dd>
                 </div>
