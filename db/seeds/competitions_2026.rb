@@ -115,7 +115,7 @@ puts "✅ Created #{athletes['F'].count} female athletes"
 # HELPER METHODS
 # ============================================================================
 
-def create_race_with_participants(competition, race_type, stage_name, stage_type, gender_category, athletes, start_bib, scheduled_time, status = "scheduled")
+def create_race_with_participants(competition, race_type, stage_name, stage_type, gender_category, athletes, start_bib, scheduled_time, status = "scheduled", skip_participants: false)
   max_position = Race.where(competition_id: competition.id).maximum(:position) || -1
   next_position = max_position + 1
   
@@ -131,21 +131,26 @@ def create_race_with_participants(competition, race_type, stage_name, stage_type
     position: next_position
   )
   
-  athletes.each_with_index do |athlete, index|
-    bib = start_bib + index
-    bib = ((bib - 1) % 200) + 1 if bib > 200  # Keep bibs between 1-200
-    RaceParticipation.create!(
-      race: race,
-      athlete: athlete,
-      bib_number: bib,
-      status: "registered"
-    )
+  unless skip_participants
+    athletes.each_with_index do |athlete, index|
+      bib = start_bib + index
+      bib = ((bib - 1) % 200) + 1 if bib > 200  # Keep bibs between 1-200
+      RaceParticipation.create!(
+        race: race,
+        athlete: athlete,
+        bib_number: bib,
+        status: "registered"
+      )
+    end
   end
+  
+  # Populate race locations from templates
+  Operations::Races::PopulateLocations.new.call(race_id: race.id, race_type_id: race_type.id)
   
   race
 end
 
-def create_relay_race_with_teams(competition, race_type, stage_name, stage_type, male_athletes, female_athletes, start_bib, scheduled_time, team_count, status = "scheduled")
+def create_relay_race_with_teams(competition, race_type, stage_name, stage_type, male_athletes, female_athletes, start_bib, scheduled_time, team_count, status = "scheduled", skip_participants: false)
   max_position = Race.where(competition_id: competition.id).maximum(:position) || -1
   next_position = max_position + 1
   
@@ -161,50 +166,55 @@ def create_relay_race_with_teams(competition, race_type, stage_name, stage_type,
     position: next_position
   )
   
-  team_count.times do |i|
-    male_athlete = male_athletes[i]
-    female_athlete = female_athletes[i]
-    
-    next unless male_athlete && female_athlete
-    
-    team_bib = start_bib + i
-    team_bib = ((team_bib - 1) % 200) + 1 if team_bib > 200  # Keep bibs between 1-200
-    
-    team = Team.create!(
-      race: race,
-      athlete_1: male_athlete,
-      athlete_2: female_athlete,
-      name: "#{male_athlete.country} Mixed #{i + 1}",
-      team_type: "relay_team",
-      bib_number: team_bib
-    )
-    
-    # Each athlete gets unique bib for relay teams - male uses team bib, female adds 50
-    male_bib = team_bib
-    female_bib = team_bib + 50
-    female_bib = ((female_bib - 1) % 200) + 1 if female_bib > 200
-    
-    RaceParticipation.create!(
-      race: race,
-      athlete: male_athlete,
-      team: team,
-      bib_number: male_bib,
-      status: "registered"
-    )
-    
-    RaceParticipation.create!(
-      race: race,
-      athlete: female_athlete,
-      team: team,
-      bib_number: female_bib,
-      status: "registered"
-    )
+  unless skip_participants
+    team_count.times do |i|
+      male_athlete = male_athletes[i]
+      female_athlete = female_athletes[i]
+      
+      next unless male_athlete && female_athlete
+      
+      team_bib = start_bib + i
+      team_bib = ((team_bib - 1) % 200) + 1 if team_bib > 200  # Keep bibs between 1-200
+      
+      team = Team.create!(
+        race: race,
+        athlete_1: male_athlete,
+        athlete_2: female_athlete,
+        name: "#{male_athlete.country} Mixed #{i + 1}",
+        team_type: "relay_team",
+        bib_number: team_bib
+      )
+      
+      # Each athlete gets unique bib for relay teams - male uses team bib, female adds 50
+      male_bib = team_bib
+      female_bib = team_bib + 50
+      female_bib = ((female_bib - 1) % 200) + 1 if female_bib > 200
+      
+      RaceParticipation.create!(
+        race: race,
+        athlete: male_athlete,
+        team: team,
+        bib_number: male_bib,
+        status: "registered"
+      )
+      
+      RaceParticipation.create!(
+        race: race,
+        athlete: female_athlete,
+        team: team,
+        bib_number: female_bib,
+        status: "registered"
+      )
+    end
   end
+  
+  # Populate race locations from templates
+  Operations::Races::PopulateLocations.new.call(race_id: race.id, race_type_id: race_type.id)
   
   race
 end
 
-def create_team_race(competition, race_type, stage_name, stage_type, gender_category, athletes, start_bib, scheduled_time, team_size = 2, status = "scheduled")
+def create_team_race(competition, race_type, stage_name, stage_type, gender_category, athletes, start_bib, scheduled_time, team_size = 2, status = "scheduled", skip_participants: false)
   max_position = Race.where(competition_id: competition.id).maximum(:position) || -1
   next_position = max_position + 1
   
@@ -221,37 +231,42 @@ def create_team_race(competition, race_type, stage_name, stage_type, gender_cate
   )
   
   # Create teams
-  team_count = [athletes.count / team_size, 15].min
-  team_count.times do |i|
-    team_athletes = athletes[(i * team_size)...(i * team_size + team_size)]
-    next if team_athletes.count < team_size
-    
-    team_bib = start_bib + i
-    team_bib = ((team_bib - 1) % 200) + 1 if team_bib > 200  # Keep bibs between 1-200
-    
-    team = Team.create!(
-      race: race,
-      athlete_1: team_athletes[0],
-      athlete_2: team_athletes[1],
-      name: "#{team_athletes[0].country} Team #{i + 1}",
-      team_type: "race_team",
-      bib_number: team_bib
-    )
-    
-    # Each team member gets unique bib - use larger offset to avoid collisions
-    team_athletes.each_with_index do |athlete, idx|
-      athlete_bib = team_bib + (idx * 50)
-      athlete_bib = ((athlete_bib - 1) % 200) + 1 if athlete_bib > 200
+  unless skip_participants
+    team_count = [athletes.count / team_size, 15].min
+    team_count.times do |i|
+      team_athletes = athletes[(i * team_size)...(i * team_size + team_size)]
+      next if team_athletes.count < team_size
       
-      RaceParticipation.create!(
+      team_bib = start_bib + i
+      team_bib = ((team_bib - 1) % 200) + 1 if team_bib > 200  # Keep bibs between 1-200
+      
+      team = Team.create!(
         race: race,
-        athlete: athlete,
-        team: team,
-        bib_number: athlete_bib,
-        status: "registered"
+        athlete_1: team_athletes[0],
+        athlete_2: team_athletes[1],
+        name: "#{team_athletes[0].country} Team #{i + 1}",
+        team_type: "race_team",
+        bib_number: team_bib
       )
+      
+      # Each team member gets unique bib - use larger offset to avoid collisions
+      team_athletes.each_with_index do |athlete, idx|
+        athlete_bib = team_bib + (idx * 50)
+        athlete_bib = ((athlete_bib - 1) % 200) + 1 if athlete_bib > 200
+        
+        RaceParticipation.create!(
+          race: race,
+          athlete: athlete,
+          team: team,
+          bib_number: athlete_bib,
+          status: "registered"
+        )
+      end
     end
   end
+  
+  # Populate race locations from templates
+  Operations::Races::PopulateLocations.new.call(race_id: race.id, race_type_id: race_type.id)
   
   race
 end
@@ -294,15 +309,15 @@ create_relay_race_with_teams(
 )
 create_relay_race_with_teams(
   boi_taull, mixed_relay_type, "Semi-Final 1", "semi_final",
-  athletes["M"][0..5], athletes["F"][0..5], 1, race_time - 1.day + 11.hours, 6, "completed"
+  athletes["M"][0..5], athletes["F"][0..5], 1, race_time - 1.day + 11.hours, 6, "completed", skip_participants: true
 )
 create_relay_race_with_teams(
   boi_taull, mixed_relay_type, "Semi-Final 2", "semi_final",
-  athletes["M"][6..11], athletes["F"][6..11], 7, race_time - 1.day + 11.hours + 5.minutes, 6, "completed"
+  athletes["M"][6..11], athletes["F"][6..11], 7, race_time - 1.day + 11.hours + 5.minutes, 6, "completed", skip_participants: true
 )
 create_relay_race_with_teams(
   boi_taull, mixed_relay_type, "Final", "final",
-  athletes["M"][0..5], athletes["F"][0..5], 1, race_time - 1.day + 12.hours, 6, "completed"
+  athletes["M"][0..5], athletes["F"][0..5], 1, race_time - 1.day + 12.hours, 6, "completed", skip_participants: true
 )
 
 # Sprint Women (today - semi-finals ongoing)
@@ -313,7 +328,7 @@ create_race_with_participants(
 5.times do |i|
   create_race_with_participants(
     boi_taull, sprint_type, "Heat #{i + 1}", "heat", "W",
-    athletes["F"][20 + (i * 6)..20 + (i * 6) + 5], 1 + i * 6, race_time - 20.minutes + (i * 2).minutes, "completed"
+    athletes["F"][20 + (i * 6)..20 + (i * 6) + 5], 1 + i * 6, race_time - 20.minutes + (i * 2).minutes, "completed", skip_participants: true
   )
 end
 create_race_with_participants(
@@ -322,11 +337,11 @@ create_race_with_participants(
 )
 create_race_with_participants(
   boi_taull, sprint_type, "Semi-Final 2", "semi_final", "W",
-  athletes["F"][26..31], 7, race_time + 2.minutes, "scheduled"
+  athletes["F"][26..31], 7, race_time + 2.minutes, "scheduled", skip_participants: true
 )
 create_race_with_participants(
   boi_taull, sprint_type, "Final", "final", "W",
-  athletes["F"][20..25], 1, race_time + 30.minutes
+  athletes["F"][20..25], 1, race_time + 30.minutes, skip_participants: true
 )
 
 # Sprint Men (today - upcoming)
@@ -337,20 +352,20 @@ create_race_with_participants(
 5.times do |i|
   create_race_with_participants(
     boi_taull, sprint_type, "Heat #{i + 1}", "heat", "M",
-    athletes["M"][20 + (i * 6)..20 + (i * 6) + 5], 101 + i * 6, race_time + 1.5.hours + (i * 2).minutes
+    athletes["M"][20 + (i * 6)..20 + (i * 6) + 5], 101 + i * 6, race_time + 1.5.hours + (i * 2).minutes, "scheduled", skip_participants: true
   )
 end
 create_race_with_participants(
   boi_taull, sprint_type, "Semi-Final 1", "semi_final", "M",
-  athletes["M"][20..25], 101, race_time + 2.hours
+  athletes["M"][20..25], 101, race_time + 2.hours, "scheduled", skip_participants: true
 )
 create_race_with_participants(
   boi_taull, sprint_type, "Semi-Final 2", "semi_final", "M",
-  athletes["M"][26..31], 107, race_time + 2.hours + 5.minutes
+  athletes["M"][26..31], 107, race_time + 2.hours + 5.minutes, "scheduled", skip_participants: true
 )
 create_race_with_participants(
   boi_taull, sprint_type, "Final", "final", "M",
-  athletes["M"][20..25], 101, race_time + 2.5.hours
+  athletes["M"][20..25], 101, race_time + 2.5.hours, "scheduled", skip_participants: true
 )
 
 puts "✅ Created Boí Taüll races (Mixed Relay, Sprint)"

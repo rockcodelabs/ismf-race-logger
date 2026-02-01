@@ -8,7 +8,7 @@ Dry::Struct::Error in Web::Controllers::Admin::RacesController#show
 Dry::Struct::Error in Web::Controllers::Admin::RaceTypes::LocationTemplatesController#index
 [Structs::RaceTypeLocationTemplate.new] "start" (String) has invalid type for :course_segment violates constraints (included_in?(["uphill1", "uphill2", "uphill3", "transition_1to2", "transition_2to1", "descent", "footpart", "start_area", "finish_area"], "start") failed)
 
-4. seeds for race location templates and race locations
+4. ✅ seeds for race location templates and race locations - 3,042 race locations created from templates (13 per Sprint, 13 per Individual, 9 per Mixed Relay, 7 per Vertical, 8 per Team)
 5. on desktop I cannot change profile
 6. in menu link to reports and to report!
 7. competitions should be ordered so top the next and latest

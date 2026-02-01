@@ -57,6 +57,20 @@ class RacePolicy < ApplicationPolicy
     admin? || var_operator?
   end
 
+  # Cancel race
+  # Admins and VAR operators can cancel races
+  # @return [Boolean]
+  def cancel?
+    admin? || var_operator?
+  end
+
+  # Complete race
+  # Admins and VAR operators can mark races as completed
+  # @return [Boolean]
+  def complete?
+    admin? || var_operator?
+  end
+
   # Scope for listing races
   class Scope < ApplicationPolicy::Scope
     def resolve
