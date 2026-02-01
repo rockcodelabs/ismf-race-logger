@@ -184,6 +184,26 @@ class ReportBroadcaster < BaseBroadcaster
     broadcast_flash_notice(report.race_id, "#{count} video#{count == 1 ? '' : 's'} added to report ##{report.bib_number}.")
   end
 
+  # Broadcast flash notice message to all connected clients
+  def broadcast_flash_notice(race_id, message)
+    Turbo::StreamsChannel.broadcast_append_to(
+      stream_name(race_id),
+      target: "flash-messages",
+      partial: "shared/flash",
+      locals: { type: "notice", message: message }
+    )
+  end
+
+  # Broadcast flash alert message to all connected clients
+  def broadcast_flash_alert(race_id, message)
+    Turbo::StreamsChannel.broadcast_append_to(
+      stream_name(race_id),
+      target: "flash-messages",
+      partial: "shared/flash",
+      locals: { type: "alert", message: message }
+    )
+  end
+
   private
 
   # Stream name for race-specific report updates
@@ -221,26 +241,6 @@ class ReportBroadcaster < BaseBroadcaster
       action: :update,
       target: "rejected-count",
       html: status_counts["rejected"] || 0
-    )
-  end
-
-  # Broadcast flash notice message to all connected clients
-  def broadcast_flash_notice(race_id, message)
-    Turbo::StreamsChannel.broadcast_append_to(
-      stream_name(race_id),
-      target: "flash-messages",
-      partial: "shared/flash",
-      locals: { type: "notice", message: message }
-    )
-  end
-
-  # Broadcast flash alert message to all connected clients
-  def broadcast_flash_alert(race_id, message)
-    Turbo::StreamsChannel.broadcast_append_to(
-      stream_name(race_id),
-      target: "flash-messages",
-      partial: "shared/flash",
-      locals: { type: "alert", message: message }
     )
   end
 end
