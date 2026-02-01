@@ -25,7 +25,7 @@
     <%# Find next race for sorting and status display %>
     <% all_races = @races_by_type.values.flatten %>
     <% in_progress_races = all_races.select { |r| r.in_progress? } %>
-    <% upcoming_races = all_races.select { |r| r.upcoming? && r.minutes_until_start <= 120 } %>
+    <% upcoming_races = all_races.select { |r| r.upcoming? } %>
     <% actual_next_up = upcoming_races.reject { |r| r.in_progress? }.min_by(&:scheduled_at) %>
 
     <%# Sort race types by closest scheduled time %>

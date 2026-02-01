@@ -2,9 +2,9 @@
 <%# Usage: render 'admin/races/races_by_type', races_by_type: @races_by_type, competition: @competition %>
 
 <% if races_by_type.any? %>
-  <%# Find the actual next upcoming race (not in progress) within 2 hours %>
+  <%# Find the actual next upcoming race (not in progress) %>
   <% all_races_touch = races_by_type.values.flatten %>
-  <% upcoming_races_touch = all_races_touch.select { |r| r.upcoming? && r.minutes_until_start <= 120 } %>
+  <% upcoming_races_touch = all_races_touch.select { |r| r.upcoming? } %>
   <% actual_next_up = upcoming_races_touch.reject { |r| r.in_progress? }.min_by(&:scheduled_at) %>
   
   <%# Sort race types by closest scheduled time %>

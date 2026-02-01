@@ -1,109 +1,125 @@
 <div class="space-y-6">
   <!-- Page header with breadcrumb -->
-  <div class="space-y-2">
-    <nav class="flex text-sm text-gray-500">
+  <div class="space-y-4">
+    <nav class="flex flex-wrap items-center text-sm text-gray-500">
       <%= link_to "Competitions", admin_competitions_path, class: "hover:text-ismf-blue" %>
       <span class="mx-2">/</span>
-      <%= link_to @competition.name, admin_competition_path(@competition), class: "hover:text-ismf-blue" %>
+      <%= link_to @competition.name, admin_competition_path(@competition), class: "hover:text-ismf-blue truncate max-w-xs" %>
       <span class="mx-2">/</span>
       <%= link_to "Races", admin_competition_races_path(@competition), class: "hover:text-ismf-blue" %>
       <span class="mx-2">/</span>
-      <span class="text-ismf-navy font-medium"><%= @race.name %></span>
+      <span class="text-ismf-navy font-medium truncate max-w-xs"><%= @race.name %></span>
     </nav>
 
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold text-ismf-navy"><%= @race.name %></h1>
         <p class="mt-1 text-sm text-ismf-gray">
           <%= @race.race_type_name %> • <%= @race.stage_name %>
         </p>
       </div>
-      <div class="flex items-center gap-3">
-        <%= link_to admin_race_reports_path(@race), class: "btn-secondary" do %>
-          <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <span>View Reports</span>
-        <% end %>
-        <%= link_to admin_race_incidents_path(@race), class: "btn-secondary" do %>
-          <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <span>View Incidents</span>
-        <% end %>
-        <% if policy(@race).update? %>
-          <%= link_to admin_race_race_locations_path(@race), class: "btn-secondary" do %>
+      
+      <!-- Action buttons - Two rows -->
+      <div class="flex flex-col gap-2">
+        <!-- Row 1: Primary actions -->
+        <div class="flex flex-wrap items-center gap-2">
+          <%= link_to admin_race_reports_path(@race), class: "btn-secondary" do %>
             <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <span>Manage Locations</span>
+            <span>View Reports</span>
           <% end %>
-        <% end %>
-        <% if policy(@race).update? %>
-          <%= link_to new_admin_race_import_path(@race), class: "btn-primary" do %>
+          <%= link_to admin_race_incidents_path(@race), class: "btn-secondary" do %>
             <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
-            <span>Import Athletes</span>
+            <span>View Incidents</span>
           <% end %>
-        <% end %>
-        <% if @race.can_edit? && policy(@race).update? %>
-          <%= link_to edit_admin_competition_race_path(@competition, @race), class: "btn-secondary" do %>
+          <% if policy(@race).update? %>
+            <%= link_to admin_race_race_locations_path(@race), class: "btn-secondary" do %>
+              <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              <span>Manage Locations</span>
+            <% end %>
+          <% end %>
+          <% if policy(@race).update? %>
+            <%= link_to new_admin_race_import_path(@race), class: "btn-primary" do %>
+              <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Import Athletes</span>
+            <% end %>
+          <% end %>
+        </div>
+        
+        <!-- Row 2: Edit and navigation -->
+        <div class="flex flex-wrap items-center gap-2">
+          <% if @race.can_edit? && policy(@race).update? %>
+            <%= link_to edit_admin_competition_race_path(@competition, @race), class: "btn-secondary" do %>
+              <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              <span>Edit Race</span>
+            <% end %>
+          <% end %>
+          <%= link_to admin_competition_races_path(@competition), class: "btn-secondary" do %>
             <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            <span>Edit Race</span>
+            <span>Back to Races</span>
           <% end %>
-        <% end %>
-        <%= link_to admin_competition_races_path(@competition), class: "btn-secondary" do %>
-          <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          <span>Back to Races</span>
-        <% end %>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Competition context card -->
-  <div class="card bg-gradient-to-r from-ismf-blue to-blue-600 text-white">
-    <div class="p-4">
-      <div class="flex items-center gap-4">
+  <!-- Competition context card - Grid Layout -->
+  <div class="card bg-gradient-to-r from-ismf-blue to-blue-600 text-white overflow-hidden">
+    <div class="p-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <!-- Competition -->
         <div>
-          <div class="text-sm opacity-75">Competition</div>
-          <div class="text-lg font-semibold"><%= @competition.name %></div>
+          <div class="text-xs opacity-75 mb-1 uppercase tracking-wide">Competition</div>
+          <div class="font-semibold"><%= @competition.name %></div>
         </div>
-        <div class="h-10 w-px bg-white/20"></div>
+        
+        <!-- Dates -->
         <div>
-          <div class="text-sm opacity-75">Dates</div>
-          <div class="text-lg font-semibold"><%= @competition.short_date_range %></div>
+          <div class="text-xs opacity-75 mb-1 uppercase tracking-wide">Dates</div>
+          <div class="font-semibold"><%= @competition.short_date_range %></div>
         </div>
-        <div class="h-10 w-px bg-white/20"></div>
+        
+        <!-- Location -->
         <div>
-          <div class="text-sm opacity-75">Location</div>
-          <div class="text-lg font-semibold"><%= @competition.place %>, <%= @competition.country_name %></div>
+          <div class="text-xs opacity-75 mb-1 uppercase tracking-wide">Location</div>
+          <div class="font-semibold"><%= @competition.place %>, <%= @competition.country_name %></div>
         </div>
-        <div class="h-10 w-px bg-white/20"></div>
+        
+        <!-- Category -->
         <div>
-          <div class="text-sm opacity-75">Category</div>
-          <div class="text-lg font-semibold"><%= @race.gender_category_display %></div>
+          <div class="text-xs opacity-75 mb-1 uppercase tracking-wide">Category</div>
+          <div class="font-semibold"><%= @race.gender_category_display %></div>
         </div>
-        <div class="h-10 w-px bg-white/20"></div>
+        
+        <!-- Race Type -->
         <div>
-          <div class="text-sm opacity-75">Race Type</div>
-          <div class="text-lg font-semibold"><%= @race.race_type_name %></div>
+          <div class="text-xs opacity-75 mb-1 uppercase tracking-wide">Race Type</div>
+          <div class="font-semibold"><%= @race.race_type_name %></div>
         </div>
-        <div class="h-10 w-px bg-white/20"></div>
+        
+        <!-- Stage -->
         <div>
-          <div class="text-sm opacity-75">Stage</div>
-          <div class="text-lg font-semibold"><%= @race.stage_name %></div>
+          <div class="text-xs opacity-75 mb-1 uppercase tracking-wide">Stage</div>
+          <div class="font-semibold"><%= @race.stage_name %></div>
         </div>
-        <div class="h-10 w-px bg-white/20"></div>
-        <div>
-          <div class="text-sm opacity-75">Status</div>
-          <div class="flex items-center gap-3">
-            <div class="text-lg font-semibold"><%= @race.status.titleize %></div>
+        
+        <!-- Status with actions -->
+        <div class="sm:col-span-2 lg:col-span-1 xl:col-span-2">
+          <div class="text-xs opacity-75 mb-1 uppercase tracking-wide">Status</div>
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="font-semibold"><%= @race.status.titleize %></div>
             <% if @race.in_progress? && policy(@race).complete? %>
               <%= button_to complete_admin_competition_race_path(@competition, @race), method: :post, class: "inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors", data: { turbo_confirm: "Mark this race as completed?" } do %>
                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,7 +145,7 @@
   <!-- Participants Section -->
   <div class="card">
     <div class="px-6 py-5 border-b border-gray-200 bg-gray-50">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-center gap-4">
           <h3 class="text-lg font-medium text-ismf-navy">Participants</h3>
           <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-ismf-blue text-white">
@@ -140,12 +156,12 @@
           <% if policy(@race).copy_participants? %>
             <% copyable_races = race_repo.copyable_races(@race.id) %>
             <% if copyable_races.any? %>
-              <%= form_with url: copy_admin_competition_race_participations_path(@competition, @race), method: :post, class: "flex items-center gap-2" do |f| %>
+              <%= form_with url: copy_admin_competition_race_participations_path(@competition, @race), method: :post, class: "flex flex-col sm:flex-row items-stretch sm:items-center gap-2" do |f| %>
                 <%= f.select :source_race_id, 
                     options_from_collection_for_select(copyable_races, :id, :name),
                     { prompt: "Copy from..." },
                     class: "rounded-lg border-gray-300 text-sm min-w-[200px]" %>
-                <%= f.submit "Copy Participants", class: "btn-primary" %>
+                <%= f.submit "Copy Participants", class: "btn-primary whitespace-nowrap" %>
               <% end %>
             <% else %>
               <span class="text-sm text-gray-500 italic">No previous races available to copy from</span>
