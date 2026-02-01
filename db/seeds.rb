@@ -10,7 +10,8 @@
 # Seed files:
 # - db/seeds/roles.rb - User roles
 # - db/seeds/race_types.rb - Race type definitions
-# - db/seeds/location_templates.rb - Location templates for race types
+# - db/seeds/race_type_location_templates.rb - Location templates for race types
+# - db/seeds/penalties.rb - ISMF penalty codes
 # - db/seeds/users.rb - Users with PIN authentication
 # - db/seeds/competitions_2026.rb - 2026 ISMF World Cup competitions
 #
@@ -47,7 +48,8 @@ puts "✅ Database cleared"
 seed_files = [
   "roles",
   "race_types",
-  "location_templates",
+  "race_type_location_templates",
+  "penalties",
   "users",
   "competitions_2026"
 ]
@@ -71,6 +73,7 @@ puts "Summary:"
 puts "  Roles: #{Role.count}"
 puts "  Race Types: #{RaceType.count}"
 puts "  Location Templates: #{RaceTypeLocationTemplate.count}"
+puts "  Penalties: #{Penalty.count}"
 puts "  Users: #{User.count}"
 puts "  Competitions: #{Competition.count}"
 puts "  Athletes: #{Athlete.count}"

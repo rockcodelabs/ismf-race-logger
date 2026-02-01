@@ -32,6 +32,11 @@ Rails.application.routes.draw do
     
     resources :competitions do
       resources :races do
+        member do
+          post :cancel
+          post :complete
+        end
+        
         resources :participations, only: [:destroy], controller: "races/participations" do
           collection do
             post :copy

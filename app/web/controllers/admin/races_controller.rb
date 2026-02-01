@@ -21,7 +21,7 @@ module Web
       #
       class RacesController < BaseController
         before_action :set_competition
-        before_action :set_race, only: [ :show, :edit, :update, :destroy ]
+        before_action :set_race, only: [ :show, :edit, :update, :destroy, :cancel, :complete ]
         after_action :verify_authorized
 
         # GET /admin/competitions/:competition_id/races
@@ -129,6 +129,36 @@ module Web
           in Dry::Monads::Failure(errors)
             redirect_to admin_competition_races_path(@competition),
                        alert: "Failed to delete race: #{format_errors(errors)}"
+          end
+        end
+
+        # POST /admin/competitions/:competition_id/races/:id/cancel
+        def cancel
+          authorize @race
+          result = Operations::Races::Cancel.new.call(id: @race.id)
+
+          case result
+          in Dry::Monads::Success(race)
+            redirect_to admin_competition_race_path(@competition, @race),
+                       notice: "Race '#{race.name}' was cancelled."
+          in Dry::Monads::Failure(errors)
+            redirect_to admin_competition_race_path(@competition, @race),
+                       alert: "Failed to cancel race: #{format_errors(errors)}"
+          end
+        end
+
+        # POST /admin/competitions/:competition_id/races/:id/complete
+        def complete
+          authorize @race
+          result = Operations::Races::Complete.new.call(id: @race.id)
+
+          case result
+          in Dry::Monads::Success(race)
+            redirect_to admin_competition_race_path(@competition, @race),
+                       notice: "Race '#{race.name}' was marked as completed."
+          in Dry::Monads::Failure(errors)
+            redirect_to admin_competition_race_path(@competition, @race),
+                       alert: "Failed to complete race: #{format_errors(errors)}"
           end
         end
 
