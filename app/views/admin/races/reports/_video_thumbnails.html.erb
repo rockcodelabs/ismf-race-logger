@@ -1,10 +1,10 @@
 <%= turbo_frame_tag "report_#{report.id}_video_thumbnails" do %>
   <div class="flex gap-1" data-controller="video-trigger">
-    <% report.videos.first(4).each do |video| %>
+    <% report.videos.first(2).each do |video| %>
       <button data-action="click->video-trigger#open"
               data-video-url="<%= rails_blob_path(video, disposition: "inline") %>"
               data-video-blob-id="<%= video.id %>"
-              class="group relative inline-block w-12 h-12 rounded-lg border-2 border-gray-200 overflow-hidden hover:border-blue-400 hover:shadow-lg transition-all hover:scale-105 cursor-pointer"
+              class="group relative inline-block w-10 h-10 rounded border border-gray-200 overflow-hidden hover:border-blue-400 hover:shadow-lg transition-all hover:scale-105 cursor-pointer"
               title="<%= video.filename.to_s %> - Click to play">
         <% if video.previewable? %>
           <% begin %>
@@ -32,9 +32,9 @@
         <% end %>
       </button>
     <% end %>
-    <% if report.videos_count > 4 %>
-      <div class="inline-flex items-center justify-center w-12 h-12 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 text-xs font-bold text-gray-600">
-        +<%= report.videos_count - 4 %>
+    <% if report.videos_count > 2 %>
+      <div class="inline-flex items-center justify-center w-10 h-10 rounded border border-dashed border-gray-300 bg-gray-50 text-xs font-bold text-gray-600">
+        +<%= report.videos_count - 2 %>
       </div>
     <% end %>
   </div>

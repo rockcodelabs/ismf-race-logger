@@ -57,6 +57,10 @@ export default class extends Controller {
         // Delay slightly to not interfere with page load
         setTimeout(() => this.start(), 1000)
       }
+      
+      // Listen for Turbo Stream updates (when other users upload videos)
+      this.setupTurboStreamListener()
+      
     } catch (error) {
       console.error('❌ Failed to initialize video cache:', error)
       this.showError('Video cache not available')
@@ -65,6 +69,61 @@ export default class extends Controller {
 
   disconnect() {
     this.cancelPrefetch = true
+    this.removeTurboStreamListener()
+  }
+
+  // Setup listener for Turbo Stream updates
+  setupTurboStreamListener() {
+    this.turboStreamListener = (event) => {
+      // When a report row is updated (videos added), auto-cache new videos
+      if (event.target.id && event.target.id.startsWith('report_')) {
+        console.log('📡 Report updated via Turbo Stream, checking for new videos...')
+        this.checkAndCacheNewVideos(event.target)
+      }
+    }
+    
+    document.addEventListener('turbo:before-stream-render', this.turboStreamListener)
+    console.log('👂 Listening for Turbo Stream updates')
+  }
+
+  // Remove Turbo Stream listener
+  removeTurboStreamListener() {
+    if (this.turboStreamListener) {
+      document.removeEventListener('turbo:before-stream-render', this.turboStreamListener)
+      console.log('🔇 Stopped listening for Turbo Stream updates')
+    }
+  }
+
+  // Check for new videos in updated report and cache them
+  async checkAndCacheNewVideos(reportElement) {
+    try {
+      // Find video thumbnail buttons in the updated report row
+      const videoButtons = reportElement.querySelectorAll('[data-video-blob-id]')
+      
+      for (const button of videoButtons) {
+        const videoId = button.dataset.videoBlobId
+        const videoUrl = button.dataset.videoUrl
+        
+        if (!videoId || !videoUrl) continue
+        
+        // Check if already cached
+        const cached = await this.videoCache.get(videoId)
+        
+        if (!cached) {
+          console.log(`💾 Auto-caching newly uploaded video ${videoId}...`)
+          await this.videoCache.put(videoId, videoUrl, {
+            auto_cached: true,
+            cached_at: new Date().toISOString()
+          })
+          console.log(`✅ Video ${videoId} auto-cached`)
+          
+          // Update status to reflect new cached video
+          await this.updateStatus()
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to auto-cache new videos:', error)
+    }
   }
 
   // Start prefetching videos
@@ -159,20 +218,34 @@ export default class extends Controller {
           `
         } else if (cachedCount === totalCount) {
           this.statusTarget.innerHTML = `
-            <div class="flex items-center gap-2 text-green-600">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              <span class="text-xs font-medium">${cachedCount}/${totalCount} cached (${cacheSize} MB)</span>
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2 text-green-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span class="text-xs font-medium">${cachedCount}/${totalCount} cached (${cacheSize} MB)</span>
+              </div>
+              <button data-action="click->video-prefetch#clear" 
+                      class="text-xs text-red-600 hover:text-red-700 hover:underline font-medium"
+                      title="Clear all cached videos for this race">
+                Clear Cache
+              </button>
             </div>
           `
         } else {
           this.statusTarget.innerHTML = `
-            <div class="flex items-center gap-2 text-blue-600">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              <span class="text-xs font-medium">${cachedCount}/${totalCount} cached (${cacheSize} MB)</span>
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2 text-blue-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span class="text-xs font-medium">${cachedCount}/${totalCount} cached (${cacheSize} MB)</span>
+              </div>
+              <button data-action="click->video-prefetch#clear" 
+                      class="text-xs text-red-600 hover:text-red-700 hover:underline font-medium"
+                      title="Clear all cached videos for this race">
+                Clear Cache
+              </button>
             </div>
           `
         }

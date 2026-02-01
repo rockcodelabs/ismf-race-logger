@@ -242,7 +242,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .table th {
-  padding: 0.75rem 1.5rem;
+  padding: 0.75rem 1rem;
   text-align: left;
   font-size: 0.75rem;
   font-weight: 600;
@@ -254,8 +254,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .table td {
-  padding: 1rem 1.5rem;
-  white-space: nowrap;
+  padding: 0.75rem 1rem;
   font-size: 0.875rem;
   color: #111827;
 }
@@ -266,6 +265,64 @@ h1, h2, h3, h4, h5, h6 {
 
 .table tbody tr:hover {
   background-color: #f9fafb;
+}
+
+/* Column width constraints */
+.table th:nth-child(1),
+.table td:nth-child(1) {
+  /* Checkbox column */
+  width: 3rem;
+  white-space: nowrap;
+}
+
+.table th:nth-child(2),
+.table td:nth-child(2) {
+  /* Bib column */
+  width: 4rem;
+  white-space: nowrap;
+}
+
+.table th:nth-child(3),
+.table td:nth-child(3) {
+  /* Location/Time column - allow wrapping */
+  max-width: 12rem;
+  white-space: normal;
+}
+
+.table th:nth-child(4),
+.table td:nth-child(4) {
+  /* Reporter column - allow wrapping */
+  max-width: 10rem;
+  white-space: normal;
+}
+
+.table th:nth-child(5),
+.table td:nth-child(5) {
+  /* Athlete column - allow wrapping */
+  max-width: 12rem;
+  white-space: normal;
+}
+
+.table th:nth-child(6),
+.table td:nth-child(6) {
+  /* Status column */
+  width: 10rem;
+  white-space: nowrap;
+}
+
+.table th:nth-child(7),
+.table td:nth-child(7) {
+  /* Videos column */
+  max-width: 16rem;
+  white-space: nowrap;
+}
+
+.table th:nth-child(8),
+.table td:nth-child(8) {
+  /* Actions column */
+  width: 8rem;
+  white-space: nowrap;
+  text-align: right;
 }
 
 /* Flash messages */

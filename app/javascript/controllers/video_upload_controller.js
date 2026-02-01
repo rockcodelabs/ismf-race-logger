@@ -621,19 +621,34 @@ export default class extends Controller {
 
   // Show success message
   showSuccess(message) {
-    // Show flash message in DOM
-    this.showFlashMessage(message, 'notice')
     console.log('✅ SUCCESS:', message)
+    
+    // Use generic flash API
+    if (window.flash) {
+      window.flash.success(message)
+    } else {
+      // Fallback: dispatch custom event
+      document.dispatchEvent(new CustomEvent('flash:show', {
+        detail: { message, type: 'notice' }
+      }))
+    }
   }
 
   // Show error message
   showError(message) {
     console.error('❌ ERROR:', message)
     
-    // Show flash message in DOM
-    this.showFlashMessage(message, 'alert')
+    // Use generic flash API
+    if (window.flash) {
+      window.flash.error(message)
+    } else {
+      // Fallback: dispatch custom event
+      document.dispatchEvent(new CustomEvent('flash:show', {
+        detail: { message, type: 'alert' }
+      }))
+    }
     
-    // Dispatch error event for flash notifications
+    // Dispatch error event for other listeners
     console.log('📣 Dispatching error event...')
     this.dispatch('error', {
       detail: { message },
@@ -648,46 +663,19 @@ export default class extends Controller {
     }, 3000)
   }
 
-  // Show flash message in DOM
+  // Legacy method - kept for backwards compatibility but now uses generic flash API
   showFlashMessage(message, type) {
-    const flashContainer = document.getElementById('flash-messages')
-    if (!flashContainer) {
-      console.warn('⚠️ Flash container not found')
-      return
-    }
-
-    const flashId = `flash-${crypto.randomUUID()}`
-    const bgClass = type === 'notice' ? 'bg-green-100' : 'bg-red-100'
-    const borderClass = type === 'notice' ? 'border-green-500' : 'border-red-500'
-    const textClass = type === 'notice' ? 'text-green-900' : 'text-red-900'
-    const buttonClass = type === 'notice' ? 'text-green-700 hover:text-green-900' : 'text-red-700 hover:text-red-900'
-    const iconPath = type === 'notice' 
-      ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
-      : 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
-    const dismissTime = type === 'notice' ? 3000 : 5000
-
-    const flashHTML = `
-      <div id="${flashId}" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999] ${bgClass} border-2 ${borderClass} ${textClass} px-6 py-4 rounded-xl flex items-center gap-4 shadow-lg animate-slide-down max-w-md" style="display: flex !important; position: fixed !important; visibility: visible !important; pointer-events: auto;">
-        <svg class="w-8 h-8 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}" />
-        </svg>
-        <span class="text-xl font-semibold flex-1">${message}</span>
-        <button type="button" class="${buttonClass}" onclick="this.parentElement.remove()">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-    `
-
-    flashContainer.insertAdjacentHTML('beforeend', flashHTML)
-
-    // Auto-dismiss
-    setTimeout(() => {
-      const flashElement = document.getElementById(flashId)
-      if (flashElement) {
-        flashElement.remove()
+    if (window.flash) {
+      if (type === 'notice') {
+        window.flash.success(message)
+      } else {
+        window.flash.error(message)
       }
-    }, dismissTime)
+    } else {
+      // Fallback: dispatch custom event
+      document.dispatchEvent(new CustomEvent('flash:show', {
+        detail: { message, type }
+      }))
+    }
   }
 }

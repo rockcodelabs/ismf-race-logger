@@ -170,6 +170,16 @@ module Web
                 html: status_counts["pending_review"] || 0
               )
               
+              # Broadcast flash message to all connected clients
+              incident_broadcaster = AppContainer["broadcasters.incident"]
+              incident_broadcaster.broadcast_flash_notice(@race.id, "Incident #{status_label}.")
+              
+              # Also broadcast to reports stream if action came from reports page
+              if params[:redirect_to_reports] == "true"
+                report_broadcaster = AppContainer["broadcasters.report"]
+                report_broadcaster.broadcast_flash_notice(@race.id, "Report and incident #{status_label}.")
+              end
+              
               # Check if request came from report page
               if params[:redirect_to_reports] == "true"
                 redirect_to admin_race_reports_path(@race),
@@ -184,6 +194,16 @@ module Web
                 "Validation failed: #{error.last.values.flatten.join(', ')}"
               else
                 "Error deciding incident: #{error.inspect}"
+              end
+              
+              # Broadcast error flash message to all connected clients
+              incident_broadcaster = AppContainer["broadcasters.incident"]
+              incident_broadcaster.broadcast_flash_alert(@race.id, error_message)
+              
+              # Also broadcast to reports stream if action came from reports page
+              if params[:redirect_to_reports] == "true"
+                report_broadcaster = AppContainer["broadcasters.report"]
+                report_broadcaster.broadcast_flash_alert(@race.id, error_message)
               end
               
               # Check if request came from report page
@@ -213,17 +233,27 @@ module Web
 
             if result.success?
               incident = result.value!
+              
+              # Broadcast flash message to all connected clients
+              incident_broadcaster = AppContainer["broadcasters.incident"]
+              incident_broadcaster.broadcast_flash_notice(@race.id, "Penalties updated.")
+              
               redirect_to admin_race_incident_path(@race, incident),
                           notice: "Penalties updated."
             else
               error = result.failure
-              if error.is_a?(Array) && error.first == :validation_failed
-                redirect_to admin_race_incident_path(@race, @incident),
-                            alert: "Validation failed: #{error.last.values.flatten.join(', ')}"
+              error_message = if error.is_a?(Array) && error.first == :validation_failed
+                "Validation failed: #{error.last.values.flatten.join(', ')}"
               else
-                redirect_to admin_race_incident_path(@race, @incident),
-                            alert: "Error attaching penalties: #{error.inspect}"
+                "Error attaching penalties: #{error.inspect}"
               end
+              
+              # Broadcast error flash message to all connected clients
+              incident_broadcaster = AppContainer["broadcasters.incident"]
+              incident_broadcaster.broadcast_flash_alert(@race.id, error_message)
+              
+              redirect_to admin_race_incident_path(@race, @incident),
+                          alert: error_message
             end
           end
 
@@ -233,17 +263,27 @@ module Web
 
             if result.success?
               incident = result.value!
+              
+              # Broadcast flash message to all connected clients
+              incident_broadcaster = AppContainer["broadcasters.incident"]
+              incident_broadcaster.broadcast_flash_notice(@race.id, "Incident reopened.")
+              
               redirect_to admin_race_incident_path(@race, incident),
                           notice: "Incident reopened."
             else
               error = result.failure
-              if error == :already_pending
-                redirect_to admin_race_incident_path(@race, @incident),
-                            alert: "Incident is already pending."
+              error_message = if error == :already_pending
+                "Incident is already pending."
               else
-                redirect_to admin_race_incident_path(@race, @incident),
-                            alert: "Error reopening incident: #{error.inspect}"
+                "Error reopening incident: #{error.inspect}"
               end
+              
+              # Broadcast error flash message to all connected clients
+              incident_broadcaster = AppContainer["broadcasters.incident"]
+              incident_broadcaster.broadcast_flash_alert(@race.id, error_message)
+              
+              redirect_to admin_race_incident_path(@race, @incident),
+                          alert: error_message
             end
           end
 
@@ -252,8 +292,14 @@ module Web
             report_ids = params[:report_ids]&.map(&:to_i) || []
 
             if report_ids.empty?
+              error_message = "No reports selected to add."
+              
+              # Broadcast error flash message to all connected clients
+              incident_broadcaster = AppContainer["broadcasters.incident"]
+              incident_broadcaster.broadcast_flash_alert(@race.id, error_message)
+              
               redirect_to admin_race_incident_path(@race, @incident),
-                          alert: "No reports selected to add."
+                          alert: error_message
               return
             end
 
@@ -264,8 +310,14 @@ module Web
 
             if result.success?
               incident = result.value!
+              success_message = "Added #{report_ids.size} report(s) to incident."
+              
+              # Broadcast flash message to all connected clients
+              incident_broadcaster = AppContainer["broadcasters.incident"]
+              incident_broadcaster.broadcast_flash_notice(@race.id, success_message)
+              
               redirect_to admin_race_incident_path(@race, incident),
-                          notice: "Added #{report_ids.size} report(s) to incident."
+                          notice: success_message
             else
               error = result.failure
               error_message = case error
@@ -278,6 +330,10 @@ module Web
               else
                 "Error adding reports: #{error.inspect}"
               end
+              
+              # Broadcast error flash message to all connected clients
+              incident_broadcaster = AppContainer["broadcasters.incident"]
+              incident_broadcaster.broadcast_flash_alert(@race.id, error_message)
 
               redirect_to admin_race_incident_path(@race, @incident),
                           alert: error_message
@@ -289,8 +345,14 @@ module Web
             report_ids = params[:report_ids]&.map(&:to_i) || []
 
             if report_ids.empty?
+              error_message = "No reports selected to remove."
+              
+              # Broadcast error flash message to all connected clients
+              incident_broadcaster = AppContainer["broadcasters.incident"]
+              incident_broadcaster.broadcast_flash_alert(@race.id, error_message)
+              
               redirect_to admin_race_incident_path(@race, @incident),
-                          alert: "No reports selected to remove."
+                          alert: error_message
               return
             end
 
@@ -301,8 +363,14 @@ module Web
 
             if result.success?
               incident = result.value!
+              success_message = "Removed #{report_ids.size} report(s) from incident."
+              
+              # Broadcast flash message to all connected clients
+              incident_broadcaster = AppContainer["broadcasters.incident"]
+              incident_broadcaster.broadcast_flash_notice(@race.id, success_message)
+              
               redirect_to admin_race_incident_path(@race, incident),
-                          notice: "Removed #{report_ids.size} report(s) from incident."
+                          notice: success_message
             else
               error = result.failure
               error_message = case error
@@ -315,6 +383,10 @@ module Web
               else
                 "Error removing reports: #{error.inspect}"
               end
+              
+              # Broadcast error flash message to all connected clients
+              incident_broadcaster = AppContainer["broadcasters.incident"]
+              incident_broadcaster.broadcast_flash_alert(@race.id, error_message)
 
               redirect_to admin_race_incident_path(@race, @incident),
                           alert: error_message
@@ -335,6 +407,11 @@ module Web
 
             if result.success?
               incident = result.value!
+              
+              # Broadcast flash message to all connected clients
+              incident_broadcaster = AppContainer["broadcasters.incident"]
+              incident_broadcaster.broadcast_flash_notice(@race.id, "Incidents merged successfully.")
+              
               redirect_to admin_race_incident_path(@race, incident),
                           notice: "Incidents merged successfully."
             else
@@ -347,6 +424,10 @@ module Web
               else
                 "Error merging incidents: #{error.inspect}"
               end
+              
+              # Broadcast error flash message to all connected clients
+              incident_broadcaster = AppContainer["broadcasters.incident"]
+              incident_broadcaster.broadcast_flash_alert(@race.id, error_message)
 
               redirect_to admin_race_incident_path(@race, @incident),
                           alert: error_message
@@ -359,8 +440,14 @@ module Web
             incident_ids = params[:incident_ids]&.map(&:to_i) || []
             
             if incident_ids.empty?
+              error_message = "No incidents selected to delete."
+              
+              # Broadcast error flash message to all connected clients
+              incident_broadcaster = AppContainer["broadcasters.incident"]
+              incident_broadcaster.broadcast_flash_alert(@race.id, error_message)
+              
               redirect_to admin_race_incidents_path(@race),
-                          alert: "No incidents selected to delete."
+                          alert: error_message
               return
             end
             
@@ -368,8 +455,14 @@ module Web
             incidents = Incident.where(id: incident_ids, race_id: @race.id)
             
             if incidents.count != incident_ids.size
+              error_message = "Some incidents not found or don't belong to this race."
+              
+              # Broadcast error flash message to all connected clients
+              incident_broadcaster = AppContainer["broadcasters.incident"]
+              incident_broadcaster.broadcast_flash_alert(@race.id, error_message)
+              
               redirect_to admin_race_incidents_path(@race),
-                          alert: "Some incidents not found or don't belong to this race."
+                          alert: error_message
               return
             end
             
@@ -421,10 +514,19 @@ module Web
             end
             message += " successfully."
             
+            # Broadcast flash message to all connected clients
+            incident_broadcaster.broadcast_flash_notice(@race.id, message)
+            
             redirect_to admin_race_incidents_path(@race), notice: message
           rescue StandardError => e
+            error_message = "Error deleting incidents: #{e.message}"
+            
+            # Broadcast error flash message to all connected clients
+            incident_broadcaster = AppContainer["broadcasters.incident"]
+            incident_broadcaster.broadcast_flash_alert(@race.id, error_message)
+            
             redirect_to admin_race_incidents_path(@race),
-                        alert: "Error deleting incidents: #{e.message}"
+                        alert: error_message
           end
 
           def destroy
@@ -456,6 +558,9 @@ module Web
               message += " and #{reports_count} linked report#{reports_count == 1 ? '' : 's'}"
             end
             message += " successfully."
+            
+            # Broadcast flash message to all connected clients
+            incident_broadcaster.broadcast_flash_notice(@race.id, message)
             
             redirect_to admin_race_incidents_path(@race), notice: message
           end

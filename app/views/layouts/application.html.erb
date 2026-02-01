@@ -33,7 +33,7 @@
 
   <body class="min-h-screen bg-white text-ismf-navy antialiased" style="font-family: 'Poppins', system-ui, sans-serif;">
     <!-- Flash Messages Container - for both page loads and Turbo Stream broadcasts -->
-    <div id="flash-messages">
+    <div id="flash-messages" data-controller="flash-stack">
       <% if notice %>
         <%= render "shared/flash", type: "notice", message: notice %>
       <% end %>

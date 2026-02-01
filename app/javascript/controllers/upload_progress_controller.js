@@ -151,32 +151,24 @@ export default class extends Controller {
   }
 
   // Show notification (success or error)
+  // Uses generic flash API provided by flash-stack controller
   showNotification(event) {
     const { message, type } = event.detail
     
-    // Create flash message element
-    const flashContainer = document.getElementById('flash-messages')
-    if (!flashContainer) return
-
-    const flashElement = document.createElement('div')
-    flashElement.className = this.getFlashClasses(type)
-    flashElement.textContent = message
-    flashElement.setAttribute('data-controller', 'flash')
-    flashElement.setAttribute('data-flash-delay-value', '5000')
-
-    flashContainer.appendChild(flashElement)
-  }
-
-  // Get CSS classes for flash message based on type
-  getFlashClasses(type) {
-    const baseClasses = 'px-4 py-3 rounded-lg shadow-lg mb-2'
-    
-    if (type === 'success') {
-      return `${baseClasses} bg-green-100 text-green-800 border border-green-200`
-    } else if (type === 'error') {
-      return `${baseClasses} bg-red-100 text-red-800 border border-red-200`
+    // Use global flash API if available
+    if (window.flash) {
+      if (type === 'success') {
+        window.flash.success(message)
+      } else if (type === 'error') {
+        window.flash.error(message)
+      } else {
+        window.flash.notice(message)
+      }
     } else {
-      return `${baseClasses} bg-blue-100 text-blue-800 border border-blue-200`
+      // Fallback: dispatch custom event
+      document.dispatchEvent(new CustomEvent('flash:show', {
+        detail: { message, type: type === 'success' ? 'notice' : 'alert' }
+      }))
     }
   }
 }

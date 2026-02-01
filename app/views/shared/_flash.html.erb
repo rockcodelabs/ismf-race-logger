@@ -24,7 +24,7 @@
   end
 %>
 
-<div id="flash-<%= SecureRandom.uuid %>" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] <%= bg_class %> border-2 <%= border_class %> <%= text_class %> px-4 py-3 rounded-xl flex items-center gap-3 shadow-lg animate-slide-down max-w-sm" data-controller="flash" data-flash-dismiss-after-value="<%= dismiss_time %>" style="display: flex !important; position: fixed !important; visibility: visible !important; pointer-events: auto;">
+<div id="flash-<%= SecureRandom.uuid %>" class="fixed left-1/2 -translate-x-1/2 z-9999 <%= bg_class %> border-2 <%= border_class %> <%= text_class %> px-4 py-3 rounded-xl flex items-center gap-3 shadow-lg max-w-sm transition-all duration-300" data-controller="flash" data-flash-dismiss-after-value="<%= dismiss_time %>" data-action="flash:removed->flash-stack#reposition" style="display: flex !important; visibility: visible !important; pointer-events: auto;">
   <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<%= icon_path %>" />
   </svg>

@@ -40,6 +40,10 @@ export default class extends Controller {
 
     // Remove element after animation completes
     setTimeout(() => {
+      // Dispatch event before removing so stack controller can reposition
+      this.element.dispatchEvent(new CustomEvent('flash:removed', { 
+        bubbles: true 
+      }))
       this.element.remove()
     }, 300)
   }
