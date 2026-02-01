@@ -1,0 +1,45 @@
+<% if report.bib_number.nil? %>
+  <!-- Bib Number Selection Card (shown only when bib is NN) -->
+  <div class="card border-2 border-orange-300 bg-orange-50">
+    <div class="p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold text-orange-900">Bib Number Not Set</h3>
+          <p class="text-sm text-orange-700">Select the athlete's bib number below</p>
+        </div>
+      </div>
+
+      <!-- Participant Grid -->
+      <div class="bg-white rounded-lg p-4 max-h-96 overflow-y-auto">
+        <div class="grid grid-cols-3 gap-2">
+          <% participations.each do |participation| %>
+            <%= form_with url: update_bib_admin_race_report_path(race, report), 
+                          method: :patch,
+                          class: "contents" do |f| %>
+              <%= f.hidden_field :race_participation_id, value: participation.id %>
+              <%= f.hidden_field :bib_number, value: participation.bib_number %>
+              
+              <%= f.button type: :submit,
+                           class: "flex flex-col items-center justify-center p-3 rounded-lg bg-white border-2 border-gray-200 transition-all hover:border-ismf-blue hover:shadow-md hover:scale-105 active:scale-95" do %>
+                <span class="text-2xl font-black text-ismf-navy mb-1"><%= participation.bib_number %></span>
+                <span class="text-xs text-gray-600 truncate w-full text-center font-medium">
+                  <%= participation.athlete&.last_name || 'Unknown' %>
+                </span>
+                <% if participation.athlete&.country.present? %>
+                  <span class="text-xs text-gray-400 mt-0.5">
+                    <%= participation.athlete.country %>
+                  </span>
+                <% end %>
+              <% end %>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

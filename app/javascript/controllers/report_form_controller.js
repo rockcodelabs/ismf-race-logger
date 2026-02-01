@@ -107,6 +107,58 @@ export default class extends Controller {
     }, 2000)
   }
 
+  // Called when "Number NN" (unknown bib) button is clicked
+  selectUnknownBib(event) {
+    if (!this.selectedLocationId) {
+      this.showMessage("Please select a location first")
+      return
+    }
+
+    if (this.isSubmitting) {
+      return
+    }
+
+    // Highlight the button briefly
+    const button = event.currentTarget
+    button.classList.add("selected")
+
+    // Generate client UUID for idempotency
+    const clientUuid = this.generateUUID()
+
+    // Fill the hidden form with location only (no bib or participation)
+    if (this.hasLocationInputTarget) {
+      this.locationInputTarget.value = this.selectedLocationId
+    }
+    
+    if (this.hasParticipationInputTarget) {
+      this.participationInputTarget.value = ""
+    }
+    
+    if (this.hasBibInputTarget) {
+      this.bibInputTarget.value = ""
+    }
+    
+    if (this.hasClientUuidInputTarget) {
+      this.clientUuidInputTarget.value = clientUuid
+    }
+
+    // Submit the form
+    this.isSubmitting = true
+
+    if (this.hasFormTarget) {
+      this.formTarget.requestSubmit()
+    } else {
+      console.error("Form target not found!")
+      this.showError("Form not found - please refresh the page")
+    }
+
+    // Reset after a delay
+    setTimeout(() => {
+      this.isSubmitting = false
+      button.classList.remove("selected")
+    }, 2000)
+  }
+
   // Update location button styling
   updateLocationButtons(selectedId) {
     const buttons = this.element.querySelectorAll(".location-btn")

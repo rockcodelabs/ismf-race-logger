@@ -24,8 +24,8 @@ module Structs
     attribute :incident_id, Types::Integer.optional
     attribute :user_id, Types::Integer
     attribute :race_location_id, Types::Integer
-    attribute :race_participation_id, Types::Integer
-    attribute :bib_number, Types::BibNumber
+    attribute :race_participation_id, Types::Integer.optional
+    attribute :bib_number, Types::BibNumber.optional
     attribute :athlete_position, Types::Integer.optional
     attribute :description, Types::String.optional
     attribute :status, Types::ReportStatus
@@ -101,6 +101,8 @@ module Structs
 
     # Display bib number with athlete position for team races
     def bib_display
+      return "NN" if bib_number.nil?
+      
       if athlete_position.present? && athlete_position > 0
         "#{bib_number} (Athlete #{athlete_position})"
       else
@@ -118,8 +120,10 @@ module Structs
       if athlete_name.present?
         flag = athlete_country.present? ? country_flag(athlete_country) : ""
         "#{flag} #{athlete_name}".strip
-      else
+      elsif bib_number.present?
         "Bib ##{bib_number}"
+      else
+        "Number NN"
       end
     end
 

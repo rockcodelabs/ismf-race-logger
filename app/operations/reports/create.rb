@@ -59,6 +59,10 @@ module Operations
           return Success(existing) if existing
         end
 
+        # Ensure bib_number and race_participation_id are nil if not provided
+        validated[:bib_number] = nil unless validated[:bib_number].present?
+        validated[:race_participation_id] = nil unless validated[:race_participation_id].present?
+
         # Load user to check role
         user = @user_repo.find(validated[:user_id])
         return Failure([ :user_not_found, "User with ID #{validated[:user_id]} not found" ]) unless user
@@ -71,7 +75,7 @@ module Operations
         incident = nil
 
         ActiveRecord::Base.transaction do
-          # Create the report
+          # Create the report (bib_number and race_participation_id can be nil)
           report = Report.create!(
             client_uuid: validated[:client_uuid] || SecureRandom.uuid,
             race_id: validated[:race_id],

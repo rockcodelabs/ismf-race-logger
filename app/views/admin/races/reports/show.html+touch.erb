@@ -20,6 +20,45 @@
 
   <!-- Main Content -->
   <div class="flex-1 overflow-y-auto touch-scrollable p-4">
+    <!-- Bib Selection (if not set) -->
+    <% if @report.bib_number.nil? %>
+      <div class="bg-orange-50 border-2 border-orange-300 rounded-2xl p-4 mb-4">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center shrink-0">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-orange-900">Bib Number Not Set</h3>
+            <p class="text-sm text-orange-700">Select the athlete's bib number</p>
+          </div>
+        </div>
+
+        <!-- Participant Grid -->
+        <div class="bg-white rounded-xl p-3 max-h-64 overflow-y-auto touch-scrollable">
+          <div class="grid grid-cols-4 gap-2">
+            <% @participations.each do |participation| %>
+              <%= form_with url: update_bib_admin_race_report_path(@race, @report), 
+                            method: :patch,
+                            class: "contents" do |f| %>
+                <%= f.hidden_field :race_participation_id, value: participation.id %>
+                <%= f.hidden_field :bib_number, value: participation.bib_number %>
+                
+                <%= f.button type: :submit,
+                             class: "flex flex-col items-center justify-center p-2 rounded-lg bg-white border-2 border-gray-200 transition-all active:border-ismf-blue active:scale-95" do %>
+                  <span class="text-xl font-black text-ismf-navy"><%= participation.bib_number %></span>
+                  <span class="text-xs text-gray-600 truncate w-full text-center">
+                    <%= participation.athlete&.last_name&.truncate(8) || 'Unknown' %>
+                  </span>
+                <% end %>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+    
     <!-- Athlete Card -->
     <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
       <div class="flex items-center gap-4">

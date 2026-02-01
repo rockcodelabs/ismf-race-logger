@@ -92,6 +92,8 @@ module Structs
 
     # Returns bib display with position indicator for team races
     def bib_display
+      return "NN" if bib_number.nil?
+      
       if athlete_position && athlete_position > 0
         "#{bib_number} (#{athlete_position == 1 ? 'A' : 'B'})"
       else
@@ -109,8 +111,10 @@ module Structs
       if athlete_name.present?
         flag = athlete_country.present? ? country_flag(athlete_country) : ""
         "#{flag} #{athlete_name}".strip
+      elsif bib_number.present?
+        "Bib ##{bib_number}"
       else
-        "Unknown"
+        "Number NN"
       end
     end
 
@@ -165,7 +169,8 @@ module Structs
 
     # Short display for pending queue (e.g., "#12 @ Uphill-Top")
     def queue_display
-      "##{bib_number} @ #{location_display}"
+      bib_text = bib_number.present? ? "##{bib_number}" : "NN"
+      "#{bib_text} @ #{location_display}"
     end
   end
 end

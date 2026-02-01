@@ -98,6 +98,33 @@ class ReportBroadcaster < BaseBroadcaster
     broadcast_flash_notice(race_id, "Report ##{report.bib_number} reopened.")
   end
 
+  # Broadcast when a report is updated (e.g., bib number changed)
+  # Replaces the report in all views
+  def updated(report, race_id)
+    race = Race.find(race_id)
+    part = wrap(report)
+    
+    # Broadcast updated card format for touch displays
+    Turbo::StreamsChannel.broadcast_replace_to(
+      stream_name(race_id),
+      target: dom_id(report),
+      partial: "admin/races/reports/report_card",
+      locals: { report: part, race: race }
+    )
+    
+    # Broadcast updated table row for desktop
+    Turbo::StreamsChannel.broadcast_replace_to(
+      stream_name(race_id),
+      target: dom_id(report),
+      partial: "admin/races/reports/report_row",
+      locals: { report: part, race: race }
+    )
+    
+    # Broadcast flash message to all devices
+    bib_display = report.bib_number.present? ? "##{report.bib_number}" : "NN"
+    broadcast_flash_notice(race_id, "Report #{bib_display} updated.")
+  end
+
   # Broadcast when a report is deleted
   # Removes from all views and updates counters
   def deleted(report, race_id)

@@ -23,7 +23,7 @@ module Web
           include Dry::Monads[:result]
 
           before_action :set_race
-          before_action :set_report, only: [ :show, :confirm, :reject, :reject_with_incident, :reopen, :video_thumbnails ]
+          before_action :set_report, only: [ :show, :confirm, :reject, :reject_with_incident, :reopen, :video_thumbnails, :update_bib ]
 
           # GET /admin/races/:race_id/reports/videos
           # Returns all videos for the race in JSON format for prefetching
@@ -100,6 +100,9 @@ module Web
             authorize @report, :show?
             @report = parts_factory.wrap(@report)
             
+            # Load participations for bib selection (if bib is not set)
+            @participations = race_participation_repo.for_race(@race.id)
+            
             # Load incident data if report is linked to an incident
             if @report.incident_id.present?
               @incident = incident_repo.find(@report.incident_id)
@@ -120,11 +123,15 @@ module Web
           def create
             authorize Report, :create?
             
+            # Handle optional bib_number and race_participation_id
+            bib_number = report_params[:bib_number].present? ? report_params[:bib_number].to_i : nil
+            race_participation_id = report_params[:race_participation_id].present? ? report_params[:race_participation_id].to_i : nil
+            
             result = Operations::Reports::Create.new.call(
               race_id: @race.id,
               race_location_id: report_params[:race_location_id].to_i,
-              race_participation_id: report_params[:race_participation_id].to_i,
-              bib_number: report_params[:bib_number].to_i,
+              race_participation_id: race_participation_id,
+              bib_number: bib_number,
               user_id: Current.user.id,
               athlete_position: report_params[:athlete_position]&.to_i,
               description: report_params[:description],
@@ -398,6 +405,57 @@ module Web
                 format.html do
                   redirect_to admin_race_report_path(@race, @report),
                               alert: error_message
+                end
+              end
+            end
+          end
+
+          def update_bib
+            authorize @report, :update?
+            
+            result = Operations::Reports::UpdateBib.new.call(
+              report_id: @report.id,
+              race_participation_id: params[:race_participation_id].to_i,
+              bib_number: params[:bib_number].to_i
+            )
+
+            respond_to do |format|
+              if result.success?
+                report = result.value!
+                
+                # Broadcast update to all connected clients
+                report_broadcaster.updated(report, @race.id)
+                
+                format.turbo_stream do
+                  redirect_to admin_race_report_path(@race, @report),
+                              notice: "Bib number updated successfully.",
+                              status: :see_other
+                end
+                
+                format.html do
+                  redirect_to admin_race_report_path(@race, @report),
+                              notice: "Bib number updated successfully.",
+                              status: :see_other
+                end
+              else
+                error = result.failure
+                error_message = if error.is_a?(Array) && error.first == :validation_failed
+                  errors = error.last
+                  "Validation failed: #{errors.values.flatten.join(', ')}"
+                else
+                  "Error updating bib number"
+                end
+                
+                format.turbo_stream do
+                  render turbo_stream: turbo_stream.append("flash-messages",
+                    partial: "shared/flash",
+                    locals: { type: "alert", message: error_message }), status: :unprocessable_entity
+                end
+                
+                format.html do
+                  redirect_to admin_race_report_path(@race, @report),
+                              alert: error_message,
+                              status: :unprocessable_entity
                 end
               end
             end

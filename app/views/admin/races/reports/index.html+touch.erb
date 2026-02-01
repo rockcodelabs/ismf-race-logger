@@ -73,6 +73,18 @@
       <!-- Participant Grid -->
       <div class="flex-1 overflow-y-auto touch-scrollable p-2">
         <div class="grid grid-cols-4 gap-2">
+          <!-- Number NN Option (Unknown Bib) -->
+          <button type="button"
+                  class="touch-bib-btn flex flex-col items-center justify-center p-2 rounded-xl bg-gray-100 border-2 border-gray-300 transition-all disabled:opacity-50"
+                  data-action="click->touch-report#selectUnknownBib"
+                  data-touch-report-target="bibButton"
+                  disabled>
+            <span class="text-2xl font-black text-orange-600">NN</span>
+            <span class="text-xs text-gray-500 truncate w-full text-center">
+              Unknown
+            </span>
+          </button>
+          
           <% @participations.each do |participation| %>
             <button type="button"
                     class="touch-bib-btn flex flex-col items-center justify-center p-2 rounded-xl bg-white border-2 border-gray-200 transition-all disabled:opacity-50"

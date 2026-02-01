@@ -20,7 +20,7 @@ class Report < ApplicationRecord
   belongs_to :incident, optional: true
   belongs_to :user
   belongs_to :race_location
-  belongs_to :race_participation
+  belongs_to :race_participation, optional: true
 
   # Video attachments (multiple videos per report)
   has_many_attached :videos

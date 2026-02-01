@@ -43,6 +43,8 @@ module Web
 
       # Formatted bib display (handles team positions)
       def bib_badge
+        return "NN" if value.bib_number.nil?
+        
         if value.athlete_position.present? && value.athlete_position > 0
           position_label = value.athlete_position == 1 ? "A" : "B"
           "#{value.bib_number}#{position_label}"
@@ -53,7 +55,8 @@ module Web
 
       # Short display for pending queue (e.g., "#12 @ Uphill-Top")
       def queue_display
-        "##{value.bib_number} @ #{location_name}"
+        bib_text = value.bib_number.present? ? "##{value.bib_number}" : "NN"
+        "#{bib_text} @ #{location_name}"
       end
 
       # Location name with fallback
@@ -74,8 +77,10 @@ module Web
         elsif value.respond_to?(:athlete_name) && value.athlete_name.present?
           # Fallback to plain name if athlete_display not available
           value.athlete_name
-        else
+        elsif value.bib_number.present?
           "Bib ##{value.bib_number}"
+        else
+          "Number NN"
         end
       end
 

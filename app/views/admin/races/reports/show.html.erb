@@ -38,6 +38,9 @@
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Column 1: Report Info -->
     <div class="space-y-6">
+      <!-- Bib Selection (if not set) -->
+      <%= render "bib_selection", report: @report, race: @race, participations: @participations %>
+      
       <!-- Report details card -->
       <div class="card">
         <div class="p-6">

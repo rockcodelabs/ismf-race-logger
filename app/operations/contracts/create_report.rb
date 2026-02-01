@@ -23,8 +23,8 @@ module Operations
       params do
         required(:race_id).filled(:integer)
         required(:race_location_id).filled(:integer)
-        required(:race_participation_id).filled(:integer)
-        required(:bib_number).filled(:integer)
+        optional(:race_participation_id).maybe(:integer)
+        optional(:bib_number).maybe(:integer)
         required(:user_id).filled(:integer)
         optional(:athlete_position).maybe(:integer)
         optional(:description).maybe(:string)
@@ -53,9 +53,9 @@ module Operations
         end
       end
 
-      # Validate race_participation belongs to the race
+      # Validate race_participation belongs to the race (if provided)
       rule(:race_participation_id, :race_id) do
-        next unless values[:race_id] && values[:race_participation_id]
+        next unless values[:race_id] && values[:race_participation_id].present?
 
         participation = RaceParticipation.find_by(id: values[:race_participation_id])
         if participation.nil?
@@ -65,8 +65,10 @@ module Operations
         end
       end
 
-      # Validate bib_number is valid
+      # Validate bib_number is valid (if provided)
       rule(:bib_number) do
+        next if value.nil?
+        
         key.failure("must be between 1 and 9999") unless value.between?(1, 9999)
       end
 

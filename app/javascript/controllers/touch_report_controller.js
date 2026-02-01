@@ -109,6 +109,58 @@ export default class extends Controller {
     }, 2000)
   }
 
+  // Called when "Number NN" (unknown bib) button is tapped
+  selectUnknownBib(event) {
+    if (!this.selectedLocationId) {
+      this.showToast("Please select a location first")
+      return
+    }
+
+    if (this.isSubmitting) {
+      return
+    }
+
+    // Highlight the button briefly
+    const button = event.currentTarget
+    button.classList.add("ring-4", "ring-orange-400", "bg-orange-50")
+
+    // Generate client UUID for idempotency
+    const clientUuid = this.generateUUID()
+
+    // Fill the hidden form with location only (no bib or participation)
+    if (this.hasLocationInputTarget) {
+      this.locationInputTarget.value = this.selectedLocationId
+    }
+    
+    if (this.hasParticipationInputTarget) {
+      this.participationInputTarget.value = ""
+    }
+    
+    if (this.hasBibInputTarget) {
+      this.bibInputTarget.value = ""
+    }
+    
+    if (this.hasClientUuidInputTarget) {
+      this.clientUuidInputTarget.value = clientUuid
+    }
+
+    // Haptic feedback
+    this.vibrate(50)
+
+    // Submit the form
+    this.isSubmitting = true
+
+    if (this.hasFormTarget) {
+      this.formTarget.requestSubmit()
+    }
+
+    // Reset after a delay
+    setTimeout(() => {
+      this.isSubmitting = false
+      button.classList.remove("ring-4", "ring-orange-400", "bg-orange-50")
+    }, 2000)
+  }
+
   // Update location button styling
   updateLocationButtons(selectedId) {
     const buttons = this.element.querySelectorAll(".touch-location-btn")
