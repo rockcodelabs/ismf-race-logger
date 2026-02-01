@@ -20,6 +20,7 @@
 class User < ApplicationRecord
   # Password hashing infrastructure (required for authentication)
   has_secure_password
+  has_secure_password :pin, validations: false
 
   # Associations (for eager loading in repos)
   belongs_to :role, optional: true

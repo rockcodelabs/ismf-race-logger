@@ -3,10 +3,28 @@
 module Web
   module Controllers
     class SessionsController < ApplicationController
-      allow_unauthenticated_access only: %i[new create]
+      allow_unauthenticated_access only: %i[new create select_user authenticate_pin]
       rate_limit to: 10, within: 3.minutes, only: :create, with: -> { redirect_to new_session_path, alert: "Try again later." }
 
       def new
+      end
+
+      def select_user
+        @users = User.includes(:role).where.not(pin_digest: nil).order(:name)
+      end
+
+      def authenticate_pin
+        user = User.find_by(id: params[:user_id])
+        
+        if user&.authenticate_pin(params[:pin])
+          start_new_session_for(user)
+          redirect_url = params[:redirect_to].presence || after_authentication_url
+          redirect_to redirect_url
+        else
+          redirect_params = { alert: "Invalid PIN. Please try again." }
+          redirect_params[:redirect_to] = params[:redirect_to] if params[:redirect_to].present?
+          redirect_to select_user_session_path(redirect_params)
+        end
       end
 
       def create
@@ -20,7 +38,7 @@ module Web
 
       def destroy
         terminate_session
-        redirect_to new_session_path, status: :see_other
+        redirect_to root_path, status: :see_other
       end
 
       private

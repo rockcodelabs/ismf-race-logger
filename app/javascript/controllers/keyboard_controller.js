@@ -81,7 +81,15 @@ export default class extends Controller {
     this.keyboard = new Keyboard(this.element, {
       onChange: input => this.handleChange(input),
       onKeyPress: button => this.handleKeyPress(button),
-      layout: this.getLayout(),
+      layout: {
+        default: [
+          "1 2 3 4 5 6 7 8 9 0 {bksp}",
+          "q w e r t y u i o p @",
+          "a s d f g h j k l .",
+          "z x c v b n m - _",
+          "{preview} {space} {hide} {enter}"
+        ]
+      },
       theme: "simple-keyboard",
       display: {
         "{bksp}": "⌫",
@@ -105,6 +113,21 @@ export default class extends Controller {
   }
 
   getLayout() {
+    // Check if input has data-numeric attribute or inputmode="numeric"
+    const isNumeric = this.currentInput?.getAttribute('inputmode') === 'numeric' ||
+                      this.currentInput?.hasAttribute('data-numeric')
+    
+    if (isNumeric) {
+      return {
+        default: [
+          "1 2 3",
+          "4 5 6",
+          "7 8 9",
+          "{bksp} 0 {hide}"
+        ]
+      }
+    }
+    
     return {
       default: [
         "1 2 3 4 5 6 7 8 9 0 {bksp}",
@@ -194,6 +217,36 @@ export default class extends Controller {
     }
     
     this.currentInput = input
+    
+    // Update keyboard layout based on input type
+    const isNumeric = input.getAttribute('inputmode') === 'numeric' ||
+                      input.hasAttribute('data-numeric')
+    
+    if (isNumeric) {
+      this.keyboard.setOptions({
+        layout: {
+          default: [
+            "1 2 3",
+            "4 5 6",
+            "7 8 9",
+            "{bksp} 0 {hide}"
+          ]
+        }
+      })
+    } else {
+      this.keyboard.setOptions({
+        layout: {
+          default: [
+            "1 2 3 4 5 6 7 8 9 0 {bksp}",
+            "q w e r t y u i o p @",
+            "a s d f g h j k l .",
+            "z x c v b n m - _",
+            "{preview} {space} {hide} {enter}"
+          ]
+        }
+      })
+    }
+    
     this.element.style.display = "block"
     this.element.style.visibility = "visible"
     

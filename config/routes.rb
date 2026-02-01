@@ -2,7 +2,10 @@
 
 Rails.application.routes.draw do
   # Authentication routes - using web layer controllers
-  resource :session, controller: "web/controllers/sessions"
+  resource :session, controller: "web/controllers/sessions" do
+    get :select_user, on: :member
+    post :authenticate_pin, on: :member
+  end
   resources :passwords, param: :token, controller: "web/controllers/passwords"
 
   # Admin namespace - using web layer controllers
