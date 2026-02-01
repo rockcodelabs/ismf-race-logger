@@ -71,6 +71,13 @@ class RacePolicy < ApplicationPolicy
     admin? || var_operator?
   end
 
+  # Copy participants from another race
+  # Only VAR operators can copy participants
+  # @return [Boolean]
+  def copy_participants?
+    var_operator?
+  end
+
   # Scope for listing races
   class Scope < ApplicationPolicy::Scope
     def resolve

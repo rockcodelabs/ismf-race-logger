@@ -100,20 +100,15 @@
           <div class="text-sm opacity-75">Status</div>
           <div class="flex items-center gap-3">
             <div class="text-lg font-semibold"><%= @race.status.titleize %></div>
-            <% if @race.in_progress? %>
+            <% if @race.in_progress? && policy(@race).complete? %>
               <%= button_to complete_admin_competition_race_path(@competition, @race), method: :post, class: "inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors", data: { turbo_confirm: "Mark this race as completed?" } do %>
                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
                 Complete
               <% end %>
-              <%= button_to cancel_admin_competition_race_path(@competition, @race), method: :post, class: "inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors", data: { turbo_confirm: "Are you sure you want to cancel this race?" } do %>
-                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Cancel
-              <% end %>
-            <% elsif @race.scheduled? %>
+            <% end %>
+            <% if (@race.in_progress? || @race.scheduled?) && policy(@race).cancel? %>
               <%= button_to cancel_admin_competition_race_path(@competition, @race), method: :post, class: "inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors", data: { turbo_confirm: "Are you sure you want to cancel this race?" } do %>
                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -138,17 +133,19 @@
           </span>
         </div>
         <div class="flex items-center gap-3">
-          <% copyable_races = race_repo.copyable_races(@race.id) %>
-          <% if copyable_races.any? %>
-            <%= form_with url: copy_admin_competition_race_participations_path(@competition, @race), method: :post, class: "flex items-center gap-2" do |f| %>
-              <%= f.select :source_race_id, 
-                  options_from_collection_for_select(copyable_races, :id, :name),
-                  { prompt: "Copy from..." },
-                  class: "rounded-lg border-gray-300 text-sm min-w-[200px]" %>
-              <%= f.submit "Copy Participants", class: "btn-primary" %>
+          <% if policy(@race).copy_participants? %>
+            <% copyable_races = race_repo.copyable_races(@race.id) %>
+            <% if copyable_races.any? %>
+              <%= form_with url: copy_admin_competition_race_participations_path(@competition, @race), method: :post, class: "flex items-center gap-2" do |f| %>
+                <%= f.select :source_race_id, 
+                    options_from_collection_for_select(copyable_races, :id, :name),
+                    { prompt: "Copy from..." },
+                    class: "rounded-lg border-gray-300 text-sm min-w-[200px]" %>
+                <%= f.submit "Copy Participants", class: "btn-primary" %>
+              <% end %>
+            <% else %>
+              <span class="text-sm text-gray-500 italic">No previous races available to copy from</span>
             <% end %>
-          <% else %>
-            <span class="text-sm text-gray-500 italic">No previous races available to copy from</span>
           <% end %>
         </div>
       </div>

@@ -87,17 +87,19 @@
   </div>
 
   <!-- Copy Participants Section -->
-  <% copyable_races = race_repo.copyable_races(@race.id) %>
-  <% if copyable_races.any? %>
-    <div class="shrink-0 px-3 pt-2 bg-white border-b border-gray-200">
-      <%= form_with url: copy_admin_competition_race_participations_path(@competition, @race), method: :post, class: "flex items-center gap-2 pb-2" do |f| %>
-        <%= f.select :source_race_id, 
-            options_from_collection_for_select(copyable_races, :id, :name),
-            { prompt: "Copy from..." },
-            class: "flex-1 rounded-lg border-gray-300 text-sm h-12" %>
-        <%= f.submit "Copy", class: "btn-primary h-12 px-6" %>
-      <% end %>
-    </div>
+  <% if policy(@race).copy_participants? %>
+    <% copyable_races = race_repo.copyable_races(@race.id) %>
+    <% if copyable_races.any? %>
+      <div class="shrink-0 px-3 pt-2 bg-white border-b border-gray-200">
+        <%= form_with url: copy_admin_competition_race_participations_path(@competition, @race), method: :post, class: "flex items-center gap-2 pb-2" do |f| %>
+          <%= f.select :source_race_id, 
+              options_from_collection_for_select(copyable_races, :id, :name),
+              { prompt: "Copy from..." },
+              class: "flex-1 rounded-lg border-gray-300 text-sm h-12" %>
+          <%= f.submit "Copy", class: "btn-primary h-12 px-6" %>
+        <% end %>
+      </div>
+    <% end %>
   <% end %>
 
   <!-- Participants Header -->

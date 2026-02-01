@@ -42,15 +42,17 @@ class ReportPolicy < ApplicationPolicy
   end
 
   # Confirm a pending report
+  # Only VAR operators can confirm reports
   # @return [Boolean]
   def confirm?
-    can_report?
+    var_operator?
   end
 
   # Reject a pending report
+  # Only VAR operators can reject reports
   # @return [Boolean]
   def reject?
-    can_report?
+    var_operator?
   end
 
   # Reopen a rejected report

@@ -128,20 +128,26 @@
                     </p>
                   </div>
                 </div>
-                <div class="flex gap-2 w-full">
-                  <%= button_to confirm_admin_race_report_path(@race, report.id), 
-                      method: :post,
-                      form: { class: "flex-1" },
-                      class: "w-full py-3 rounded-lg bg-green-500 text-white font-bold text-sm active:bg-green-600 transition" do %>
-                    ✓ Confirm
-                  <% end %>
-                  <%= button_to reject_admin_race_report_path(@race, report.id), 
-                      method: :post,
-                      form: { class: "flex-1" },
-                      class: "w-full py-3 rounded-lg bg-red-500 text-white font-bold text-sm active:bg-red-600 transition" do %>
-                    ✗ Reject
-                  <% end %>
-                </div>
+                <% if policy(report).confirm? || policy(report).reject? %>
+                  <div class="flex gap-2 w-full">
+                    <% if policy(report).confirm? %>
+                      <%= button_to confirm_admin_race_report_path(@race, report.id), 
+                          method: :post,
+                          form: { class: "flex-1" },
+                          class: "w-full py-3 rounded-lg bg-green-500 text-white font-bold text-sm active:bg-green-600 transition" do %>
+                        ✓ Confirm
+                      <% end %>
+                    <% end %>
+                    <% if policy(report).reject? %>
+                      <%= button_to reject_admin_race_report_path(@race, report.id), 
+                          method: :post,
+                          form: { class: "flex-1" },
+                          class: "w-full py-3 rounded-lg bg-red-500 text-white font-bold text-sm active:bg-red-600 transition" do %>
+                        ✗ Reject
+                      <% end %>
+                    <% end %>
+                  </div>
+                <% end %>
               </div>
             <% end %>
           </div>

@@ -90,12 +90,14 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
         </svg>
       <% end %>
-      <% if report.can_confirm? %>
+      <% if report.can_confirm? && policy(report).confirm? %>
         <%= button_to confirm_admin_race_report_path(race, report), method: :post, class: "inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-green-600 hover:bg-green-50 transition-all", title: "Confirm" do %>
           <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
           </svg>
         <% end %>
+      <% end %>
+      <% if report.can_confirm? && policy(report).reject? %>
         <%= button_to reject_admin_race_report_path(race, report), method: :post, class: "inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all", title: "Reject" do %>
           <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />

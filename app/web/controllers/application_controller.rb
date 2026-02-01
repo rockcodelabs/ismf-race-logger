@@ -161,6 +161,7 @@ module Web
       def current_user
         Current.user
       end
+      helper_method :current_user
 
       # Generic Turbo error response handler for Rails 8
       # 
