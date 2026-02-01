@@ -23,77 +23,125 @@
 
   <div class="space-y-3">
     <% sorted_race_types.each do |race_type_name, races| %>
+      <% sorted_races = races.sort_by(&:position) %>
+      <% active_races = sorted_races.reject { |r| r.completed? || r.cancelled? } %>
+      <% completed_races = sorted_races.select { |r| r.completed? || r.cancelled? } %>
+      <% has_completed = completed_races.any? %>
+      
       <div class="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200">
         <!-- Race Type Header -->
         <div class="bg-gray-50 px-3 py-2 border-b border-gray-200">
           <h3 class="text-sm font-bold text-ismf-navy"><%= race_type_name&.titleize || 'Unknown' %></h3>
-          <p class="text-xs text-ismf-gray"><%= races.count %> race<%= 's' if races.count != 1 %></p>
+          <p class="text-xs text-ismf-gray">
+            <%= races.count %> race<%= 's' if races.count != 1 %>
+            <% if has_completed %>
+              <span class="text-gray-400">
+                • <%= active_races.count %> upcoming, <%= completed_races.count %> done
+              </span>
+            <% end %>
+          </p>
         </div>
 
-        <!-- Race Rows - Horizontal Layout -->
-        <div class="overflow-x-auto">
-          <div class="flex divide-x divide-gray-200">
-            <% races.sort_by(&:position).each do |race| %>
-              <% is_completed = race.completed? %>
-              <% is_cancelled = race.cancelled? %>
-              <% card_opacity = (is_completed || is_cancelled) ? "opacity-50" : "" %>
-              <% hover_class = (is_completed || is_cancelled) ? "active:bg-gray-100" : "active:bg-blue-50" %>
-              
-              <%= link_to admin_competition_race_path(competition, race), class: "flex-1 min-w-[180px] px-3 py-3 #{hover_class} transition border-b border-gray-100 last:border-b-0 #{card_opacity}" do %>
-                <div class="text-center">
-                  <h4 class="text-sm font-bold <%= is_completed ? 'text-gray-500' : 'text-ismf-navy' %> mb-1">
-                    <%= race.stage_name %>
-                  </h4>
-                  <% if race.scheduled_at.present? %>
-                    <div class="flex items-center justify-center gap-1 text-xs <%= is_completed ? 'text-gray-400' : 'text-ismf-gray' %> mb-2">
-                      <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span><%= race.scheduled_at.strftime("%H:%M") %></span>
-                    </div>
-                  <% end %>
-                  <div class="flex justify-center">
-                    <% case race.status %>
-                    <% when 'in_progress' %>
-                      <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-green-100 text-green-800 border border-green-200">
-                        <span class="w-1.5 h-1.5 mr-1 bg-green-600 rounded-full animate-pulse"></span>
-                        Live
-                      </span>
-                    <% when 'completed' %>
-                      <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-gray-200 text-gray-600 border border-gray-300">
-                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        <!-- Active/Upcoming Races Grid -->
+        <% if active_races.any? %>
+          <div class="p-3">
+            <div class="grid grid-cols-3 gap-2">
+              <% active_races.each do |race| %>
+                <%= link_to admin_competition_race_path(competition, race), class: "block p-3 rounded-lg border-2 border-gray-200 active:border-ismf-blue active:bg-blue-50 transition-all" do %>
+                  <div class="text-center">
+                    <h4 class="text-xs font-bold text-ismf-navy mb-1 truncate">
+                      <%= race.stage_name %>
+                    </h4>
+                    <% if race.scheduled_at.present? %>
+                      <div class="flex items-center justify-center gap-1 text-[10px] text-ismf-gray mb-1.5">
+                        <svg class="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        Done
-                      </span>
-                    <% when 'scheduled' %>
-                      <% if actual_next_up && race.id == actual_next_up.id %>
-                        <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-orange-100 text-orange-800 border border-orange-300">
-                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          Next Up
+                        <span><%= race.scheduled_at.strftime("%H:%M") %></span>
+                      </div>
+                    <% end %>
+                    <div class="flex justify-center">
+                      <% case race.status %>
+                      <% when 'in_progress' %>
+                        <span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded bg-green-100 text-green-800 border border-green-200">
+                          <span class="w-1 h-1 mr-1 bg-green-600 rounded-full animate-pulse"></span>
+                          Live
                         </span>
+                      <% when 'scheduled' %>
+                        <% if actual_next_up && race.id == actual_next_up.id %>
+                          <span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded bg-orange-100 text-orange-800 border border-orange-300">
+                            Next
+                          </span>
+                        <% else %>
+                          <span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded bg-blue-100 text-blue-800 border border-blue-200">
+                            Soon
+                          </span>
+                        <% end %>
                       <% else %>
-                        <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-gray-100 text-gray-800 border border-gray-200">
-                          Upcoming
+                        <span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded bg-gray-100 text-gray-600 border border-gray-200">
+                          <%= race.status.humanize %>
                         </span>
                       <% end %>
-                    <% when 'cancelled' %>
-                      <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-red-100 text-red-800 border border-red-200">
-                        Cancelled
-                      </span>
-                    <% else %>
-                      <span class="inline-flex items-center px-2 py-1 text-xs font-bold rounded-lg bg-gray-100 text-gray-600 border border-gray-200">
-                        <%= race.status.humanize %>
-                      </span>
-                    <% end %>
+                    </div>
                   </div>
-                </div>
+                <% end %>
               <% end %>
-            <% end %>
+            </div>
           </div>
-        </div>
+        <% end %>
+
+        <!-- Completed Races (Collapsible) -->
+        <% if has_completed %>
+          <details class="border-t border-gray-200">
+            <summary class="px-3 py-2 bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2 text-xs">
+                  <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                  <span class="font-medium text-gray-600">
+                    <%= completed_races.count %> done
+                  </span>
+                </div>
+                <span class="text-[10px] text-gray-400">Tap to expand</span>
+              </div>
+            </summary>
+            
+            <div class="p-3 bg-gray-50/50">
+              <div class="grid grid-cols-3 gap-2">
+                <% completed_races.each do |race| %>
+                  <% is_cancelled = race.cancelled? %>
+                  <%= link_to admin_competition_race_path(competition, race), class: "block p-3 rounded-lg border-2 border-gray-200 active:border-gray-400 active:bg-gray-100 transition-all opacity-70" do %>
+                    <div class="text-center">
+                      <h4 class="text-xs font-bold text-gray-500 mb-1 truncate">
+                        <%= race.stage_name %>
+                      </h4>
+                      <% if race.scheduled_at.present? %>
+                        <div class="flex items-center justify-center gap-1 text-[10px] text-gray-400 mb-1.5">
+                          <svg class="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span><%= race.scheduled_at.strftime("%H:%M") %></span>
+                        </div>
+                      <% end %>
+                      <div class="flex justify-center">
+                        <% if is_cancelled %>
+                          <span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-800 border border-red-200">
+                            Cancelled
+                          </span>
+                        <% else %>
+                          <span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded bg-gray-200 text-gray-600 border border-gray-300">
+                            Done
+                          </span>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          </details>
+        <% end %>
       </div>
     <% end %>
   </div>

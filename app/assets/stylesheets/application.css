@@ -83,3 +83,24 @@ input[type="range"].slider::-moz-range-thumb:hover {
   opacity: 0;
   transition: opacity 0.3s ease-out;
 }
+
+/* Details/Summary (Collapsible) Styles */
+details summary {
+  list-style: none;
+}
+
+details summary::-webkit-details-marker {
+  display: none;
+}
+
+details summary svg {
+  transition: transform 0.2s ease-in-out;
+}
+
+details[open] summary svg {
+  transform: rotate(180deg);
+}
+
+details[open] summary {
+  border-bottom: 1px solid #e5e7eb; /* gray-200 */
+}
