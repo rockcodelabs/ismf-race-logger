@@ -121,16 +121,32 @@ class CompetitionRepo < DB::Repo
     end
 
     # Apply sorting
-    scope = case sort&.to_sym
+    results = case sort&.to_sym
     when :oldest
-      scope.order(:start_date)
+      scope.order(:start_date).map { |record| to_summary(record) }
     when :name
-      scope.order(:name)
-    else # :recent
-      scope.order(start_date: :desc)
+      scope.order(:name).map { |record| to_summary(record) }
+    else # :recent - prioritize ongoing, then upcoming, then past
+      # Fetch all records and sort in Ruby for proper status prioritization
+      records = scope.to_a
+      today = Date.current
+      
+      records.sort_by do |record|
+        status_priority = if record.start_date <= today && record.end_date >= today
+          1 # ongoing - highest priority
+        elsif record.start_date > today
+          2 # upcoming
+        else
+          3 # past - lowest priority
+        end
+        
+        # Return array: [status_priority, -start_date] for sorting
+        # Negative start_date for descending order within each group
+        [status_priority, -record.start_date.to_time.to_i]
+      end.map { |record| to_summary(record) }
     end
 
-    scope.map { |record| to_summary(record) }
+    results
   end
 
   # ===========================================================================

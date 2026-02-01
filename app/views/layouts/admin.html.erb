@@ -53,27 +53,40 @@
           
           <!-- Navigation -->
           <nav class="mt-8 flex-1 px-3 space-y-1">
-            <%= link_to admin_root_path, class: "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors #{request.path == admin_root_path ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue hover:text-white'}" do %>
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              Dashboard
+            <!-- Active Race Buttons (Visible to ALL roles) -->
+            <% active_race = Race.find_by(status: "in_progress") %>
+            <% if active_race.present? %>
+              <div class="mb-4">
+                <%= link_to admin_race_reports_path(active_race), class: "flex items-center gap-3 px-3 py-3 text-sm font-semibold rounded-lg transition-colors bg-green-600 text-white hover:bg-green-700 shadow-lg" do %>
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>Active Race Reports</span>
+                <% end %>
+                
+                <%= link_to new_admin_race_report_path(active_race), class: "flex items-center gap-3 px-3 py-3 text-sm font-semibold rounded-lg transition-colors bg-green-600 text-white hover:bg-green-700 shadow-lg mt-2" do %>
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>New Report!</span>
+                <% end %>
+              </div>
             <% end %>
             
-            <%= link_to admin_users_path, class: "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors #{controller_name == 'users' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue hover:text-white'}" do %>
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-              Users
-            <% end %>
+            <!-- Live Timer -->
+            <div class="mb-6" data-controller="live-timer">
+              <div class="bg-ismf-blue/20 rounded-lg p-4 text-center">
+                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Current Time</div>
+                <div class="text-3xl font-bold text-white font-mono" data-live-timer-target="display">
+                  --:--:--
+                </div>
+                <div class="text-xs text-gray-400 mt-1" data-live-timer-target="date">
+                  Loading...
+                </div>
+              </div>
+            </div>
             
-            <%= link_to admin_competitions_path, class: "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors #{controller_name == 'competitions' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue hover:text-white'}" do %>
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-              </svg>
-              Competitions
-            <% end %>
-            
+            <!-- Penalties (Visible to ALL roles) -->
             <%= link_to admin_penalties_path, class: "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors #{controller_name == 'penalties' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue hover:text-white'}" do %>
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -81,61 +94,58 @@
               Penalties
             <% end %>
             
-            <!-- Live Timer -->
-            <div class="pt-6 mt-6 border-t border-ismf-blue">
-              <div class="px-3 mb-6" data-controller="live-timer">
-                <div class="bg-ismf-blue/20 rounded-lg p-4 text-center">
-                  <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Current Time</div>
-                  <div class="text-3xl font-bold text-white font-mono" data-live-timer-target="display">
-                    --:--:--
-                  </div>
-                  <div class="text-xs text-gray-400 mt-1" data-live-timer-target="date">
-                    Loading...
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Configuration Section -->
-            <div class="pt-6 border-t border-ismf-blue">
-              <h3 class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Configuration</h3>
-              
-              <% RaceType.order(:name).each do |race_type| %>
-                <%= link_to admin_race_type_location_templates_path(race_type), class: "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors #{params[:race_type_id] == race_type.id.to_s ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue hover:text-white'}" do %>
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <%= race_type.name %> Locations
+            <!-- Role-Specific Section -->
+            <% user_struct = AppContainer["repos.user"].find(Current.user.id) %>
+            <% if user_struct.admin? || user_struct.var_operator? || user_struct.referee_manager? %>
+              <div class="pt-6 mt-6 border-t border-ismf-blue">
+                <!-- Admin Only: Race Locations -->
+                <% if user_struct.admin? %>
+                  <%= link_to admin_location_templates_path, class: "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors #{controller_name == 'location_templates' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue hover:text-white'}" do %>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Race Locations
+                  <% end %>
                 <% end %>
-              <% end %>
-            </div>
+                
+                <!-- Referee Manager and VAR Operator: Competitions -->
+                <% if user_struct.referee_manager? || user_struct.var_operator? %>
+                  <%= link_to admin_competitions_path, class: "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors #{controller_name == 'competitions' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue hover:text-white'}" do %>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                    </svg>
+                    Competitions
+                  <% end %>
+                <% end %>
+              </div>
+            <% end %>
           </nav>
           
           <!-- User info at bottom -->
-          <div class="shrink-0 flex border-t border-ismf-blue p-4">
-            <div class="flex items-center w-full">
+          <div class="shrink-0 border-t border-ismf-blue">
+            <%= link_to edit_profile_path, class: "flex items-center w-full p-4 hover:bg-ismf-blue transition-colors group" do %>
               <div class="shrink-0">
-                <div class="w-9 h-9 bg-ismf-red rounded-full flex items-center justify-center">
+                <div class="w-9 h-9 bg-ismf-red rounded-full flex items-center justify-center group-hover:bg-ismf-red/80 transition-colors">
                   <span class="text-white font-medium text-sm">
                     <%= Current.user&.name&.first&.upcase || Current.user&.email_address&.first&.upcase || "?" %>
                   </span>
                 </div>
               </div>
               <div class="ml-3 flex-1 min-w-0">
-                <p class="text-sm font-medium text-white truncate">
+                <p class="text-sm font-medium text-white truncate group-hover:text-gray-100">
                   <%= Current.user&.display_name %>
                 </p>
                 <p class="text-xs text-gray-400 truncate">
-                  <%= Current.user&.admin? ? "Administrator" : "User" %>
+                  <% user_struct = AppContainer["repos.user"].find(Current.user.id) %>
+                  <%= user_struct.admin? ? "Administrator" : (user_struct.var_operator? ? "VAR Operator" : user_struct.role_name&.humanize || "User") %>
                 </p>
               </div>
-              <%= button_to session_path, method: :delete, class: "ml-2 p-1.5 text-gray-400 hover:text-white transition-colors", data: { turbo_confirm: "Are you sure you want to sign out?" } do %>
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              <% end %>
-            </div>
+              <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            <% end %>
           </div>
         </div>
       </aside>
@@ -159,20 +169,33 @@
                   </svg>
                 <% end %>
               <% end %>
-              <%= button_to session_path, method: :delete, class: "p-2 text-gray-300 hover:text-white", data: { turbo_confirm: "Sign out?" } do %>
+              <%= link_to edit_profile_path, class: "p-2 text-gray-300 hover:text-white", title: "Edit Profile" do %>
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               <% end %>
             </div>
           </div>
           <!-- Mobile navigation -->
           <nav class="flex gap-1 px-3 pb-3 overflow-x-auto">
-            <%= link_to "Dashboard", admin_root_path, class: "shrink-0 px-3 py-1.5 text-sm font-medium rounded-full transition-colors #{request.path == admin_root_path ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue'}" %>
-            <%= link_to "Users", admin_users_path, class: "shrink-0 px-3 py-1.5 text-sm font-medium rounded-full transition-colors #{controller_name == 'users' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue'}" %>
-            <%= link_to "Competitions", admin_competitions_path, class: "shrink-0 px-3 py-1.5 text-sm font-medium rounded-full transition-colors #{controller_name == 'competitions' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue'}" %>
+            <!-- Active Race Buttons (Visible to ALL roles) -->
+            <% active_race = Race.find_by(status: "in_progress") %>
+            <% if active_race.present? %>
+              <%= link_to "Reports", admin_race_reports_path(active_race), class: "shrink-0 px-3 py-1.5 text-sm font-semibold rounded-full transition-colors bg-green-600 text-white hover:bg-green-700" %>
+              <%= link_to "New Report!", new_admin_race_report_path(active_race), class: "shrink-0 px-3 py-1.5 text-sm font-semibold rounded-full transition-colors bg-green-600 text-white hover:bg-green-700" %>
+            <% end %>
+            
             <%= link_to "Penalties", admin_penalties_path, class: "shrink-0 px-3 py-1.5 text-sm font-medium rounded-full transition-colors #{controller_name == 'penalties' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue'}" %>
-            <%= link_to "Race Types", admin_race_type_location_templates_path(RaceType.first), class: "shrink-0 px-3 py-1.5 text-sm font-medium rounded-full transition-colors #{controller.class.name.include?('LocationTemplates') ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue'}" if RaceType.any? %>
+            
+            <!-- Role-Specific Links -->
+            <% user_struct = AppContainer["repos.user"].find(Current.user.id) %>
+            <% if user_struct.admin? %>
+              <%= link_to "Race Locations", admin_location_templates_path, class: "shrink-0 px-3 py-1.5 text-sm font-medium rounded-full transition-colors #{controller_name == 'location_templates' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue'}" %>
+            <% end %>
+            <% if user_struct.referee_manager? || user_struct.var_operator? %>
+              <%= link_to "Competitions", admin_competitions_path, class: "shrink-0 px-3 py-1.5 text-sm font-medium rounded-full transition-colors #{controller_name == 'competitions' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue'}" %>
+            <% end %>
           </nav>
         </header>
 

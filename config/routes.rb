@@ -17,6 +17,9 @@ Rails.application.routes.draw do
     resources :users
     resources :penalties, only: [:index]
     
+    # Unified location templates overview
+    resources :location_templates, only: [:index]
+    
     # Video markers (for ActiveStorage blobs)
     post "videos/markers", to: "videos#create_markers"
     get "videos/markers/:id", to: "videos#show_markers"

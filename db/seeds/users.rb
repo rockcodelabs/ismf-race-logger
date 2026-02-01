@@ -18,6 +18,7 @@ puts "\nCreating PIN-enabled users..."
 
 users_data = [
   { name: "Dariusz Finster", email: "dariusz.finster@gmail.com", role: var_operator_role, admin: true },
+  { name: "Youri", email: "var.operator@ismf-ski.com", role: var_operator_role, admin: false },
   { name: "Oriol Montero", email: "oriol.montero@ismf-ski.com", role: referee_manager_role, admin: false },
   { name: "Laurent Perruchon", email: "laurent.perruchon@ismf-ski.com", role: national_referee_role, admin: false },
   { name: "Brent Harris", email: "brent.harris@ismf-ski.com", role: jury_president_role, admin: false },

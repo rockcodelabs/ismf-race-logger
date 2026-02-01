@@ -1,0 +1,200 @@
+<div class="space-y-6">
+  <!-- Page header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-ismf-navy">Race Location Templates</h1>
+      <p class="mt-1 text-sm text-ismf-gray">Manage location templates for all race types. Templates define standard and custom locations that are auto-populated when races are created.</p>
+    </div>
+  </div>
+
+  <!-- Overall statistics -->
+  <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="flex items-center">
+          <div class="shrink-0">
+            <div class="w-12 h-12 bg-ismf-blue rounded-lg flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-ismf-gray truncate">Total Templates</dt>
+              <dd class="text-3xl font-bold text-ismf-navy"><%= @total_templates %></dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="flex items-center">
+          <div class="shrink-0">
+            <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-ismf-gray truncate">Standard</dt>
+              <dd class="text-3xl font-bold text-ismf-navy"><%= @total_standard %></dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="flex items-center">
+          <div class="shrink-0">
+            <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </div>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-ismf-gray truncate">Custom</dt>
+              <dd class="text-3xl font-bold text-ismf-navy"><%= @total_custom %></dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Race Types with their templates -->
+  <% @templates_by_race_type.each do |race_type_id, data| %>
+    <% race_type = data[:race_type] %>
+    <% templates = data[:templates] %>
+    <% standard_count = data[:standard_count] %>
+    <% custom_count = data[:custom_count] %>
+
+    <div class="card">
+      <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <h2 class="text-lg font-semibold text-ismf-navy"><%= race_type.name %></h2>
+            <div class="flex items-center gap-2">
+              <span class="badge-success"><%= standard_count %> standard</span>
+              <span class="badge-info"><%= custom_count %> custom</span>
+            </div>
+          </div>
+          <%= link_to admin_race_type_location_templates_path(race_type), class: "btn-secondary text-sm" do %>
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Manage Templates
+          <% end %>
+        </div>
+      </div>
+
+      <div class="p-6">
+        <% if templates.any? %>
+          <div class="space-y-2">
+            <% templates.each do |template| %>
+              <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-ismf-blue hover:bg-blue-50 transition-colors">
+                <div class="flex items-center gap-3 flex-1">
+                  <!-- Order indicator -->
+                  <div class="shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-sm font-semibold text-gray-600">
+                    <%= template.display_order %>
+                  </div>
+
+                  <!-- Template info -->
+                  <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                      <span class="font-medium text-ismf-navy"><%= template.name %></span>
+                      <% if template.is_standard %>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          Standard
+                        </span>
+                      <% else %>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                          Custom
+                        </span>
+                      <% end %>
+                      <% if template.color_code.present? %>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium <%= case template.color_code
+                          when 'green' then 'bg-green-100 text-green-800'
+                          when 'red' then 'bg-red-100 text-red-800'
+                          when 'yellow' then 'bg-yellow-100 text-yellow-800'
+                          else 'bg-gray-100 text-gray-800'
+                        end %>">
+                          <%= template.color_code.titleize %>
+                        </span>
+                      <% end %>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1 text-xs text-ismf-gray">
+                      <span><%= template.course_segment.humanize %></span>
+                      <span>•</span>
+                      <span><%= template.segment_position.humanize %></span>
+                      <% if template.description.present? %>
+                        <span>•</span>
+                        <span class="italic"><%= template.description %></span>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Quick actions -->
+                <div class="flex items-center gap-2">
+                  <%= link_to edit_admin_race_type_location_template_path(race_type, template), class: "p-2 text-gray-400 hover:text-ismf-blue transition-colors", title: "Edit" do %>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="text-center py-8">
+            <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-ismf-navy">No templates</h3>
+            <p class="mt-1 text-sm text-ismf-gray">No location templates have been created for this race type yet.</p>
+            <div class="mt-4">
+              <%= link_to new_admin_race_type_location_template_path(race_type), class: "btn-primary text-sm" do %>
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Create First Template
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Help text -->
+  <div class="card bg-blue-50 border-blue-200">
+    <div class="card-body">
+      <div class="flex items-start gap-3">
+        <svg class="w-5 h-5 text-blue-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div>
+          <h3 class="text-sm font-semibold text-blue-900">About Location Templates</h3>
+          <p class="mt-1 text-sm text-blue-800">
+            Location templates define the standard and custom locations that are automatically created when a new race is created. 
+            <strong>Standard locations</strong> are required checkpoints (Start, Finish, Transitions), while 
+            <strong>custom locations</strong> are optional monitoring points (Gates, Camera positions). 
+            Changes to templates only affect future races.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

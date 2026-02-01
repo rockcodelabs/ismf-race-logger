@@ -14,7 +14,11 @@
         <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
-        <span class="text-ismf-navy"><%= @race.name %></span>
+        <%= link_to @race.name, admin_competition_race_path(@race.competition_id, @race), class: "hover:text-ismf-blue" %>
+        <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+        <span class="text-ismf-navy">Reports</span>
       </nav>
       <h1 class="text-2xl font-bold text-ismf-navy">Reports</h1>
       <p class="mt-1 text-sm text-ismf-gray">Manage reports for <%= @race.name %>.</p>
@@ -163,20 +167,6 @@
 
   <!-- Reports table -->
   <div class="card">
-    <!-- Drag and drop hint -->
-    <div class="px-6 py-3 bg-blue-50 border-b border-blue-100 flex items-center gap-3">
-      <svg class="w-5 h-5 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-      </svg>
-      <div class="flex-1">
-        <p class="text-sm font-medium text-blue-900">Drag & Drop Video Upload</p>
-        <p class="text-xs text-blue-700">Drag MP4 video files (10-50MB) from your folder directly onto any report row to upload</p>
-      </div>
-      <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    </div>
-    
     <div class="table-container border-0 rounded-none">
       <table class="table">
         <thead>

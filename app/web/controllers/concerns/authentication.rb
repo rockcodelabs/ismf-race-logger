@@ -46,7 +46,43 @@ module Web
           end
 
           def after_authentication_url
-            session.delete(:return_to_after_authenticating) || root_url
+            return_to = session.delete(:return_to_after_authenticating)
+            return return_to if return_to.present?
+            
+            # Role-based redirect after sign-in
+            role_based_redirect_url
+          end
+
+          def role_based_redirect_url
+            user = Current.user
+            return root_url unless user
+            
+            # Find active race or next scheduled race
+            active_race = Race.find_by(status: "in_progress")
+            next_race = active_race || Race.where(status: "scheduled").order(:scheduled_at).first
+            
+            role_name = user.role&.name
+            is_management = role_name.in?(%w[var_operator jury_president referee_manager])
+            is_admin = user.admin?
+            
+            # Management roles (var_operator, jury_president, referee_manager)
+            # -> Redirect to reports index if there's an active/scheduled race
+            # -> Otherwise redirect to dashboard (still accessible, just not in menu)
+            if is_management
+              return next_race ? admin_race_reports_path(next_race) : admin_root_path
+            end
+            
+            # All other roles (referees, etc.)
+            # -> Redirect to new report page if there's an active/scheduled race
+            # -> If admin but no race, go to dashboard
+            # -> If non-admin and no race, go to root
+            if next_race
+              new_admin_race_report_path(next_race)
+            elsif is_admin
+              admin_root_path
+            else
+              root_url
+            end
           end
 
           def start_new_session_for(user)

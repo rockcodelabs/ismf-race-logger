@@ -35,7 +35,7 @@ module Web
           elsif status_filter
             competition_repo.filtered(status: status_filter, sort: :recent)
           else
-            competition_repo.all
+            competition_repo.filtered(sort: :recent)
           end
 
           @status_counts = competition_repo.count_by_status
