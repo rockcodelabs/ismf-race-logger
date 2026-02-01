@@ -25,6 +25,42 @@ module Web
           before_action :set_race
           before_action :set_report, only: [ :show, :confirm, :reject, :reject_with_incident, :reopen, :video_thumbnails ]
 
+          # GET /admin/races/:race_id/reports/videos
+          # Returns all videos for the race in JSON format for prefetching
+          def videos_index
+            authorize Report, :index?
+            
+            # Get all reports with videos for this race
+            reports = report_repo.for_race(@race.id)
+            
+            videos = []
+            reports.each do |report|
+              # Get ActiveRecord model to access videos
+              report_model = Report.includes(videos_attachments: :blob).find(report.id)
+              
+              report_model.videos.each do |video|
+                videos << {
+                  id: video.id,
+                  url: Rails.application.routes.url_helpers.rails_blob_url(video, only_path: false, host: request.base_url),
+                  filename: video.filename.to_s,
+                  size: video.byte_size,
+                  content_type: video.content_type,
+                  report_id: report.id,
+                  metadata: {
+                    report_bib: report.bib_number,
+                    report_status: report.status
+                  }
+                }
+              end
+            end
+            
+            render json: {
+              race_id: @race.id,
+              video_count: videos.length,
+              videos: videos
+            }
+          end
+
           def index
             authorize Report, :index?
             
@@ -39,6 +75,18 @@ module Web
             
             @reports = parts_factory.wrap_many(@reports)
             @status_counts = report_repo.count_by_status(@race.id)
+
+            # Get all videos for this race for prefetch controller
+            @race_videos = []
+            report_repo.for_race(@race.id).each do |report|
+              report_model = Report.includes(videos_attachments: :blob).find(report.id)
+              report_model.videos.each do |video|
+                @race_videos << {
+                  id: video.id,
+                  url: rails_blob_url(video, only_path: false, host: request.base_url)
+                }
+              end
+            end
 
             # Touch view needs locations and participations for the split-screen UI
             if touch_display?

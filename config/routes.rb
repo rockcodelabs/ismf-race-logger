@@ -24,6 +24,12 @@ Rails.application.routes.draw do
     post "videos/markers", to: "videos#create_markers"
     get "videos/markers/:id", to: "videos#show_markers"
     
+    # Chunked video uploads
+    post "chunked_uploads/initiate", to: "chunked_uploads#initiate"
+    post "chunked_uploads/chunk", to: "chunked_uploads#chunk"
+    post "chunked_uploads/finalize", to: "chunked_uploads#finalize"
+    delete "chunked_uploads/:id", to: "chunked_uploads#destroy"
+    
     # Race type location templates
     resources :race_types, only: [] do
       resources :location_templates, controller: "race_types/location_templates" do
@@ -62,6 +68,7 @@ Rails.application.routes.draw do
       resources :reports, controller: "races/reports", only: [:index, :show, :new, :create] do
         collection do
           delete :delete_multiple
+          get :videos_index
         end
         member do
           post :confirm

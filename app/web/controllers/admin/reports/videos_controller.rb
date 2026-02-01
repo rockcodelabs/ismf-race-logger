@@ -50,7 +50,18 @@ module Web
               # Broadcast update to all clients viewing this race
               report_broadcaster.videos_attached(report_struct)
               
-              head :ok
+              # Return video data for client-side caching
+              videos_data = report_struct.videos.map do |video|
+                {
+                  id: video.id,
+                  url: Rails.application.routes.url_helpers.rails_blob_url(video, only_path: false, host: request.base_url),
+                  filename: video.filename.to_s,
+                  size: video.byte_size,
+                  content_type: video.content_type
+                }
+              end
+              
+              render json: { success: true, videos: videos_data }, status: :ok
             else
               error = result.failure
               

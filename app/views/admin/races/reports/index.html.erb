@@ -4,8 +4,12 @@
 <%= render "shared/video_player_modal" %>
 
 <div class="space-y-6" 
-     data-controller="report-selection upload-queue upload-progress" 
-     data-report-selection-race-id-value="<%= @race.id %>">
+     data-controller="report-selection upload-queue upload-progress video-prefetch" 
+     data-report-selection-race-id-value="<%= @race.id %>"
+     data-race-id="<%= @race.id %>"
+     data-video-prefetch-race-id-value="<%= @race.id %>"
+     data-video-prefetch-videos-value="<%= @race_videos.to_json %>"
+     data-video-prefetch-auto-start-value="true">
   <!-- Page header -->
   <div class="flex items-center justify-between">
     <div>
@@ -22,6 +26,9 @@
       </nav>
       <h1 class="text-2xl font-bold text-ismf-navy">Reports</h1>
       <p class="mt-1 text-sm text-ismf-gray">Manage reports for <%= @race.name %>.</p>
+      
+      <!-- Video Cache Status -->
+      <div class="mt-2" data-video-prefetch-target="status"></div>
     </div>
     <div class="flex items-center gap-3">
       <%= link_to admin_race_incidents_path(@race), class: "btn-secondary whitespace-nowrap" do %>

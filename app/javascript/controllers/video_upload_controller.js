@@ -2,6 +2,8 @@
 
 import { Controller } from "@hotwired/stimulus"
 import { DirectUpload } from "@rails/activestorage"
+import ChunkedUploadService from "services/chunked_upload_service"
+import VideoCacheService from "services/video_cache_service"
 
 console.log('📦 video_upload_controller.js module loading...')
 
@@ -16,6 +18,7 @@ console.log('📦 video_upload_controller.js module loading...')
 // - File validation (MP4, 10-50MB)
 // - Visual feedback during drag
 // - Immediate upload on drop
+// - Per-row progress with speed and ETA
 //
 // Usage:
 //   <tr data-controller="video-upload"
@@ -25,13 +28,18 @@ console.log('📦 video_upload_controller.js module loading...')
 //       data-video-upload-attach-url-value="/admin/races/1/reports/123/videos">
 //
 export default class extends Controller {
+  static targets = ["progressContainer", "progressBar", "progressText", "speedText"]
+  
   static values = {
     reportId: Number,
     raceId: Number,
     directUploadUrl: String,
     attachUrl: String,
     maxSize: { type: Number, default: 500 * 1024 * 1024 }, // 500MB
-    allowedTypes: { type: Array, default: ["video/mp4", "video/quicktime", "video/webm", "video/ogg", "video/x-msvideo", "video/avi"] }
+    allowedTypes: { type: Array, default: ["video/mp4", "video/quicktime", "video/webm", "video/ogg", "video/x-msvideo", "video/avi"] },
+    useChunkedUpload: { type: Boolean, default: true },
+    chunkSize: { type: Number, default: 10 * 1024 * 1024 }, // 10MB chunks
+    maxParallelChunks: { type: Number, default: 3 }
   }
 
   connect() {
@@ -46,6 +54,12 @@ export default class extends Controller {
     })
     this.dragCounter = 0
     this.uploading = false
+    this.uploadStartTime = null
+    this.lastProgressTime = null
+    this.lastLoadedBytes = 0
+    
+    // Initialize video cache service
+    this.initVideoCache()
     
     // Prevent default drag behavior on window to catch ALL drag events
     console.log('🛡️ Adding window-level drag prevention...')
@@ -64,6 +78,17 @@ export default class extends Controller {
     window.addEventListener('drop', this.windowDropHandler, false)
     
     console.log('✅ Window-level drag prevention installed')
+  }
+  
+  async initVideoCache() {
+    try {
+      this.videoCache = new VideoCacheService()
+      await this.videoCache.init(this.raceIdValue)
+      console.log('✅ Video cache initialized for race', this.raceIdValue)
+    } catch (error) {
+      console.warn('⚠️ Video cache not available:', error)
+      this.videoCache = null
+    }
   }
   
   disconnect() {
@@ -119,7 +144,7 @@ export default class extends Controller {
       target: event.target,
       currentTarget: event.currentTarget,
       dataTransfer: event.dataTransfer,
-      files: event.dataTransfer?.files
+      files: event.dataTransfer ? event.dataTransfer.files : null
     })
     event.preventDefault()
     event.stopPropagation()
@@ -214,7 +239,7 @@ export default class extends Controller {
     return { valid: true }
   }
 
-  // Upload files via Direct Upload
+  // Upload files via Direct Upload or Chunked Upload
   async uploadFiles(files) {
     console.log('🚀 uploadFiles called with', files.length, 'files')
     
@@ -231,14 +256,25 @@ export default class extends Controller {
     const failedUploads = []
 
     try {
-      console.log('📤 Starting Direct Upload for', files.length, 'file(s)...')
+      console.log('📤 Starting upload for', files.length, 'file(s)...')
       // Upload all files
       for (const file of files) {
         console.log(`  ⬆️ Uploading: ${file.name}`)
         try {
-          const signedId = await this.uploadFile(file)
-          console.log(`  ✅ Upload complete: ${file.name} → ${signedId}`)
-          signedIds.push(signedId)
+          // Use chunked upload for files > 20MB, otherwise use direct upload
+          const useChunked = this.useChunkedUploadValue && file.size > 20 * 1024 * 1024
+          
+          if (useChunked) {
+            console.log(`  📦 Using chunked upload for ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`)
+            const signedId = await this.uploadFileChunked(file)
+            console.log(`  ✅ Chunked upload complete: ${file.name} → ${signedId}`)
+            signedIds.push(signedId)
+          } else {
+            console.log(`  📤 Using direct upload for ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`)
+            const signedId = await this.uploadFile(file)
+            console.log(`  ✅ Direct upload complete: ${file.name} → ${signedId}`)
+            signedIds.push(signedId)
+          }
         } catch (error) {
           console.error(`  ❌ Failed to upload ${file.name}:`, error)
           failedUploads.push(file.name)
@@ -254,8 +290,15 @@ export default class extends Controller {
       // Attach uploaded files to report
       if (signedIds.length > 0) {
         console.log('🔗 Attaching videos to report...', this.attachUrlValue)
-        await this.attachVideos(signedIds)
+        const attachedVideos = await this.attachVideos(signedIds)
         console.log('✅ Videos attached successfully')
+        
+        // Cache uploaded videos for instant playback
+        if (this.videoCache && attachedVideos) {
+          console.log('💾 Caching uploaded videos...')
+          this.cacheUploadedVideos(attachedVideos)
+        }
+        
         this.showSuccess(`${signedIds.length} video${signedIds.length === 1 ? '' : 's'} uploaded successfully`)
       }
 
@@ -277,6 +320,12 @@ export default class extends Controller {
   // Upload a single file via Direct Upload
   uploadFile(file) {
     console.log(`    🎬 Creating DirectUpload for ${file.name} to ${this.directUploadUrlValue}`)
+    
+    // Reset tracking variables
+    this.uploadStartTime = Date.now()
+    this.lastProgressTime = Date.now()
+    this.lastLoadedBytes = 0
+    
     return new Promise((resolve, reject) => {
       const upload = new DirectUpload(file, this.directUploadUrlValue, {
         directUploadWillStoreFileWithXHR: (xhr) => {
@@ -284,7 +333,27 @@ export default class extends Controller {
             if (event.lengthComputable) {
               const progress = Math.round((event.loaded / event.total) * 100)
               console.log(`    📊 Upload progress for ${file.name}: ${progress}%`)
-              this.updateProgress(progress, file.name)
+              
+              // Calculate speed and ETA
+              const now = Date.now()
+              const timeDiff = (now - this.lastProgressTime) / 1000 // seconds
+              const bytesDiff = event.loaded - this.lastLoadedBytes
+              
+              if (timeDiff > 0.5) { // Update every 500ms
+                const speedBps = bytesDiff / timeDiff // bytes per second
+                const speedMbps = (speedBps / (1024 * 1024)).toFixed(2) // MB/s
+                
+                const remainingBytes = event.total - event.loaded
+                const eta = speedBps > 0 ? Math.ceil(remainingBytes / speedBps) : 0
+                
+                this.updateProgress(progress, file.name, speedMbps, eta, event.loaded, event.total)
+                
+                this.lastProgressTime = now
+                this.lastLoadedBytes = event.loaded
+              } else {
+                // Just update progress without recalculating speed
+                this.updateProgress(progress, file.name)
+              }
             }
           })
         }
@@ -302,40 +371,144 @@ export default class extends Controller {
       })
     })
   }
+  
+  // Upload a file using chunked upload service
+  uploadFileChunked(file) {
+    console.log(`    📦 Creating ChunkedUploadService for ${file.name}`)
+    
+    return new Promise((resolve, reject) => {
+      const service = new ChunkedUploadService({
+        file: file,
+        chunkSize: this.chunkSizeValue,
+        maxParallelChunks: this.maxParallelChunksValue,
+        
+        onProgress: (progressData) => {
+          console.log(`    📊 Chunked upload progress:`, progressData)
+          
+          const speedMbps = (progressData.speed / (1024 * 1024)).toFixed(2)
+          this.updateProgress(
+            progressData.progress,
+            file.name,
+            speedMbps,
+            progressData.eta,
+            progressData.bytesUploaded,
+            progressData.totalBytes
+          )
+        },
+        
+        onChunkComplete: (chunkIndex, data) => {
+          console.log(`    ✓ Chunk ${chunkIndex} uploaded (${data.received}/${data.total})`)
+        },
+        
+        onComplete: (blobId, result) => {
+          console.log(`    ✅ ChunkedUpload success for ${file.name}:`, result)
+          resolve(blobId)
+        },
+        
+        onError: (error) => {
+          console.error(`    ❌ ChunkedUpload error for ${file.name}:`, error)
+          reject(error)
+        }
+      })
+      
+      console.log('    📡 Starting chunked upload...')
+      service.start()
+    })
+  }
 
   // Update progress display
-  updateProgress(percentage, filename) {
+  updateProgress(percentage, filename, speedMbps = null, eta = null, loaded = null, total = null) {
     // Update element with upload progress feedback
-    const progressMessage = `Uploading ${filename}... ${percentage}%`
+    let progressMessage = `Uploading ${filename}... ${percentage}%`
+    
+    if (speedMbps !== null && eta !== null) {
+      progressMessage += ` • ${speedMbps} MB/s • ${this.formatETA(eta)}`
+    }
+    
     console.log(`📈 ${progressMessage}`)
     
     // Show progress in the upload zone
-    this.showUploadProgress(percentage, filename)
+    this.showUploadProgress(percentage, filename, speedMbps, eta, loaded, total)
   }
 
   // Show upload progress in the UI
-  showUploadProgress(percentage, filename) {
-    // Add a subtle progress indicator to the drop zone
-    const progressText = this.element.querySelector('.upload-progress-text')
-    if (progressText) {
-      progressText.textContent = `Uploading ${filename}... ${percentage}%`
-    } else {
-      // Create progress text if it doesn't exist
-      const dropZone = this.element.querySelector('.border-dashed')
-      if (dropZone) {
-        const text = document.createElement('p')
-        text.className = 'upload-progress-text text-sm text-blue-600 font-medium mt-2'
-        text.textContent = `Uploading ${filename}... ${percentage}%`
-        dropZone.appendChild(text)
-      }
+  showUploadProgress(percentage, filename, speedMbps = null, eta = null, loaded = null, total = null) {
+    // Find or create progress container in the row
+    let progressContainer = this.element.querySelector('.upload-progress-container')
+    
+    if (!progressContainer) {
+      // Find the videos cell (7th td)
+      const videosCell = this.element.querySelector('td:nth-child(7)')
+      if (!videosCell) return
+      
+      // Create progress container
+      progressContainer = document.createElement('div')
+      progressContainer.className = 'upload-progress-container'
+      progressContainer.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-medium text-blue-700 truncate" data-upload-filename></span>
+              <span class="text-xs font-semibold text-blue-900" data-upload-percentage></span>
+            </div>
+            <div class="w-full bg-blue-100 rounded-full h-2 overflow-hidden">
+              <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" data-upload-progress-bar style="width: 0%"></div>
+            </div>
+            <div class="flex items-center justify-between mt-1">
+              <span class="text-xs text-gray-600" data-upload-speed></span>
+              <span class="text-xs text-gray-600" data-upload-size></span>
+            </div>
+          </div>
+        </div>
+      `
+      
+      // Replace cell content with progress
+      videosCell.innerHTML = ''
+      videosCell.appendChild(progressContainer)
+    }
+    
+    // Update progress UI
+    const filenameEl = progressContainer.querySelector('[data-upload-filename]')
+    const percentageEl = progressContainer.querySelector('[data-upload-percentage]')
+    const progressBar = progressContainer.querySelector('[data-upload-progress-bar]')
+    const speedEl = progressContainer.querySelector('[data-upload-speed]')
+    const sizeEl = progressContainer.querySelector('[data-upload-size]')
+    
+    if (filenameEl) filenameEl.textContent = filename
+    if (percentageEl) percentageEl.textContent = `${percentage}%`
+    if (progressBar) progressBar.style.width = `${percentage}%`
+    
+    if (speedEl && speedMbps !== null && eta !== null) {
+      speedEl.textContent = `${speedMbps} MB/s • ${this.formatETA(eta)}`
+    }
+    
+    if (sizeEl && loaded !== null && total !== null) {
+      const loadedMB = (loaded / (1024 * 1024)).toFixed(1)
+      const totalMB = (total / (1024 * 1024)).toFixed(1)
+      sizeEl.textContent = `${loadedMB} / ${totalMB} MB`
     }
   }
 
   // Clear upload progress
   clearUploadProgress() {
-    const progressText = this.element.querySelector('.upload-progress-text')
-    if (progressText) {
-      progressText.remove()
+    const progressContainer = this.element.querySelector('.upload-progress-container')
+    if (progressContainer) {
+      progressContainer.remove()
+    }
+  }
+  
+  // Format ETA in seconds to human-readable string
+  formatETA(seconds) {
+    if (seconds < 60) {
+      return `${seconds}s left`
+    } else if (seconds < 3600) {
+      const mins = Math.floor(seconds / 60)
+      const secs = seconds % 60
+      return `${mins}m ${secs}s left`
+    } else {
+      const hours = Math.floor(seconds / 3600)
+      const mins = Math.floor((seconds % 3600) / 60)
+      return `${hours}h ${mins}m left`
     }
   }
 
@@ -355,7 +528,8 @@ export default class extends Controller {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-CSRF-Token': token
+        'X-CSRF-Token': token,
+        'Accept': 'application/json'
       },
       body: JSON.stringify(payload)
     })
@@ -369,23 +543,80 @@ export default class extends Controller {
     if (!response.ok) {
       const error = await response.json()
       console.error('    ❌ Attach failed:', error)
-      throw new Error(error.error || error.errors?.[0] || 'Failed to attach videos')
+      throw new Error(error.error || (error.errors && error.errors[0]) || 'Failed to attach videos')
     }
 
-    console.log('    ✅ Attach successful')
+    // Try to parse response to get video IDs and URLs for caching
+    try {
+      const contentType = response.headers.get('content-type')
+      if (contentType && contentType.includes('application/json')) {
+        const result = await response.json()
+        console.log('    ✅ Attach successful with data:', result)
+        return result.videos || null
+      }
+    } catch (e) {
+      console.log('    ✅ Attach successful (no JSON response)')
+    }
+    
+    return null
+  }
+  
+  // Cache uploaded videos for instant playback
+  async cacheUploadedVideos(videos) {
+    if (!videos || videos.length === 0) return
+    
+    try {
+      for (const video of videos) {
+        if (video.id && video.url) {
+          console.log(`💾 Caching video ${video.id}...`)
+          await this.videoCache.put(video.id, video.url, {
+            filename: video.filename,
+            report_id: this.reportIdValue,
+            uploaded_at: new Date().toISOString()
+          })
+          console.log(`✅ Video ${video.id} cached`)
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to cache videos:', error)
+      // Don't fail the upload if caching fails
+    }
   }
 
   // Show uploading state
   showUploadingState(fileCount) {
     console.log('💫 Showing uploading state:', fileCount, 'file(s)')
-    this.element.classList.add('bg-blue-50', 'animate-pulse', 'ring-2', 'ring-blue-400')
+    this.element.classList.add('bg-blue-50', 'ring-2', 'ring-blue-400')
   }
 
   // Clear uploading state
   clearUploadingState() {
     console.log('🧹 Clearing uploading state')
-    this.element.classList.remove('bg-blue-50', 'animate-pulse', 'ring-2', 'ring-blue-400')
+    this.element.classList.remove('bg-blue-50', 'ring-2', 'ring-blue-400')
     this.clearUploadProgress()
+    
+    // Show success state briefly
+    this.showSuccessState()
+  }
+  
+  // Show success state briefly after upload completes
+  showSuccessState() {
+    const videosCell = this.element.querySelector('td:nth-child(7)')
+    if (!videosCell) return
+    
+    videosCell.innerHTML = `
+      <div class="flex items-center gap-2 text-green-600 animate-pulse">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span class="text-sm font-medium">Upload complete!</span>
+      </div>
+    `
+    
+    // Reload the row content after 2 seconds to show the thumbnails
+    setTimeout(() => {
+      window.location.reload()
+    }, 2000)
   }
 
   // Show success message

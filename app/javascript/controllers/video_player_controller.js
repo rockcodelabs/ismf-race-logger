@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import VideoCacheService from "services/video_cache_service"
 
 // Connects to data-controller="video-player"
 export default class extends Controller {
@@ -39,6 +40,26 @@ export default class extends Controller {
     this.isDraggingEnd = false
     this.loopEnabled = false
     this.isMuted = true // Default to muted
+    this.currentBlobUrl = null // Track blob URLs for cleanup
+    
+    // Initialize video cache service
+    this.initVideoCache()
+  }
+  
+  async initVideoCache() {
+    try {
+      this.videoCache = new VideoCacheService()
+      // Get race ID from data attribute on page
+      const raceElement = document.querySelector('[data-race-id]')
+      if (raceElement) {
+        const raceId = parseInt(raceElement.dataset.raceId, 10)
+        await this.videoCache.init(raceId)
+        console.log('✅ Video cache initialized for player')
+      }
+    } catch (error) {
+      console.warn('⚠️ Video cache not available for player:', error)
+      this.videoCache = null
+    }
   }
 
   open(event) {
@@ -54,7 +75,7 @@ export default class extends Controller {
     this.openWithUrl(videoUrl, videoBlobId)
   }
 
-  openWithUrl(videoUrl, videoBlobId = null) {
+  async openWithUrl(videoUrl, videoBlobId = null) {
     if (!videoUrl) {
       console.error("No video URL provided")
       return
@@ -62,7 +83,12 @@ export default class extends Controller {
 
     this.videoUrlValue = videoUrl
     this.videoBlobIdValue = videoBlobId
-    this.videoTarget.src = videoUrl
+    
+    // Try to load from cache first
+    const cachedVideoUrl = await this.loadFromCache(videoBlobId)
+    const finalUrl = cachedVideoUrl || videoUrl
+    
+    this.videoTarget.src = finalUrl
     this.videoTarget.muted = this.isMuted // Set default mute state
     this.modalTarget.classList.remove("hidden")
     this.modalTarget.classList.add("flex")
@@ -77,12 +103,137 @@ export default class extends Controller {
     // Load existing markers if available
     this.loadMarkers()
   }
+  
+  // Load video from cache if available
+  async loadFromCache(videoBlobId) {
+    if (!this.videoCache || !videoBlobId) {
+      console.log('📡 Loading video from server (no cache)')
+      return null
+    }
+    
+    try {
+      // Extract video ID from blob ID or URL
+      const videoId = this.extractVideoId(videoBlobId)
+      if (!videoId) {
+        console.log('📡 Loading video from server (no video ID)')
+        return null
+      }
+      
+      console.log(`🔍 Checking cache for video ${videoId}...`)
+      const cached = await this.videoCache.get(videoId)
+      
+      if (cached && cached.blobUrl) {
+        console.log(`✅ Video ${videoId} loaded from cache (instant playback)`)
+        
+        // Clean up previous blob URL if exists
+        if (this.currentBlobUrl) {
+          VideoCacheService.revokeObjectURL(this.currentBlobUrl)
+        }
+        
+        this.currentBlobUrl = cached.blobUrl
+        this.showCacheIndicator(true)
+        return cached.blobUrl
+      } else {
+        console.log(`📡 Loading video ${videoId} from server (not cached)`)
+        this.showCacheIndicator(false)
+        
+        // Optionally: Cache it in background after loading
+        this.cacheVideoInBackground(videoId, this.videoUrlValue)
+        
+        return null
+      }
+    } catch (error) {
+      console.error('Failed to load from cache:', error)
+      this.showCacheIndicator(false)
+      return null
+    }
+  }
+  
+  // Extract video ID from blob ID or attachment ID
+  extractVideoId(identifier) {
+    if (!identifier) return null
+    
+    // If it's a number, use it directly
+    if (typeof identifier === 'number') return identifier
+    
+    // If it's a string that looks like a number, parse it
+    const parsed = parseInt(identifier, 10)
+    if (!isNaN(parsed)) return parsed
+    
+    // Otherwise try to extract from URL patterns
+    const match = identifier.match(/\/(\d+)\//)
+    return match ? parseInt(match[1], 10) : null
+  }
+  
+  // Cache video in background for next time
+  async cacheVideoInBackground(videoId, videoUrl) {
+    if (!this.videoCache || !videoId || !videoUrl) return
+    
+    try {
+      console.log(`💾 Caching video ${videoId} in background...`)
+      await this.videoCache.put(videoId, videoUrl)
+      console.log(`✅ Video ${videoId} cached for next time`)
+      this.showCacheIndicator(true)
+    } catch (error) {
+      console.warn(`⚠️ Failed to cache video ${videoId}:`, error)
+    }
+  }
+  
+  // Show cache status indicator
+  showCacheIndicator(fromCache) {
+    // Add a small indicator to show if video is from cache
+    const indicator = this.modalTarget.querySelector('.cache-indicator')
+    if (indicator) {
+      indicator.remove()
+    }
+    
+    const indicatorEl = document.createElement('div')
+    indicatorEl.className = 'cache-indicator absolute top-20 right-4 px-3 py-1 rounded-full text-xs font-medium z-50'
+    
+    if (fromCache) {
+      indicatorEl.classList.add('bg-green-500', 'text-white')
+      indicatorEl.innerHTML = `
+        <div class="flex items-center gap-1">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span>Cached</span>
+        </div>
+      `
+    } else {
+      indicatorEl.classList.add('bg-blue-500', 'text-white')
+      indicatorEl.innerHTML = `
+        <div class="flex items-center gap-1">
+          <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>Streaming</span>
+        </div>
+      `
+    }
+    
+    this.modalTarget.appendChild(indicatorEl)
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+      indicatorEl.style.opacity = '0'
+      indicatorEl.style.transition = 'opacity 0.5s'
+      setTimeout(() => indicatorEl.remove(), 500)
+    }, 3000)
+  }
 
   close() {
-    this.pause()
-    this.videoTarget.src = ""
+    this.videoTarget.pause()
+    this.videoTarget.currentTime = 0
+    this.videoTarget.src = '' // Clear src to release resources
     this.modalTarget.classList.add("hidden")
     this.modalTarget.classList.remove("flex")
+    
+    // Cleanup blob URL if we created one
+    if (this.currentBlobUrl) {
+      VideoCacheService.revokeObjectURL(this.currentBlobUrl)
+      this.currentBlobUrl = null
+    }
     
     // Restore body scroll
     document.body.style.overflow = ""
