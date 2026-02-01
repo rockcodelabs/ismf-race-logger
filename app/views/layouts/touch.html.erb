@@ -43,22 +43,22 @@
     <!-- Flash Messages Container for Turbo Streams -->
     <div id="flash-messages"></div>
     
-    <!-- Flash Messages (positioned to avoid ISMF logo button: 140x88px) -->
+    <!-- Flash Messages (positioned at bottom center, narrower width) -->
     <% if notice %>
-      <div class="fixed top-24 left-4 right-4 z-[9999] bg-green-100 border-2 border-green-500 text-green-900 px-6 py-4 rounded-xl flex items-center gap-4 shadow-lg" data-controller="flash" data-flash-dismiss-after-value="5000" style="display: flex !important; position: fixed !important; visibility: visible !important; pointer-events: auto;">
-        <svg class="w-8 h-8 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-green-100 border-2 border-green-500 text-green-900 px-4 py-3 rounded-xl flex items-center gap-3 shadow-lg max-w-sm" data-controller="flash" data-flash-dismiss-after-value="5000" style="display: flex !important; position: fixed !important; visibility: visible !important; pointer-events: auto;">
+        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span class="text-xl font-semibold"><%= notice %></span>
+        <span class="text-base font-semibold"><%= notice %></span>
       </div>
     <% end %>
     
     <% if alert %>
-      <div class="fixed top-24 left-4 right-4 z-[9999] bg-red-100 border-2 border-red-500 text-red-900 px-6 py-4 rounded-xl flex items-center gap-4 shadow-lg" data-controller="flash" data-flash-dismiss-after-value="5000" style="display: flex !important; position: fixed !important; visibility: visible !important; pointer-events: auto;">
-        <svg class="w-8 h-8 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-red-100 border-2 border-red-500 text-red-900 px-4 py-3 rounded-xl flex items-center gap-3 shadow-lg max-w-sm" data-controller="flash" data-flash-dismiss-after-value="5000" style="display: flex !important; position: fixed !important; visibility: visible !important; pointer-events: auto;">
+        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span class="text-xl font-semibold"><%= alert %></span>
+        <span class="text-base font-semibold"><%= alert %></span>
       </div>
     <% end %>
 

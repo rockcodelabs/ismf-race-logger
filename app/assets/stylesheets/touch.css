@@ -96,6 +96,24 @@ body.touch-mode textarea {
 }
 
 /* ========================================
+   REPORT ACTION BUTTONS
+   ======================================== */
+
+/* Ensure button_to forms take proper width in flex containers */
+body.touch-mode form[action*="/confirm"],
+body.touch-mode form[action*="/reject"] {
+  flex: 1;
+  display: flex;
+}
+
+/* Ensure buttons inside forms take full width */
+body.touch-mode form[action*="/confirm"] button,
+body.touch-mode form[action*="/reject"] button {
+  width: 100%;
+  flex: 1;
+}
+
+/* ========================================
    TOUCH LOGO
    ======================================== */
 

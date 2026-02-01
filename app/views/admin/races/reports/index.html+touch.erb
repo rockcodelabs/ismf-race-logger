@@ -109,7 +109,7 @@
         </span>
       </div>
       
-      <div class="flex-1 overflow-y-auto touch-scrollable" data-touch-report-target="pendingQueue" id="pending-reports-queue">
+      <div class="flex-1 overflow-y-auto touch-scrollable" data-touch-report-target="pendingQueue" id="pending-reports-queue" data-turbo-cache="false">
         <% pending_reports = @reports.select { |r| r.status == "pending_review" } %>
         <% if pending_reports.any? %>
           <div class="divide-y divide-gray-100">
@@ -128,15 +128,17 @@
                     </p>
                   </div>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex gap-2 w-full">
                   <%= button_to confirm_admin_race_report_path(@race, report.id), 
                       method: :post,
-                      class: "flex-1 py-2 rounded-lg bg-green-500 text-white font-semibold text-sm active:bg-green-600 transition" do %>
+                      form: { class: "flex-1" },
+                      class: "w-full py-3 rounded-lg bg-green-500 text-white font-bold text-sm active:bg-green-600 transition" do %>
                     ✓ Confirm
                   <% end %>
                   <%= button_to reject_admin_race_report_path(@race, report.id), 
                       method: :post,
-                      class: "flex-1 py-2 rounded-lg bg-red-500 text-white font-semibold text-sm active:bg-red-600 transition" do %>
+                      form: { class: "flex-1" },
+                      class: "w-full py-3 rounded-lg bg-red-500 text-white font-bold text-sm active:bg-red-600 transition" do %>
                     ✗ Reject
                   <% end %>
                 </div>

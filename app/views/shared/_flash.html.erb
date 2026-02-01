@@ -24,13 +24,13 @@
   end
 %>
 
-<div id="flash-<%= SecureRandom.uuid %>" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999] <%= bg_class %> border-2 <%= border_class %> <%= text_class %> px-6 py-4 rounded-xl flex items-center gap-4 shadow-lg animate-slide-down max-w-md" data-controller="flash" data-flash-dismiss-after-value="<%= dismiss_time %>" style="display: flex !important; position: fixed !important; visibility: visible !important; pointer-events: auto;">
-  <svg class="w-8 h-8 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<div id="flash-<%= SecureRandom.uuid %>" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] <%= bg_class %> border-2 <%= border_class %> <%= text_class %> px-4 py-3 rounded-xl flex items-center gap-3 shadow-lg animate-slide-down max-w-sm" data-controller="flash" data-flash-dismiss-after-value="<%= dismiss_time %>" style="display: flex !important; position: fixed !important; visibility: visible !important; pointer-events: auto;">
+  <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<%= icon_path %>" />
   </svg>
-  <span class="text-xl font-semibold flex-1"><%= message %></span>
+  <span class="text-base font-semibold flex-1"><%= message %></span>
   <button type="button" class="<%= button_class %>" data-action="click->flash#dismiss">
-    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
     </svg>
   </button>
