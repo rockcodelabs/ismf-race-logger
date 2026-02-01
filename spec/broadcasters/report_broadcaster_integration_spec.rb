@@ -111,7 +111,8 @@ RSpec.describe ReportBroadcaster, type: :broadcaster do
         "race_#{race.id}_reports",
         hash_including(
           target: "flash-messages",
-          partial: "shared/flash_notice_turbo"
+          partial: "shared/flash",
+          locals: hash_including(type: "notice", message: String)
         )
       ).and_call_original
 
@@ -538,12 +539,12 @@ RSpec.describe ReportBroadcaster, type: :broadcaster do
       )
     end
 
-    it "renders flash_notice_turbo partial with message" do
+    it "renders unified flash partial with message" do
       expect(Turbo::StreamsChannel).to receive(:broadcast_append_to).with(
         anything,
         hash_including(
-          partial: "shared/flash_notice_turbo",
-          locals: hash_including(message: String)
+          partial: "shared/flash",
+          locals: hash_including(type: "notice", message: String)
         )
       ).and_call_original
 

@@ -38,7 +38,7 @@ class IncidentRepo < DB::Repo
   def for_race(race_id)
     Incident
       .where(race_id: race_id)
-      .includes(:race_location, :reports, :incident_penalties)
+      .includes(:race_location, { incident_penalties: :penalty }, reports: [:user, { race_participation: :athlete }])
       .order(created_at: :desc)
       .map { |record| build_summary(record) }
   end
@@ -49,7 +49,7 @@ class IncidentRepo < DB::Repo
   def pending_for_race(race_id)
     Incident
       .where(race_id: race_id, status: "pending")
-      .includes(:race_location, :reports, :incident_penalties)
+      .includes(:race_location, { incident_penalties: :penalty }, reports: [:user, { race_participation: :athlete }])
       .order(created_at: :desc)
       .map { |record| build_summary(record) }
   end
@@ -60,7 +60,7 @@ class IncidentRepo < DB::Repo
   def decided_for_race(race_id)
     Incident
       .where(race_id: race_id, status: %w[approved rejected])
-      .includes(:race_location, :reports, :incident_penalties)
+      .includes(:race_location, { incident_penalties: :penalty }, reports: [:user, { race_participation: :athlete }])
       .order(decided_at: :desc)
       .map { |record| build_summary(record) }
   end
@@ -71,7 +71,7 @@ class IncidentRepo < DB::Repo
   def approved_for_race(race_id)
     Incident
       .where(race_id: race_id, status: "approved")
-      .includes(:race_location, :reports, :incident_penalties)
+      .includes(:race_location, { incident_penalties: :penalty }, reports: [:user, { race_participation: :athlete }])
       .order(decided_at: :desc)
       .map { |record| build_summary(record) }
   end
@@ -82,7 +82,7 @@ class IncidentRepo < DB::Repo
   def rejected_for_race(race_id)
     Incident
       .where(race_id: race_id, status: "rejected")
-      .includes(:race_location, :reports, :incident_penalties)
+      .includes(:race_location, { incident_penalties: :penalty }, reports: [:user, { race_participation: :athlete }])
       .order(decided_at: :desc)
       .map { |record| build_summary(record) }
   end
@@ -94,7 +94,7 @@ class IncidentRepo < DB::Repo
   def by_status(race_id, status)
     Incident
       .where(race_id: race_id, status: status)
-      .includes(:race_location, :reports, :incident_penalties)
+      .includes(:race_location, { incident_penalties: :penalty }, reports: [:user, { race_participation: :athlete }])
       .order(created_at: :desc)
       .map { |record| build_summary(record) }
   end
@@ -146,6 +146,7 @@ class IncidentRepo < DB::Repo
       race_id: record.race_id,
       race_location_id: record.race_location_id,
       status: record.status,
+      custom_name: record.custom_name,
       description: record.description,
       decided_by_user_id: record.decided_by_user_id,
       decided_at: record.decided_at,
@@ -160,16 +161,36 @@ class IncidentRepo < DB::Repo
 
   def build_summary(record)
     bib_numbers = record.reports.map(&:bib_number).uniq.sort
+    reporter_names = record.reports.map { |r| r.user&.display_name }.compact
+    penalty_details = record.incident_penalties.map do |ip|
+      { number: ip.penalty.penalty_number, name: ip.penalty.name }
+    end
+    
+    # Collect unique athletes from all reports
+    athletes = record.reports.map do |r|
+      athlete = r.race_participation&.athlete
+      next unless athlete
+      
+      {
+        first_name: athlete.first_name,
+        last_name: athlete.last_name,
+        country: athlete.country
+      }
+    end.compact.uniq
 
     Structs::IncidentSummary.new(
       id: record.id,
       race_id: record.race_id,
       race_location_id: record.race_location_id,
       race_location_name: record.race_location&.name,
+      custom_name: record.custom_name,
       status: record.status,
       reports_count: record.reports.size,
       penalties_count: record.incident_penalties.size,
+      penalty_details: penalty_details,
       bib_numbers: bib_numbers,
+      reporter_names: reporter_names,
+      athletes: athletes,
       created_at: record.created_at
     )
   end

@@ -42,6 +42,9 @@ Rails.application.routes.draw do
     # Reports and Incidents (nested under races)
     resources :races, only: [] do
       resources :reports, controller: "races/reports", only: [:index, :show, :new, :create] do
+        collection do
+          delete :delete_multiple
+        end
         member do
           post :confirm
           post :reject
@@ -49,11 +52,17 @@ Rails.application.routes.draw do
         end
       end
 
-      resources :incidents, controller: "races/incidents", only: [:index, :show, :new, :create, :edit] do
+      resources :incidents, controller: "races/incidents", only: [:index, :show, :new, :create, :edit, :update, :destroy] do
+        collection do
+          delete :delete_multiple
+          post :merge
+        end
         member do
           post :decide
           post :attach_penalties
           post :reopen
+          post :add_reports
+          post :remove_reports
         end
       end
     end

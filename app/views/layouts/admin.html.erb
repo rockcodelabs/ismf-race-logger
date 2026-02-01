@@ -81,8 +81,23 @@
               Penalties
             <% end %>
             
-            <!-- Configuration Section -->
+            <!-- Live Timer -->
             <div class="pt-6 mt-6 border-t border-ismf-blue">
+              <div class="px-3 mb-6" data-controller="live-timer">
+                <div class="bg-ismf-blue/20 rounded-lg p-4 text-center">
+                  <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Current Time</div>
+                  <div class="text-3xl font-bold text-white font-mono" data-live-timer-target="display">
+                    --:--:--
+                  </div>
+                  <div class="text-xs text-gray-400 mt-1" data-live-timer-target="date">
+                    Loading...
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Configuration Section -->
+            <div class="pt-6 border-t border-ismf-blue">
               <h3 class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Configuration</h3>
               
               <% RaceType.order(:name).each do |race_type| %>
@@ -183,6 +198,9 @@
                   <%= alert %>
                 </div>
               <% end %>
+              
+              <!-- Flash messages container for Turbo Stream broadcasts -->
+              <div id="flash-messages"></div>
               
               <%= yield %>
             </div>

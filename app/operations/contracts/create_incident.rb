@@ -5,10 +5,11 @@ module Operations
     # CreateIncident Contract
     #
     # Validates input parameters for creating an incident by merging reports.
-    # An incident is created from one or more confirmed reports.
+    # An incident is created from one or more reports (pending_review or confirmed).
+    # Reports will be automatically confirmed when the incident is created.
     #
     # Required fields:
-    # - report_ids: array of integers (at least one confirmed report)
+    # - report_ids: array of integers (at least one report)
     #
     # Optional fields:
     # - description: string (summary/notes about the incident)
@@ -45,19 +46,16 @@ module Operations
           next
         end
 
-        # Check all reports are confirmed
-        non_confirmed = reports.where.not(status: "confirmed")
-        if non_confirmed.exists?
-          key.failure("all reports must be confirmed before merging into an incident")
+        # Allow both pending_review and confirmed reports
+        # (Reports will be confirmed when incident is created)
+        invalid_status = reports.where.not(status: %w[pending_review confirmed])
+        if invalid_status.exists?
+          key.failure("reports must be pending_review or confirmed (cannot use rejected reports)")
           next
         end
 
-        # Check no reports are already linked to an incident
-        already_linked = reports.where.not(incident_id: nil)
-        if already_linked.exists?
-          key.failure("one or more reports are already linked to an incident")
-          next
-        end
+        # Note: We now ALLOW reports that are already linked to incidents
+        # They will be moved to the new incident (frontend handles confirmation)
 
         # Check all reports belong to the same race
         race_ids = reports.pluck(:race_id).uniq

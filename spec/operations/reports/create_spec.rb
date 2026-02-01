@@ -9,6 +9,7 @@ RSpec.describe Operations::Reports::Create do
   let(:race_type) { create(:race_type_sprint) }
   let(:race) { create(:race, :in_progress, competition: competition, race_type: race_type) }
   let(:user) { create(:user) }
+  let(:var_user) { create(:user, :var_operator) }
   let(:race_location) { create(:race_location, race: race) }
   let(:athlete) { create(:athlete) }
   let(:participation) { create(:race_participation, race: race, athlete: athlete, bib_number: 42) }
@@ -36,10 +37,14 @@ RSpec.describe Operations::Reports::Create do
         expect { operation.call(valid_params) }.to change(Report, :count).by(1)
       end
 
-      it "sets the status to pending_review" do
+      it "sets the status to pending_review for non-VAR users" do
         result = operation.call(valid_params)
 
         expect(result.value!.status).to eq("pending_review")
+      end
+
+      it "does not create an incident for non-VAR users" do
+        expect { operation.call(valid_params) }.not_to change(Incident, :count)
       end
 
       it "sets all required fields correctly" do
@@ -67,6 +72,71 @@ RSpec.describe Operations::Reports::Create do
         expect(report.race_location_name).to eq(race_location.name)
         expect(report.athlete_name).to eq("#{athlete.first_name} #{athlete.last_name}")
         expect(report.user_name).to eq(user.display_name)
+      end
+    end
+
+    context "when user is VAR operator" do
+      let(:var_params) do
+        {
+          race_id: race.id,
+          race_location_id: race_location.id,
+          race_participation_id: participation.id,
+          bib_number: participation.bib_number,
+          user_id: var_user.id
+        }
+      end
+
+      it "returns Success with a report struct" do
+        result = operation.call(var_params)
+
+        expect(result).to be_success
+        expect(result.value!).to be_a(Structs::Report)
+      end
+
+      it "creates a report in the database" do
+        expect { operation.call(var_params) }.to change(Report, :count).by(1)
+      end
+
+      it "auto-creates an incident" do
+        expect { operation.call(var_params) }.to change(Incident, :count).by(1)
+      end
+
+      it "links the report to the incident" do
+        result = operation.call(var_params)
+        report = result.value!
+
+        expect(report.incident_id).to be_present
+      end
+
+      it "sets incident status to pending" do
+        result = operation.call(var_params)
+        report = Report.find(result.value!.id)
+        incident = report.incident
+
+        expect(incident.status).to eq("pending")
+      end
+
+      it "sets incident race_location from report" do
+        result = operation.call(var_params)
+        report = Report.find(result.value!.id)
+        incident = report.incident
+
+        expect(incident.race_location_id).to eq(race_location.id)
+      end
+
+      it "sets incident description from report" do
+        params_with_desc = var_params.merge(description: "VAR observed infraction")
+        result = operation.call(params_with_desc)
+        report = Report.find(result.value!.id)
+        incident = report.incident
+
+        expect(incident.description).to eq("VAR observed infraction")
+      end
+
+      it "keeps report status as pending_review" do
+        result = operation.call(var_params)
+
+        expect(result.value!.status).to eq("pending_review")
       end
     end
 

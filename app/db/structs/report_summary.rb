@@ -15,12 +15,16 @@ module Structs
     :id,
     :race_id,
     :incident_id,
+    :incident_name,
+    :incident_status,
+    :incident_has_decision,
     :bib_number,
     :athlete_position,
     :race_location_id,
     :race_location_name,
     :athlete_name,
     :athlete_country,
+    :user_name,
     :status,
     :created_at
   ) do
@@ -47,6 +51,17 @@ module Structs
     # Can this report be merged into an incident?
     def can_merge?
       confirmed? && !linked_to_incident?
+    end
+
+    # Can this report be moved from its current incident?
+    # Returns true if linked but incident has no decision yet
+    def can_move_from_incident?
+      linked_to_incident? && !incident_has_decision
+    end
+
+    # Check if incident has a jury decision
+    def incident_has_decision?
+      incident_has_decision == true
     end
 
     # Returns CSS class for status badge

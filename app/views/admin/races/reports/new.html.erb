@@ -1,129 +1,139 @@
-<div class="space-y-6">
-  <!-- Page header -->
-  <div class="flex items-center justify-between">
-    <div>
-      <nav class="flex items-center text-sm text-gray-500 mb-2">
-        <%= link_to "Races", admin_competitions_path, class: "hover:text-ismf-blue" %>
-        <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-        </svg>
-        <%= link_to @race.name, admin_race_reports_path(@race), class: "hover:text-ismf-blue" %>
-        <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-        </svg>
-        <span class="text-ismf-navy">New Report</span>
-      </nav>
-      <h1 class="text-2xl font-bold text-ismf-navy">New Report</h1>
-      <p class="mt-1 text-sm text-ismf-gray">Create a new report for <%= @race.name %>.</p>
-    </div>
-    <div class="flex items-center gap-3">
-      <%= link_to admin_race_reports_path(@race), class: "btn-secondary whitespace-nowrap" do %>
-        <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        <span>Cancel</span>
-      <% end %>
+<div class="h-[calc(100vh-4rem)] flex flex-col bg-gray-50" data-controller="report-form">
+  <!-- Header -->
+  <div class="shrink-0 bg-white border-b border-gray-200 px-6 py-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <%= link_to admin_race_reports_path(@race), class: "p-2 hover:bg-gray-100 rounded-lg transition-colors" do %>
+          <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        <% end %>
+        <div>
+          <h1 class="text-2xl font-bold text-ismf-navy">Reports</h1>
+          <p class="text-sm text-gray-500"><%= @race.name %></p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <%= link_to admin_race_incidents_path(@race), class: "flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-700 rounded-lg font-semibold hover:bg-orange-200 transition-colors" do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          Incidents
+        <% end %>
+      </div>
     </div>
   </div>
 
-  <!-- Form card -->
-  <div class="card max-w-2xl">
-    <div class="p-6">
-      <%= form_with url: admin_race_reports_path(@race), method: :post, local: true, class: "space-y-6" do |form| %>
-        
-        <!-- Race Location -->
-        <div>
-          <label for="report_race_location_id" class="block text-sm font-medium text-ismf-navy">
-            Location <span class="text-red-500">*</span>
-          </label>
-          <select name="report[race_location_id]" id="report_race_location_id" required
-                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-ismf-blue focus:ring-ismf-blue sm:text-sm">
-            <option value="">Select a location...</option>
-            <% @race_locations.each do |location| %>
-              <option value="<%= location.id %>">
-                <%= location.name %> (<%= location.course_segment.titleize %>)
-              </option>
-            <% end %>
-          </select>
-          <p class="mt-1 text-xs text-ismf-gray">Where on the course did the incident occur?</p>
-        </div>
+  <!-- Status Banner -->
+  <div class="shrink-0 bg-gray-200 px-6 py-3 border-b border-gray-300" data-report-form-target="banner">
+    <p class="text-sm font-medium text-gray-600">
+      <span class="text-gray-400" data-report-form-target="bannerText">Select a location first</span>
+    </p>
+  </div>
 
-        <!-- Participant (Bib Number) -->
-        <div>
-          <label for="report_race_participation_id" class="block text-sm font-medium text-ismf-navy">
-            Participant (Bib Number) <span class="text-red-500">*</span>
-          </label>
-          <select name="report[race_participation_id]" id="report_race_participation_id" required
-                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-ismf-blue focus:ring-ismf-blue sm:text-sm"
-                  data-controller="participant-select"
-                  data-action="change->participant-select#updateBib">
-            <option value="" data-bib="">Select a participant...</option>
-            <% @participations.each do |participation| %>
-              <option value="<%= participation.id %>" data-bib="<%= participation.bib_number %>">
-                #<%= participation.bib_number %> - <%= participation.athlete&.first_name %> <%= participation.athlete&.last_name %>
-              </option>
-            <% end %>
-          </select>
-          <p class="mt-1 text-xs text-ismf-gray">Select the athlete involved in the incident.</p>
-        </div>
-
-        <!-- Hidden bib_number field (auto-populated) -->
-        <input type="hidden" name="report[bib_number]" id="report_bib_number" value="">
-
-        <!-- Athlete Position (for team races) -->
-        <% if @race.gender_category.to_s.length == 2 %>
-          <div>
-            <label for="report_athlete_position" class="block text-sm font-medium text-ismf-navy">
-              Athlete Position (Team Race)
-            </label>
-            <select name="report[athlete_position]" id="report_athlete_position"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-ismf-blue focus:ring-ismf-blue sm:text-sm">
-              <option value="">Not applicable</option>
-              <option value="1">Athlete A (First)</option>
-              <option value="2">Athlete B (Second)</option>
-            </select>
-            <p class="mt-1 text-xs text-ismf-gray">For team races, specify which athlete in the team.</p>
+  <!-- Main Content: Split Screen -->
+  <div class="flex-1 flex overflow-hidden">
+    
+    <!-- Left: Location Sidebar -->
+    <div class="w-64 shrink-0 bg-white border-r border-gray-200 flex flex-col">
+      <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
+        <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Select Location</h2>
+      </div>
+      <div class="flex-1 overflow-y-auto p-3 space-y-2">
+        <% @race_locations.each_with_index do |location, index| %>
+          <button type="button"
+                  class="location-btn w-full px-4 py-3 rounded-lg font-bold transition-all border-2 hover:scale-105 text-center"
+                  style="background-color: <%= location.color_code || '#e5e7eb' %>; border-color: <%= location.color_code || '#9ca3af' %>; color: white;"
+                  data-action="click->report-form#selectLocation"
+                  data-report-form-location-id-param="<%= location.id %>"
+                  data-report-form-location-name-param="<%= location.name %>"
+                  data-location-id="<%= location.id %>"
+                  title="<%= location.name %> (<%= location.course_segment.titleize %> <%= location.segment_position.titleize %>)">
+            <%= location.name %>
+          </button>
+        <% end %>
+        <% if @race_locations.empty? %>
+          <div class="text-center py-12 text-gray-400">
+            <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            </svg>
+            <p class="text-sm">No locations defined</p>
           </div>
         <% end %>
+      </div>
+    </div>
 
-        <!-- Description -->
-        <div>
-          <label for="report_description" class="block text-sm font-medium text-ismf-navy">
-            Description
-          </label>
-          <textarea name="report[description]" id="report_description" rows="4"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-ismf-blue focus:ring-ismf-blue sm:text-sm"
-                    placeholder="Optional: Describe what happened..."></textarea>
-          <p class="mt-1 text-xs text-ismf-gray">Add any notes about the observed incident.</p>
+    <!-- Right: Participant Grid -->
+    <div class="flex-1 flex flex-col bg-gray-50">
+      <!-- Grid Header -->
+      <div class="shrink-0 px-6 py-3 bg-white border-b border-gray-200 flex items-center justify-between">
+        <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Select Athlete</h2>
+        <span class="text-sm text-gray-500"><%= @participations.size %> participants</span>
+      </div>
+
+      <!-- Participant Grid -->
+      <div class="flex-1 overflow-y-auto p-4" data-report-form-target="gridContainer">
+        <div class="grid grid-cols-4 gap-3">
+          <% @participations.each do |participation| %>
+            <button type="button"
+                    class="bib-btn flex flex-col items-center justify-center p-4 rounded-xl bg-white border-2 border-gray-200 transition-all hover:border-ismf-blue hover:shadow-md opacity-40"
+                    data-action="click->report-form#selectBib"
+                    data-report-form-participation-id-param="<%= participation.id %>"
+                    data-report-form-bib-param="<%= participation.bib_number %>"
+                    data-report-form-athlete-param="<%= participation.athlete&.display_name || 'Unknown' %>"
+                    data-report-form-target="bibButton"
+                    disabled>
+              <span class="text-3xl font-black text-ismf-navy mb-1"><%= participation.bib_number %></span>
+              <span class="text-xs text-gray-500 truncate w-full text-center font-medium">
+                <%= participation.athlete&.last_name || 'Unknown' %>
+              </span>
+              <% if participation.athlete&.country.present? %>
+                <span class="text-xs text-gray-400 mt-0.5">
+                  <%= participation.athlete.country %>
+                </span>
+              <% end %>
+            </button>
+          <% end %>
         </div>
-
-        <!-- Submit -->
-        <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
-          <%= link_to "Cancel", admin_race_reports_path(@race), class: "btn-secondary" %>
-          <button type="submit" class="btn-primary">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        <% if @participations.empty? %>
+          <div class="flex flex-col items-center justify-center py-20 text-gray-400">
+            <svg class="w-16 h-16 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
-            Create Report
-          </button>
-        </div>
-      <% end %>
+            <p class="text-sm">No participants in this race</p>
+          </div>
+        <% end %>
+      </div>
     </div>
   </div>
+
+  <!-- Hidden Form -->
+  <%= form_with scope: :report,
+                url: admin_race_reports_path(@race), 
+                method: :post,
+                data: { 
+                  report_form_target: "form",
+                  turbo_frame: "_top"
+                },
+                id: "report-form",
+                class: "hidden" do |f| %>
+    <%= f.hidden_field :race_location_id, data: { report_form_target: "locationInput" } %>
+    <%= f.hidden_field :race_participation_id, data: { report_form_target: "participationInput" } %>
+    <%= f.hidden_field :bib_number, data: { report_form_target: "bibInput" } %>
+    <%= f.hidden_field :client_uuid, value: SecureRandom.uuid, data: { report_form_target: "clientUuidInput" } %>
+  <% end %>
 </div>
 
-<script>
-  // Auto-populate bib_number when participant is selected
-  document.addEventListener('DOMContentLoaded', function() {
-    const participationSelect = document.getElementById('report_race_participation_id');
-    const bibInput = document.getElementById('report_bib_number');
-    
-    if (participationSelect && bibInput) {
-      participationSelect.addEventListener('change', function() {
-        const selectedOption = participationSelect.options[participationSelect.selectedIndex];
-        const bibNumber = selectedOption.getAttribute('data-bib');
-        bibInput.value = bibNumber || '';
-      });
-    }
-  });
-</script>
+<style>
+  .location-btn.active {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+    transform: scale(1.02);
+  }
+  
+  .bib-btn.selected {
+    border-color: #1a56db;
+    background-color: #eff6ff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    transform: scale(1.05);
+  }
+</style>

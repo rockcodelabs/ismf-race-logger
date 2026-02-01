@@ -150,6 +150,112 @@ module Web
         actions << :view
         actions
       end
+
+      # Display name for incident (custom_name or fallback to ID)
+      def display_name
+        if value.respond_to?(:custom_name) && value.custom_name.present?
+          value.custom_name
+        else
+          "Incident ##{value.id}"
+        end
+      end
+
+      # Combined time, location, and reporters display
+      def time_location_reporters_display
+        parts = []
+        
+        # Add time with seconds
+        if value.respond_to?(:created_at_with_seconds)
+          parts << value.created_at_with_seconds
+        elsif value.respond_to?(:created_at)
+          parts << value.created_at.strftime("%H:%M:%S")
+        end
+        
+        # Add location
+        parts << location_display
+        
+        # Add reporters
+        if value.respond_to?(:reporters_display)
+          parts << "by #{value.reporters_display}"
+        end
+        
+        parts.join(" • ")
+      end
+
+      # Formatted time with seconds
+      def created_at_with_seconds
+        if value.respond_to?(:created_at_with_seconds)
+          value.created_at_with_seconds
+        elsif value.respond_to?(:created_at)
+          value.created_at.strftime("%H:%M:%S")
+        else
+          "—"
+        end
+      end
+
+      # Reporter names display
+      def reporters_display
+        if value.respond_to?(:reporters_display)
+          value.reporters_display
+        else
+          "Unknown"
+        end
+      end
+
+      # Penalties display (shows first penalty or count)
+      def penalties_display
+        if value.respond_to?(:penalties_display)
+          value.penalties_display
+        elsif value.respond_to?(:penalties_count) && value.penalties_count.to_i > 0
+          "#{value.penalties_count} #{value.penalties_count == 1 ? 'penalty' : 'penalties'}"
+        else
+          nil
+        end
+      end
+
+      # Penalties tooltip (all penalty details for hover)
+      def penalties_tooltip
+        if value.respond_to?(:penalties_tooltip)
+          value.penalties_tooltip
+        else
+          nil
+        end
+      end
+
+      # Athletes display with country flags
+      def athletes_with_flags
+        return "—" if !value.respond_to?(:athletes) || value.athletes.nil? || value.athletes.empty?
+        
+        value.athletes.map do |athlete|
+          country_flag = country_flag_emoji(athlete[:country])
+          "#{athlete[:first_name]} #{athlete[:last_name]} #{country_flag}"
+        end.join(", ")
+      end
+
+      # Simple athlete names display (no flags)
+      def athletes_display
+        if value.respond_to?(:athletes_display)
+          value.athletes_display
+        else
+          "—"
+        end
+      end
+
+      # Get athlete countries (unique)
+      def athlete_countries
+        if value.respond_to?(:athlete_countries)
+          value.athlete_countries
+        else
+          []
+        end
+      end
+
+      # Convert country code to flag emoji using ISO3166 gem
+      def country_flag_emoji(country_code)
+        return "" if country_code.nil? || country_code.empty?
+        
+        ISO3166::Country.find_country_by_alpha3(country_code)&.emoji_flag || ""
+      end
     end
   end
 end

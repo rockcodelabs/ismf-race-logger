@@ -32,18 +32,18 @@
 
   <!-- Status Tabs -->
   <div class="shrink-0 px-4 py-2 bg-white border-b border-gray-200 flex items-center gap-2 overflow-x-auto">
-    <span class="px-3 py-1.5 text-xs font-bold rounded-full bg-gray-100 text-gray-700 whitespace-nowrap">
+    <%= link_to admin_race_incidents_path(@race, status: "all"), class: "px-3 py-1.5 text-xs font-bold rounded-full whitespace-nowrap #{@status == 'all' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-700'}" do %>
       All (<%= @status_counts.values.sum %>)
-    </span>
-    <span class="px-3 py-1.5 text-xs font-bold rounded-full bg-yellow-100 text-yellow-800 whitespace-nowrap">
+    <% end %>
+    <%= link_to admin_race_incidents_path(@race, status: "pending"), class: "px-3 py-1.5 text-xs font-bold rounded-full whitespace-nowrap #{@status == 'pending' ? 'bg-yellow-500 text-white' : 'bg-yellow-100 text-yellow-800'}" do %>
       Pending (<%= @status_counts["pending"] || 0 %>)
-    </span>
-    <span class="px-3 py-1.5 text-xs font-bold rounded-full bg-green-100 text-green-800 whitespace-nowrap">
+    <% end %>
+    <%= link_to admin_race_incidents_path(@race, status: "approved"), class: "px-3 py-1.5 text-xs font-bold rounded-full whitespace-nowrap #{@status == 'approved' ? 'bg-green-500 text-white' : 'bg-green-100 text-green-800'}" do %>
       Approved (<%= @status_counts["approved"] || 0 %>)
-    </span>
-    <span class="px-3 py-1.5 text-xs font-bold rounded-full bg-red-100 text-red-800 whitespace-nowrap">
+    <% end %>
+    <%= link_to admin_race_incidents_path(@race, status: "rejected"), class: "px-3 py-1.5 text-xs font-bold rounded-full whitespace-nowrap #{@status == 'rejected' ? 'bg-red-500 text-white' : 'bg-red-100 text-red-800'}" do %>
       Rejected (<%= @status_counts["rejected"] || 0 %>)
-    </span>
+    <% end %>
   </div>
 
   <!-- Incidents List -->
@@ -84,6 +84,11 @@
                     <span class="text-orange-600 font-semibold"><%= incident.penalties_count_display %></span>
                   <% end %>
                 </div>
+                <% if incident.respond_to?(:athletes_with_flags) && incident.value.respond_to?(:athletes) && incident.value.athletes.present? %>
+                  <div class="text-xs text-gray-600 mt-1">
+                    <%= incident.athletes_with_flags %>
+                  </div>
+                <% end %>
               </div>
 
               <!-- Arrow -->

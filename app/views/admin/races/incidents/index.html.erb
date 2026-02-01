@@ -1,4 +1,4 @@
-<div class="space-y-6">
+<div class="space-y-6" data-controller="incident-selection" data-incident-selection-race-id-value="<%= @race.id %>">
   <!-- Page header -->
   <div class="flex items-center justify-between">
     <div>
@@ -30,19 +30,47 @@
 
   <!-- Status filter tabs -->
   <div class="flex items-center gap-2">
-    <span class="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
+    <%= link_to admin_race_incidents_path(@race, status: "all"), class: "px-3 py-1.5 rounded-full text-sm font-medium transition-colors #{@status == 'all' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" do %>
       All (<%= @status_counts.values.sum %>)
-    </span>
-    <span class="px-3 py-1.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+    <% end %>
+    <%= link_to admin_race_incidents_path(@race, status: "pending"), class: "px-3 py-1.5 rounded-full text-sm font-medium transition-colors #{@status == 'pending' ? 'bg-yellow-500 text-white' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'}" do %>
       Pending (<%= @status_counts["pending"] || 0 %>)
-    </span>
-    <span class="px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
+    <% end %>
+    <%= link_to admin_race_incidents_path(@race, status: "approved"), class: "px-3 py-1.5 rounded-full text-sm font-medium transition-colors #{@status == 'approved' ? 'bg-green-500 text-white' : 'bg-green-100 text-green-800 hover:bg-green-200'}" do %>
       Approved (<%= @status_counts["approved"] || 0 %>)
-    </span>
-    <span class="px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-800">
+    <% end %>
+    <%= link_to admin_race_incidents_path(@race, status: "rejected"), class: "px-3 py-1.5 rounded-full text-sm font-medium transition-colors #{@status == 'rejected' ? 'bg-red-500 text-white' : 'bg-red-100 text-red-800 hover:bg-red-200'}" do %>
       Rejected (<%= @status_counts["rejected"] || 0 %>)
-    </span>
+    <% end %>
   </div>
+
+  <!-- Sticky action bar for selected incidents -->
+  <div data-incident-selection-target="actionBar" class="hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-ismf-navy text-white px-6 py-4 rounded-lg shadow-2xl">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span data-incident-selection-target="selectedCount" class="font-semibold">0 incidents selected</span>
+      </div>
+      <button data-action="click->incident-selection#deleteSelected" class="btn-danger bg-red-600 text-white hover:bg-red-700">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Delete Selected Incidents
+      </button>
+      <button data-action="click->incident-selection#clearSelection" class="text-white hover:text-gray-300" title="Clear selection">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Hidden form for deleting incidents -->
+  <%= form_with url: delete_multiple_admin_race_incidents_path(@race), method: :delete, data: { incident_selection_target: "deleteForm" }, class: "hidden" do |f| %>
+    <div data-incident-selection-target="deleteHiddenInputs"></div>
+  <% end %>
 
   <!-- Incidents table -->
   <div class="card">
@@ -50,44 +78,103 @@
       <table class="table">
         <thead>
           <tr>
-            <th>ID</th>
+            <th class="w-12">
+              <input type="checkbox" data-action="change->incident-selection#toggleAll" data-incident-selection-target="selectAll" class="w-4 h-4 rounded border-gray-300 text-ismf-blue focus:ring-ismf-blue" title="Select all">
+            </th>
             <th>Bib(s)</th>
-            <th>Location</th>
+            <th>Name</th>
+            <th>Location / Time / Reporter</th>
             <th>Reports</th>
-            <th>Penalties</th>
             <th>Status</th>
-            <th>Time</th>
+            <th>Athletes</th>
             <th class="text-right">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200 bg-white">
           <% if @incidents.any? %>
             <% @incidents.each do |incident| %>
-              <tr class="<%= incident.card_class %>">
-                <td class="font-medium text-ismf-navy">#<%= incident.id %></td>
+              <tr class="<%= incident.card_class %>" data-incident-selection-target="row">
                 <td>
-                  <div class="flex items-center gap-1">
-                    <% incident.bib_display.split(", ").each do |bib| %>
-                      <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-ismf-navy text-white font-bold text-xs">
-                        <%= bib %>
-                      </span>
-                    <% end %>
-                  </div>
+                  <input type="checkbox" 
+                         data-incident-selection-target="checkbox" 
+                         data-incident-id="<%= incident.id %>"
+                         data-incident-status="<%= incident.status %>"
+                         data-reports-count="<%= incident.reports_count || 0 %>"
+                         data-action="change->incident-selection#updateSelection"
+                         class="w-4 h-4 rounded border-gray-300 text-ismf-blue focus:ring-ismf-blue">
                 </td>
-                <td class="text-ismf-gray"><%= incident.location_display %></td>
+                <td>
+                  <%= link_to admin_race_incident_path(@race, incident), class: "block" do %>
+                    <div class="flex items-center gap-1 flex-wrap">
+                      <% bib_list = incident.bib_display.split(", ") %>
+                      <% bib_list.first(3).each do |bib| %>
+                        <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ismf-navy text-white font-bold text-sm">
+                          <%= bib %>
+                        </span>
+                      <% end %>
+                      <% if bib_list.size > 3 %>
+                        <span class="text-xs text-gray-500 ml-1">+<%= bib_list.size - 3 %> more</span>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </td>
+                <td data-controller="incident-name-edit" 
+                    data-incident-name-edit-incident-id-value="<%= incident.id %>"
+                    data-incident-name-edit-race-id-value="<%= @race.id %>"
+                    data-incident-name-edit-current-name-value="<%= incident.respond_to?(:custom_name) ? incident.custom_name : '' %>">
+                  
+                  <!-- Display mode -->
+                  <div data-incident-name-edit-target="display">
+                    <a href="#" 
+                       data-action="click->incident-name-edit#edit" 
+                       class="font-medium text-ismf-navy hover:text-ismf-blue transition-colors">
+                      <%= incident.display_name %>
+                    </a>
+                  </div>
+                  
+                  <!-- Edit mode (hidden by default) -->
+                  <div data-incident-name-edit-target="form" 
+                       class="hidden">
+                    <div class="flex items-center gap-2">
+                      <input type="text" 
+                             data-incident-name-edit-target="input"
+                             data-action="keydown->incident-name-edit#handleKeydown"
+                             value="<%= incident.respond_to?(:custom_name) ? incident.custom_name : '' %>"
+                             placeholder="Incident #<%= incident.id %>"
+                             class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-ismf-blue focus:border-transparent">
+                      <button type="submit" 
+                              class="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition-colors">
+                        Save
+                      </button>
+                      <button type="button" 
+                              data-action="click->incident-name-edit#cancel"
+                              class="px-2 py-1 text-xs bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <% if incident.has_penalties? %>
+                    <div class="mt-1">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800"
+                            title="<%= incident.penalties_tooltip %>">
+                        <%= incident.penalties_display %>
+                      </span>
+                    </div>
+                  <% end %>
+                </td>
+                <td class="text-ismf-gray text-sm">
+                  <%= link_to admin_race_incident_path(@race, incident), class: "block hover:text-ismf-blue transition-colors" do %>
+                    <div class="font-medium"><%= incident.created_at_with_seconds %></div>
+                    <div class="text-xs text-gray-500 mt-0.5">
+                      <%= incident.location_display %> • by <%= incident.reporters_display %>
+                    </div>
+                  <% end %>
+                </td>
                 <td>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                     <%= incident.reports_count_display %>
                   </span>
-                </td>
-                <td>
-                  <% if incident.has_penalties? %>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                      <%= incident.penalties_count_display %>
-                    </span>
-                  <% else %>
-                    <span class="text-gray-400 text-sm">—</span>
-                  <% end %>
                 </td>
                 <td>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= incident.status_badge[:class] %>">
@@ -95,8 +182,9 @@
                   </span>
                 </td>
                 <td class="text-ismf-gray text-sm">
-                  <div><%= incident.time_ago_in_words %> ago</div>
+                  <%= incident.athletes_with_flags %>
                 </td>
+
                 <td class="text-right">
                   <div class="flex items-center justify-end gap-1">
                     <%= link_to admin_race_incident_path(@race, incident), class: "inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-ismf-blue hover:bg-blue-50 transition-all", title: "View" do %>

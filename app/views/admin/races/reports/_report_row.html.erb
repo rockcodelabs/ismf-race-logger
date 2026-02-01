@@ -1,26 +1,47 @@
-<tr class="<%= report.row_class %>" id="report_<%= report.id %>">
+<tr class="<%= report.row_class %>" id="report_<%= report.id %>" data-report-selection-target="row">
   <td>
-    <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ismf-navy text-white font-bold text-sm">
-      <%= report.bib_badge %>
-    </span>
+    <input type="checkbox" 
+           data-report-selection-target="checkbox" 
+           data-report-id="<%= report.id %>"
+           data-incident-id="<%= report.incident_id %>"
+           data-incident-status="<%= report.respond_to?(:incident_status) ? report.incident_status : '' %>"
+           data-has-decision="<%= report.respond_to?(:incident_has_decision?) ? report.incident_has_decision? : false %>"
+           data-action="change->report-selection#updateSelection"
+           class="w-4 h-4 rounded border-gray-300 text-ismf-blue focus:ring-ismf-blue">
+  </td>
+  <td>
+    <%= link_to admin_race_report_path(race, report), class: "block" do %>
+      <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ismf-navy text-white font-bold text-sm">
+        <%= report.bib_badge %>
+      </span>
+    <% end %>
+  </td>
+  <td class="text-ismf-gray text-sm">
+    <%= link_to admin_race_report_path(race, report), class: "block hover:text-ismf-blue transition-colors" do %>
+      <div><%= report.location_name %></div>
+      <div class="text-xs text-gray-500">
+        <%= report.created_at_with_seconds %> 
+        <span class="text-gray-400">(<%= report.time_ago %>)</span>
+      </div>
+    <% end %>
+  </td>
+  <td class="text-ismf-gray text-sm">
+    <%= link_to admin_race_report_path(race, report), class: "block hover:text-ismf-blue transition-colors" do %>
+      <%= report.reporter_name_display %>
+    <% end %>
   </td>
   <td>
     <div class="font-medium text-ismf-navy"><%= report.athlete_name_display %></div>
   </td>
-  <td class="text-ismf-gray"><%= report.location_name %></td>
   <td>
     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= report.status_badge[:class] %>">
       <%= report.status_badge[:label] %>
     </span>
     <% if report.linked_to_incident? %>
       <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-        Linked
+        <%= report.incident_name_display %>
       </span>
     <% end %>
-  </td>
-  <td class="text-ismf-gray text-sm">
-    <div><%= report.created_at_formatted %></div>
-    <div class="text-xs text-gray-400"><%= report.time_ago %></div>
   </td>
   <td class="text-right">
     <div class="flex items-center justify-end gap-1">

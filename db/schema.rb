@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_31_113639) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_01_122719) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -84,6 +84,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_31_113639) do
   create_table "incidents", force: :cascade do |t|
     t.uuid "client_uuid", null: false
     t.datetime "created_at", null: false
+    t.string "custom_name"
     t.datetime "decided_at"
     t.bigint "decided_by_user_id"
     t.text "description"

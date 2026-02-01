@@ -10,11 +10,13 @@ module Operations
     # This operation:
     # 1. Validates the input parameters via contract
     # 2. Checks for idempotency via client_uuid
-    # 3. Creates the report record with status 'pending_review'
-    # 4. Returns a struct (not the AR model)
+    # 3. Creates the report record
+    # 4. If user is VAR operator → auto-creates incident (unofficial)
+    # 5. If user is not VAR → report stays pending_review (VAR will organize later)
+    # 6. Returns a struct (not the AR model)
     #
     # Returns:
-    # - Success(Structs::Report) if report created
+    # - Success(Structs::Report) if report created (and incident if VAR)
     # - Success(Structs::Report) if report already exists (idempotent via client_uuid)
     # - Failure(:validation_failed, errors) if validation fails
     # - Failure(:error, message) if unexpected error occurs
@@ -37,8 +39,10 @@ module Operations
     class Create
       include Dry::Monads[:result]
 
-      def initialize(report_repo: ReportRepo.new)
+      def initialize(report_repo: ReportRepo.new, user_repo: UserRepo.new, incident_repo: IncidentRepo.new)
         @report_repo = report_repo
+        @user_repo = user_repo
+        @incident_repo = incident_repo
         @contract = Operations::Contracts::CreateReport.new
       end
 
@@ -55,18 +59,45 @@ module Operations
           return Success(existing) if existing
         end
 
-        # Create the report
-        report = Report.create!(
-          client_uuid: validated[:client_uuid] || SecureRandom.uuid,
-          race_id: validated[:race_id],
-          race_location_id: validated[:race_location_id],
-          race_participation_id: validated[:race_participation_id],
-          bib_number: validated[:bib_number],
-          user_id: validated[:user_id],
-          athlete_position: validated[:athlete_position],
-          description: validated[:description],
-          status: "pending_review"
-        )
+        # Load user to check role
+        user = @user_repo.find(validated[:user_id])
+        return Failure([ :user_not_found, "User with ID #{validated[:user_id]} not found" ]) unless user
+
+        # Determine if we should auto-create incident (VAR operator only)
+        auto_create_incident = user.var_operator?
+
+        # Create report and optionally incident in transaction
+        report = nil
+        incident = nil
+
+        ActiveRecord::Base.transaction do
+          # Create the report
+          report = Report.create!(
+            client_uuid: validated[:client_uuid] || SecureRandom.uuid,
+            race_id: validated[:race_id],
+            race_location_id: validated[:race_location_id],
+            race_participation_id: validated[:race_participation_id],
+            bib_number: validated[:bib_number],
+            user_id: validated[:user_id],
+            athlete_position: validated[:athlete_position],
+            description: validated[:description],
+            status: "pending_review"
+          )
+
+          # Auto-create incident if VAR operator
+          if auto_create_incident
+            incident = Incident.create!(
+              client_uuid: SecureRandom.uuid,
+              race_id: report.race_id,
+              race_location_id: report.race_location_id,
+              status: "pending",
+              description: validated[:description]
+            )
+
+            # Link report to incident
+            report.update!(incident_id: incident.id)
+          end
+        end
 
         # Return struct from repo
         Success(@report_repo.find(report.id))

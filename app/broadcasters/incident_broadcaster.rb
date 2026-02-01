@@ -45,6 +45,17 @@ class IncidentBroadcaster < BaseBroadcaster
     )
   end
 
+  # Broadcast when multiple incidents are deleted (bulk deletion)
+  # More efficient than calling deleted() for each incident individually
+  def bulk_deleted(incidents, race_id)
+    incidents.each do |incident|
+      broadcast_remove(
+        stream_name(race_id),
+        target: dom_id(incident)
+      )
+    end
+  end
+
   # Broadcast a status change (uses update for smoother transition)
   def status_changed(incident)
     broadcast_update(

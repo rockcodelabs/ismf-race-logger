@@ -98,6 +98,38 @@ class ReportBroadcaster < BaseBroadcaster
     broadcast_flash_notice(race_id, "Report ##{report.bib_number} reopened.")
   end
 
+  # Broadcast when a report is deleted
+  # Removes from all views and updates counters
+  def deleted(report, race_id)
+    Turbo::StreamsChannel.broadcast_remove_to(
+      stream_name(race_id),
+      target: dom_id(report)
+    )
+    
+    update_counters(race_id)
+    
+    # Broadcast flash message to all devices
+    broadcast_flash_notice(race_id, "Report ##{report.bib_number} deleted.")
+  end
+
+  # Broadcast when multiple reports are deleted (bulk deletion)
+  # More efficient than calling deleted() for each report individually
+  def bulk_deleted(reports, race_id)
+    reports.each do |report|
+      Turbo::StreamsChannel.broadcast_remove_to(
+        stream_name(race_id),
+        target: dom_id(report)
+      )
+    end
+    
+    # Update counters once after all deletions
+    update_counters(race_id)
+    
+    # Broadcast single flash message for bulk operation
+    count = reports.size
+    broadcast_flash_notice(race_id, "Deleted #{count} report#{count == 1 ? '' : 's'} successfully.")
+  end
+
   private
 
   # Stream name for race-specific report updates

@@ -20,6 +20,7 @@ module Structs
     attribute :race_id, Types::Integer
     attribute :race_location_id, Types::Integer.optional
     attribute :status, Types::IncidentStatus
+    attribute :custom_name, Types::String.optional
     attribute :description, Types::String.optional
     attribute :decided_by_user_id, Types::Integer.optional
     attribute :decided_at, Types::FlexibleDateTime.optional

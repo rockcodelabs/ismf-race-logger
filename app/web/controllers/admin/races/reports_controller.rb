@@ -27,7 +27,16 @@ module Web
 
           def index
             authorize Report, :index?
-            @reports = report_repo.for_race(@race.id)
+            
+            # Filter by status (default to pending_review)
+            status = params[:status].presence || "pending_review"
+            
+            if status == "all"
+              @reports = report_repo.for_race(@race.id)
+            else
+              @reports = report_repo.by_status(@race.id, status)
+            end
+            
             @reports = parts_factory.wrap_many(@reports)
             @status_counts = report_repo.count_by_status(@race.id)
 
@@ -73,14 +82,16 @@ module Web
                 report_broadcaster.created(report, @race.id)
                 
                 format.turbo_stream do
-                  # Rely on broadcast for updates (prevents duplicates)
-                  # Flash message also broadcasted to all devices
-                  head :ok
+                  # Turbo Stream: redirect to reports index
+                  # Broadcast already sent to update all connected clients
+                  redirect_to admin_race_reports_path(@race),
+                              notice: "Report created successfully.",
+                              status: :see_other
                 end
                 
                 format.html do
-                  # Desktop: redirect to detail page
-                  redirect_to admin_race_report_path(@race, report),
+                  # Desktop: redirect to reports index
+                  redirect_to admin_race_reports_path(@race),
                               notice: "Report created successfully.",
                               status: :see_other
                 end
@@ -96,8 +107,8 @@ module Web
                 format.turbo_stream do
                   # Only errors are shown locally (not broadcasted)
                   render turbo_stream: turbo_stream.append("flash-messages",
-                    partial: "shared/flash_alert_turbo",
-                    locals: { message: error_message }), status: :unprocessable_entity
+                    partial: "shared/flash",
+                    locals: { type: "alert", message: error_message }), status: :unprocessable_entity
                 end
                 
                 format.html do
@@ -140,8 +151,8 @@ module Web
                 format.turbo_stream do
                   # Only errors are shown locally (not broadcasted)
                   render turbo_stream: turbo_stream.append("flash-messages",
-                    partial: "shared/flash_alert_turbo",
-                    locals: { message: error_message })
+                    partial: "shared/flash",
+                    locals: { type: "alert", message: error_message })
                 end
                 
                 format.html do
@@ -181,8 +192,8 @@ module Web
                 format.turbo_stream do
                   # Only errors are shown locally (not broadcasted)
                   render turbo_stream: turbo_stream.append("flash-messages",
-                    partial: "shared/flash_alert_turbo",
-                    locals: { message: error_message })
+                    partial: "shared/flash",
+                    locals: { type: "alert", message: error_message })
                 end
                 
                 format.html do
@@ -216,6 +227,56 @@ module Web
                             alert: "Error reopening report: #{error.inspect}"
               end
             end
+          end
+
+          def delete_multiple
+            authorize Report, :destroy?
+            
+            report_ids = params[:report_ids]&.map(&:to_i) || []
+            
+            if report_ids.empty?
+              redirect_to admin_race_reports_path(@race),
+                          alert: "No reports selected to delete."
+              return
+            end
+            
+            # Load reports to check which incidents they belong to
+            reports = Report.where(id: report_ids, race_id: @race.id)
+            
+            if reports.count != report_ids.size
+              redirect_to admin_race_reports_path(@race),
+                          alert: "Some reports not found or don't belong to this race."
+              return
+            end
+            
+            # Convert to structs for broadcasting before deletion
+            report_structs = reports.map { |r| report_repo.find(r.id) }
+            
+            # Track incident IDs before deletion
+            incident_ids = reports.where.not(incident_id: nil).pluck(:incident_id).uniq
+            
+            # Delete reports within transaction
+            deleted_count = 0
+            ActiveRecord::Base.transaction do
+              deleted_count = reports.destroy_all.size
+              
+              # Clean up empty incidents
+              incident_ids.each do |incident_id|
+                incident = Incident.find_by(id: incident_id)
+                if incident && incident.reports.count == 0
+                  incident.destroy
+                end
+              end
+            end
+            
+            # Broadcast bulk deletion to all connected clients (touch displays)
+            report_broadcaster.bulk_deleted(report_structs, @race.id)
+            
+            redirect_to admin_race_reports_path(@race),
+                        notice: "Deleted #{deleted_count} report#{deleted_count == 1 ? '' : 's'} successfully."
+          rescue StandardError => e
+            redirect_to admin_race_reports_path(@race),
+                        alert: "Error deleting reports: #{e.message}"
           end
 
           private

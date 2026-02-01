@@ -1,6 +1,6 @@
 <%= turbo_stream_from "race_#{@race.id}_reports" %>
 
-<div class="space-y-6">
+<div class="space-y-6" data-controller="report-selection" data-report-selection-race-id-value="<%= @race.id %>">
   <!-- Page header -->
   <div class="flex items-center justify-between">
     <div>
@@ -34,19 +34,58 @@
 
   <!-- Status filter tabs -->
   <div class="flex items-center gap-2">
-    <span class="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
+    <%= link_to admin_race_reports_path(@race, status: 'all'), class: "px-3 py-1.5 rounded-full text-sm font-medium transition-colors #{params[:status] == 'all' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" do %>
       All (<%= @status_counts.values.sum %>)
-    </span>
-    <span class="px-3 py-1.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+    <% end %>
+    <%= link_to admin_race_reports_path(@race, status: 'pending_review'), class: "px-3 py-1.5 rounded-full text-sm font-medium transition-colors #{params[:status].blank? || params[:status] == 'pending_review' ? 'bg-yellow-600 text-white' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'}" do %>
       Pending (<span id="pending-count-badge"><%= @status_counts["pending_review"] || 0 %></span>)
-    </span>
-    <span class="px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+    <% end %>
+    <%= link_to admin_race_reports_path(@race, status: 'confirmed'), class: "px-3 py-1.5 rounded-full text-sm font-medium transition-colors #{params[:status] == 'confirmed' ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800 hover:bg-blue-200'}" do %>
       Confirmed (<span id="confirmed-count"><%= @status_counts["confirmed"] || 0 %></span>)
-    </span>
-    <span class="px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-800">
+    <% end %>
+    <%= link_to admin_race_reports_path(@race, status: 'rejected'), class: "px-3 py-1.5 rounded-full text-sm font-medium transition-colors #{params[:status] == 'rejected' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-800 hover:bg-red-200'}" do %>
       Rejected (<span id="rejected-count"><%= @status_counts["rejected"] || 0 %></span>)
-    </span>
+    <% end %>
   </div>
+
+  <!-- Sticky action bar for selected reports -->
+  <div data-report-selection-target="actionBar" class="hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-ismf-navy text-white px-6 py-4 rounded-lg shadow-2xl">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span data-report-selection-target="selectedCount" class="font-semibold">0 reports selected</span>
+      </div>
+      <button data-action="click->report-selection#createIncident" class="btn-primary bg-white text-ismf-navy hover:bg-gray-100">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        Create Incident from Selected
+      </button>
+      <button data-action="click->report-selection#deleteSelected" data-report-selection-target="deleteButton" class="btn-danger bg-red-600 text-white hover:bg-red-700">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Delete Selected Reports
+      </button>
+      <button data-action="click->report-selection#clearSelection" class="text-white hover:text-gray-300" title="Clear selection">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Hidden form for creating incident -->
+  <%= form_with url: admin_race_incidents_path(@race), method: :post, data: { report_selection_target: "form" }, class: "hidden" do |f| %>
+    <div data-report-selection-target="hiddenInputs"></div>
+  <% end %>
+
+  <!-- Hidden form for deleting reports -->
+  <%= form_with url: delete_multiple_admin_race_reports_path(@race), method: :delete, data: { report_selection_target: "deleteForm" }, class: "hidden" do |f| %>
+    <div data-report-selection-target="deleteHiddenInputs"></div>
+  <% end %>
 
   <!-- Reports table -->
   <div class="card">
@@ -54,40 +93,68 @@
       <table class="table">
         <thead>
           <tr>
+            <th class="w-12">
+              <input type="checkbox" 
+                     data-action="change->report-selection#toggleAll" 
+                     data-report-selection-target="selectAll" 
+                     class="w-4 h-4 rounded border-gray-300 text-ismf-blue focus:ring-ismf-blue"
+                     title="Select all">
+            </th>
             <th>Bib</th>
+            <th>Location / Time</th>
+            <th>Reporter</th>
             <th>Athlete</th>
-            <th>Location</th>
             <th>Status</th>
-            <th>Time</th>
             <th class="text-right">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200 bg-white" id="reports-table-body">
           <% if @reports.any? %>
             <% @reports.each do |report| %>
-              <tr class="<%= report.row_class %>" id="report_<%= report.id %>">
+              <tr class="<%= report.row_class %>" id="report_<%= report.id %>" data-report-selection-target="row">
                 <td>
-                  <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ismf-navy text-white font-bold text-sm">
-                    <%= report.bib_badge %>
-                  </span>
+                  <input type="checkbox" 
+                         data-report-selection-target="checkbox" 
+                         data-report-id="<%= report.id %>"
+                         data-incident-id="<%= report.incident_id %>"
+                         data-incident-status="<%= report.incident_status %>"
+                         data-has-decision="<%= report.incident_has_decision? %>"
+                         data-action="change->report-selection#updateSelection"
+                         class="w-4 h-4 rounded border-gray-300 text-ismf-blue focus:ring-ismf-blue">
+                </td>
+                <td>
+                  <%= link_to admin_race_report_path(@race, report), class: "block" do %>
+                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ismf-navy text-white font-bold text-sm">
+                      <%= report.bib_badge %>
+                    </span>
+                  <% end %>
+                </td>
+                <td class="text-ismf-gray text-sm">
+                  <%= link_to admin_race_report_path(@race, report), class: "block hover:text-ismf-blue transition-colors" do %>
+                    <div><%= report.location_name %></div>
+                    <div class="text-xs text-gray-500">
+                      <%= report.created_at_with_seconds %> 
+                      <span class="text-gray-400">(<%= report.time_ago %>)</span>
+                    </div>
+                  <% end %>
+                </td>
+                <td class="text-ismf-gray text-sm">
+                  <%= link_to admin_race_report_path(@race, report), class: "block hover:text-ismf-blue transition-colors" do %>
+                    <%= report.reporter_name_display %>
+                  <% end %>
                 </td>
                 <td>
                   <div class="font-medium text-ismf-navy"><%= report.athlete_name_display %></div>
                 </td>
-                <td class="text-ismf-gray"><%= report.location_name %></td>
                 <td>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= report.status_badge[:class] %>">
                     <%= report.status_badge[:label] %>
                   </span>
                   <% if report.linked_to_incident? %>
                     <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                      Linked
+                      <%= report.incident_name_display %>
                     </span>
                   <% end %>
-                </td>
-                <td class="text-ismf-gray text-sm">
-                  <div><%= report.created_at_formatted %></div>
-                  <div class="text-xs text-gray-400"><%= report.time_ago %></div>
                 </td>
                 <td class="text-right">
                   <div class="flex items-center justify-end gap-1">
@@ -122,7 +189,7 @@
             <% end %>
           <% else %>
             <tr>
-              <td colspan="6" class="text-center py-12">
+              <td colspan="7" class="text-center py-12">
                 <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>

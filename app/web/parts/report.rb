@@ -84,6 +84,11 @@ module Web
         value.created_at.strftime("%H:%M")
       end
 
+      # Formatted creation time with seconds
+      def created_at_with_seconds
+        value.created_at.strftime("%H:%M:%S")
+      end
+
       # Formatted creation time with date
       def created_at_full
         value.created_at.strftime("%b %d, %Y at %H:%M")
@@ -137,6 +142,36 @@ module Web
           value.incident_id.present?
         else
           false
+        end
+      end
+
+      # Display incident name (e.g., "Incident #123")
+      def incident_name_display
+        if value.respond_to?(:incident_name) && value.incident_name.present?
+          value.incident_name
+        elsif value.respond_to?(:incident_id) && value.incident_id.present?
+          "Incident ##{value.incident_id}"
+        else
+          nil
+        end
+      end
+
+      # Combined location and time display for compact table view
+      def location_and_time_display
+        "#{location_name} • #{created_at_with_seconds}"
+      end
+
+      # Combined location and time with relative time
+      def location_time_relative
+        "#{location_name} • #{time_ago}"
+      end
+
+      # Display reporter name with fallback
+      def reporter_name_display
+        if value.respond_to?(:user_name) && value.user_name.present?
+          value.user_name
+        else
+          "Unknown"
         end
       end
 
