@@ -1,4 +1,4 @@
-<tr class="<%= report.row_class %> hover:bg-gray-50 transition-all duration-200 relative" 
+<tr class="<%= report.row_class %> hover:bg-gray-50 transition-all duration-200 relative cursor-pointer" 
     id="report_<%= report.id %>" 
     data-report-selection-target="row"
     data-controller="video-upload"
@@ -10,7 +10,8 @@
                  dragover->video-upload#dragOver 
                  dragleave->video-upload#dragLeave 
                  drop->video-upload#drop"
-    title="Drag MP4 videos here to upload">
+    onclick="if (!event.target.closest('a, button, input, select, textarea')) { Turbo.visit('<%= admin_race_report_path(race, report) %>'); }"
+    title="Click to view report details">
   <td>
     <input type="checkbox" 
            data-report-selection-target="checkbox" 
@@ -22,25 +23,19 @@
            class="w-4 h-4 rounded border-gray-300 text-ismf-blue focus:ring-ismf-blue">
   </td>
   <td>
-    <%= link_to admin_race_report_path(race, report), class: "block" do %>
-      <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ismf-navy text-white font-bold text-sm">
-        <%= report.bib_badge %>
-      </span>
-    <% end %>
+    <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ismf-navy text-white font-bold text-sm">
+      <%= report.bib_badge %>
+    </span>
   </td>
   <td class="text-ismf-gray text-sm">
-    <%= link_to admin_race_report_path(race, report), class: "block hover:text-ismf-blue transition-colors" do %>
-      <div><%= report.location_name %></div>
-      <div class="text-xs text-gray-500">
-        <%= report.created_at_with_seconds %> 
-        <span class="text-gray-400">(<%= report.time_ago %>)</span>
-      </div>
-    <% end %>
+    <div><%= report.location_name %></div>
+    <div class="text-xs text-gray-500">
+      <%= report.created_at_with_seconds %> 
+      <span class="text-gray-400">(<%= report.time_ago %>)</span>
+    </div>
   </td>
   <td class="text-ismf-gray text-sm">
-    <%= link_to admin_race_report_path(race, report), class: "block hover:text-ismf-blue transition-colors" do %>
-      <%= report.reporter_name_display %>
-    <% end %>
+    <%= report.reporter_name_display %>
   </td>
   <td>
     <div class="font-medium text-ismf-navy"><%= report.athlete_name_display %></div>

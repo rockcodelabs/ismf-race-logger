@@ -45,7 +45,10 @@ Rails.application.configure do
   config.action_mailer.perform_caching = false
 
   # Set localhost to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: "localhost", port: 3003 }
+  config.action_mailer.default_url_options = { host: "localhost", port: 3005 }
+
+  # Set default URL options for route generation (fixes Active Storage URLs)
+  Rails.application.routes.default_url_options = { host: "localhost", port: 3005 }
 
   # Use Mailcatcher for development email testing
   # View emails at http://localhost:1080
