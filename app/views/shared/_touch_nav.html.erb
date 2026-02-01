@@ -45,6 +45,14 @@
           <span>Penalties</span>
         <% end %>
         
+        <%# Profile Button %>
+        <%= link_to edit_profile_path, class: "touch-menu-item" do %>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="touch-menu-icon">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <span>Profile</span>
+        <% end %>
+        
         <%# Back Button %>
         <button data-action="click->touch-nav#goBack" class="touch-menu-item">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="touch-menu-icon">

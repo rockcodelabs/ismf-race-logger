@@ -8,6 +8,9 @@ Rails.application.routes.draw do
   end
   resources :passwords, param: :token, controller: "web/controllers/passwords"
 
+  # Profile routes - using web layer controllers
+  resource :profile, controller: "web/controllers/profile", only: [:edit, :update]
+
   # Admin namespace - using web layer controllers
   namespace :admin, module: "web/controllers/admin" do
     root to: "dashboard#index"
