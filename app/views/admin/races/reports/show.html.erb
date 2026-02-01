@@ -1,4 +1,7 @@
-<div class="space-y-6">
+<!-- Video Player Modal -->
+<%= render "shared/video_player_modal" %>
+
+<div class="space-y-6" data-controller="video-trigger">
   <!-- Page header -->
   <div class="flex items-center justify-between">
     <div>
@@ -82,6 +85,54 @@
           <% end %>
         </div>
       </div>
+
+      <!-- Videos card -->
+      <% if @report.has_videos? %>
+        <div class="card">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-ismf-navy">Videos (<%= @report.videos_count %>)</h3>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+              <% @report.videos.each do |video| %>
+                <button data-action="click->video-trigger#open"
+                        data-video-url="<%= rails_blob_path(video, disposition: "inline") %>"
+                        data-video-blob-id="<%= video.id %>"
+                        class="group relative aspect-video rounded-lg border-2 border-gray-200 overflow-hidden hover:border-blue-400 hover:shadow-lg transition-all cursor-pointer">
+                  <% if video.previewable? %>
+                    <% begin %>
+                      <%= image_tag video.preview(resize_to_limit: [400, 300]), class: "w-full h-full object-cover", alt: video.filename.to_s %>
+                      <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center">
+                        <svg class="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+                        </svg>
+                      </div>
+                      <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
+                        <p class="text-white text-xs truncate"><%= video.filename.to_s %></p>
+                      </div>
+                    <% rescue => e %>
+                      <div class="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex flex-col items-center justify-center p-4">
+                        <svg class="w-12 h-12 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        <span class="text-xs text-blue-700 font-medium text-center"><%= video.filename.to_s %></span>
+                      </div>
+                    <% end %>
+                  <% else %>
+                    <div class="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex flex-col items-center justify-center p-4">
+                      <svg class="w-12 h-12 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <span class="text-xs text-blue-700 font-medium text-center"><%= video.filename.to_s %></span>
+                    </div>
+                  <% end %>
+                </button>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
     </div>
 
     <!-- Sidebar -->
