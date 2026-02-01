@@ -32,6 +32,9 @@ module Structs
     attribute :created_at, Types::FlexibleDateTime
     attribute :updated_at, Types::FlexibleDateTime
 
+    # Video attachments (array of ActiveStorage blobs)
+    attribute :videos, Types::Array.optional
+
     # Optional nested data (loaded via repo methods)
     attribute :race_location_name, Types::String.optional
     attribute :athlete_name, Types::String.optional

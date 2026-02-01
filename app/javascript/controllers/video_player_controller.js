@@ -1,0 +1,556 @@
+import { Controller } from "@hotwired/stimulus"
+
+// Connects to data-controller="video-player"
+export default class extends Controller {
+  static targets = [
+    "modal",
+    "video",
+    "playPauseBtn",
+    "playPauseIcon",
+    "currentTime",
+    "duration",
+    "progress",
+    "progressBar",
+    "volumeSlider",
+    "muteBtn",
+    "muteIcon",
+    "frameCount",
+    "startMarker",
+    "endMarker",
+    "markerHighlight",
+    "startTimeInput",
+    "endTimeInput",
+    "speedSelect"
+  ]
+
+  static values = {
+    videoUrl: String,
+    videoBlobId: String,
+    fps: { type: Number, default: 30 }
+  }
+
+  connect() {
+    this.playing = false
+    this.startTime = 0
+    this.endTime = 0
+    this.frameStep = 1 / this.fpsValue
+    this.isDraggingProgress = false
+    this.isDraggingStart = false
+    this.isDraggingEnd = false
+    this.loopEnabled = false
+    this.isMuted = true // Default to muted
+  }
+
+  open(event) {
+    event.preventDefault()
+    const videoUrl = event.currentTarget.dataset.videoUrl
+    const videoBlobId = event.currentTarget.dataset.videoBlobId
+    
+    if (!videoUrl) {
+      console.error("No video URL provided")
+      return
+    }
+
+    this.openWithUrl(videoUrl, videoBlobId)
+  }
+
+  openWithUrl(videoUrl, videoBlobId = null) {
+    if (!videoUrl) {
+      console.error("No video URL provided")
+      return
+    }
+
+    this.videoUrlValue = videoUrl
+    this.videoBlobIdValue = videoBlobId
+    this.videoTarget.src = videoUrl
+    this.videoTarget.muted = this.isMuted // Set default mute state
+    this.modalTarget.classList.remove("hidden")
+    this.modalTarget.classList.add("flex")
+    
+    // Prevent body scroll
+    document.body.style.overflow = "hidden"
+    
+    // Add keyboard listener
+    this.boundKeyHandler = this.handleKeyboard.bind(this)
+    document.addEventListener("keydown", this.boundKeyHandler)
+    
+    // Load existing markers if available
+    this.loadMarkers()
+  }
+
+  close() {
+    this.pause()
+    this.videoTarget.src = ""
+    this.modalTarget.classList.add("hidden")
+    this.modalTarget.classList.remove("flex")
+    
+    // Restore body scroll
+    document.body.style.overflow = ""
+    
+    // Remove keyboard listener
+    if (this.boundKeyHandler) {
+      document.removeEventListener("keydown", this.boundKeyHandler)
+    }
+  }
+
+  closeOnBackdrop(event) {
+    if (event.target === event.currentTarget) {
+      this.close()
+    }
+  }
+
+  // Playback controls
+  togglePlay() {
+    if (this.playing) {
+      this.pause()
+    } else {
+      this.play()
+    }
+  }
+
+  play() {
+    // Check if we're at or past the end marker
+    if (this.endTime > 0 && this.videoTarget.currentTime >= this.endTime) {
+      this.videoTarget.currentTime = this.startTime > 0 ? this.startTime : 0
+    }
+    
+    this.videoTarget.play()
+    this.playing = true
+    this.updatePlayPauseButton()
+  }
+
+  pause() {
+    this.videoTarget.pause()
+    this.playing = false
+    this.updatePlayPauseButton()
+  }
+
+  updatePlayPauseButton() {
+    const isPlaying = !this.videoTarget.paused
+    this.playPauseIconTarget.innerHTML = isPlaying ? this.pauseIcon() : this.playIcon()
+  }
+
+  // Frame-by-frame navigation
+  nextFrame() {
+    this.pause()
+    this.videoTarget.currentTime = Math.min(
+      this.videoTarget.currentTime + this.frameStep,
+      this.videoTarget.duration
+    )
+  }
+
+  previousFrame() {
+    this.pause()
+    this.videoTarget.currentTime = Math.max(
+      this.videoTarget.currentTime - this.frameStep,
+      0
+    )
+  }
+
+  // Jump controls
+  skipForward() {
+    this.videoTarget.currentTime = Math.min(
+      this.videoTarget.currentTime + 5,
+      this.videoTarget.duration
+    )
+  }
+
+  skipBackward() {
+    this.videoTarget.currentTime = Math.max(
+      this.videoTarget.currentTime - 5,
+      0
+    )
+  }
+
+  // Time marker controls
+  setStartMarker() {
+    this.startTime = this.videoTarget.currentTime
+    this.updateMarkers()
+    this.updateMarkerInputs()
+  }
+
+  setEndMarker() {
+    this.endTime = this.videoTarget.currentTime
+    this.updateMarkers()
+    this.updateMarkerInputs()
+  }
+
+  clearMarkers() {
+    this.startTime = 0
+    this.endTime = 0
+    this.updateMarkers()
+    this.updateMarkerInputs()
+  }
+
+  jumpToStart() {
+    if (this.startTime > 0) {
+      this.videoTarget.currentTime = this.startTime
+    }
+  }
+
+  jumpToEnd() {
+    if (this.endTime > 0) {
+      this.videoTarget.currentTime = this.endTime
+    }
+  }
+
+  toggleLoop() {
+    this.loopEnabled = !this.loopEnabled
+    this.updateLoopButton()
+  }
+
+  updateLoopButton() {
+    const loopBtn = document.querySelector('[data-video-player-target="loopBtn"]')
+    if (loopBtn) {
+      if (this.loopEnabled) {
+        loopBtn.classList.add('bg-blue-600', 'text-white')
+        loopBtn.classList.remove('bg-gray-700', 'hover:bg-gray-600')
+      } else {
+        loopBtn.classList.remove('bg-blue-600', 'text-white')
+        loopBtn.classList.add('bg-gray-700', 'hover:bg-gray-600')
+      }
+    }
+  }
+
+  async saveMarkers() {
+    if (!this.videoBlobIdValue) {
+      console.error("No video blob ID available")
+      alert("Cannot save markers - video ID not found")
+      return
+    }
+
+    const data = {
+      blob_id: this.videoBlobIdValue,
+      start_time: this.startTime,
+      end_time: this.endTime,
+      loop_enabled: this.loopEnabled,
+      muted: this.videoTarget.muted
+    }
+
+    console.log('Saving markers:', data)
+
+    try {
+      const response = await fetch('/admin/videos/markers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+        },
+        body: JSON.stringify(data)
+      })
+
+      const result = await response.json()
+      console.log('Save response:', result)
+
+      if (response.ok) {
+        console.log('Markers saved successfully:', result)
+        this.showSaveSuccess()
+      } else {
+        console.error('Save failed:', result)
+        throw new Error('Failed to save markers')
+      }
+    } catch (error) {
+      console.error('Error saving markers:', error)
+      alert('Failed to save markers. Please try again.')
+    }
+  }
+
+  async loadMarkers() {
+    if (!this.videoBlobIdValue) {
+      console.log('No blob ID, skipping marker load')
+      return
+    }
+
+    console.log('Loading markers for blob:', this.videoBlobIdValue)
+
+    try {
+      const response = await fetch(`/admin/videos/markers/${this.videoBlobIdValue}`)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Loaded markers:', data)
+        
+        if (data.start_time !== undefined && data.end_time !== undefined) {
+          this.startTime = data.start_time
+          this.endTime = data.end_time
+          this.loopEnabled = data.loop_enabled || false
+          this.isMuted = data.muted !== undefined ? data.muted : true
+          this.videoTarget.muted = this.isMuted
+          console.log('Set markers - start:', this.startTime, 'end:', this.endTime, 'loop:', this.loopEnabled, 'muted:', this.isMuted)
+          this.updateMarkers()
+          this.updateMarkerInputs()
+          this.updateLoopButton()
+          this.updateMuteButton()
+          
+          // Auto-play if markers are set
+          if (this.startTime > 0 || this.endTime > 0) {
+            console.log('Auto-playing video from start marker')
+            // Wait for video to be ready, then jump to start and play
+            if (this.videoTarget.readyState >= 2) {
+              this.videoTarget.currentTime = this.startTime
+              setTimeout(() => this.play(), 100)
+            } else {
+              this.videoTarget.addEventListener('loadedmetadata', () => {
+                this.videoTarget.currentTime = this.startTime
+                setTimeout(() => this.play(), 100)
+              }, { once: true })
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading markers:', error)
+    }
+  }
+
+  showSaveSuccess() {
+    // Create temporary success message
+    const saveBtn = document.querySelector('[data-action*="saveMarkers"]')
+    if (saveBtn) {
+      const originalText = saveBtn.innerHTML
+      saveBtn.innerHTML = '✓ Saved!'
+      saveBtn.classList.add('bg-green-600')
+      saveBtn.classList.remove('bg-blue-600')
+      
+      setTimeout(() => {
+        saveBtn.innerHTML = originalText
+        saveBtn.classList.remove('bg-green-600')
+        saveBtn.classList.add('bg-blue-600')
+      }, 2000)
+    }
+  }
+
+  updateMarkers() {
+    if (!this.videoTarget.duration) return
+    
+    const duration = this.videoTarget.duration
+    
+    // Update start marker position
+    if (this.startTime > 0) {
+      const startPercent = (this.startTime / duration) * 100
+      this.startMarkerTarget.style.left = `${startPercent}%`
+      this.startMarkerTarget.classList.remove("hidden")
+    } else {
+      this.startMarkerTarget.classList.add("hidden")
+    }
+    
+    // Update end marker position
+    if (this.endTime > 0) {
+      const endPercent = (this.endTime / duration) * 100
+      this.endMarkerTarget.style.left = `${endPercent}%`
+      this.endMarkerTarget.classList.remove("hidden")
+    } else {
+      this.endMarkerTarget.classList.add("hidden")
+    }
+    
+    // Update highlight between markers
+    if (this.startTime > 0 && this.endTime > 0) {
+      const startPercent = (this.startTime / duration) * 100
+      const endPercent = (this.endTime / duration) * 100
+      this.markerHighlightTarget.style.left = `${startPercent}%`
+      this.markerHighlightTarget.style.width = `${endPercent - startPercent}%`
+      this.markerHighlightTarget.classList.remove("hidden")
+    } else {
+      this.markerHighlightTarget.classList.add("hidden")
+    }
+  }
+
+  updateMarkerInputs() {
+    if (this.hasStartTimeInputTarget) {
+      this.startTimeInputTarget.value = this.formatTime(this.startTime)
+    }
+    if (this.hasEndTimeInputTarget) {
+      this.endTimeInputTarget.value = this.formatTime(this.endTime)
+    }
+  }
+
+  // Progress bar controls
+  startDrag(event) {
+    this.isDraggingProgress = true
+    this.updateProgress(event)
+  }
+
+  drag(event) {
+    if (this.isDraggingProgress) {
+      this.updateProgress(event)
+    }
+  }
+
+  stopDrag() {
+    this.isDraggingProgress = false
+  }
+
+  updateProgress(event) {
+    const rect = this.progressTarget.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const percent = Math.max(0, Math.min(1, x / rect.width))
+    this.videoTarget.currentTime = percent * this.videoTarget.duration
+  }
+
+  // Volume controls
+  toggleMute() {
+    this.videoTarget.muted = !this.videoTarget.muted
+    this.isMuted = this.videoTarget.muted
+    this.updateMuteButton()
+  }
+
+  updateVolume(event) {
+    this.videoTarget.volume = event.target.value / 100
+    this.videoTarget.muted = false
+    this.isMuted = false
+    this.updateMuteButton()
+  }
+
+  updateMuteButton() {
+    const isMuted = this.videoTarget.muted || this.videoTarget.volume === 0
+    this.muteIconTarget.innerHTML = isMuted ? this.mutedIcon() : this.volumeIcon()
+  }
+
+  // Speed control
+  changeSpeed(event) {
+    this.videoTarget.playbackRate = parseFloat(event.target.value)
+  }
+
+  // Video event handlers
+  handleLoadedMetadata() {
+    this.durationTarget.textContent = this.formatTime(this.videoTarget.duration)
+    
+    // Only set endTime to duration if not already loaded from metadata
+    if (this.endTime === 0) {
+      this.endTime = this.videoTarget.duration
+    }
+    
+    this.updateMarkers()
+    this.updateMarkerInputs()
+  }
+
+  handleTimeUpdate() {
+    // Update current time display
+    this.currentTimeTarget.textContent = this.formatTime(this.videoTarget.currentTime)
+    
+    // Update frame count
+    const currentFrame = Math.floor(this.videoTarget.currentTime * this.fpsValue)
+    const totalFrames = Math.floor(this.videoTarget.duration * this.fpsValue)
+    this.frameCountTarget.textContent = `Frame ${currentFrame} / ${totalFrames}`
+    
+    // Update progress bar
+    const percent = (this.videoTarget.currentTime / this.videoTarget.duration) * 100
+    this.progressBarTarget.style.width = `${percent}%`
+    
+    // Check if we've reached the end marker
+    if (this.endTime > 0 && this.videoTarget.currentTime >= this.endTime) {
+      if (this.loopEnabled && this.startTime >= 0) {
+        // Loop back to start marker
+        this.videoTarget.currentTime = this.startTime > 0 ? this.startTime : 0
+      } else {
+        // Stop at end marker
+        this.pause()
+        this.videoTarget.currentTime = this.endTime
+      }
+    }
+  }
+
+  handleEnded() {
+    this.playing = false
+    this.updatePlayPauseButton()
+  }
+
+  // Keyboard shortcuts
+  handleKeyboard(event) {
+    // Don't handle if user is typing in an input
+    if (event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA") {
+      return
+    }
+
+    switch(event.key) {
+      case " ":
+      case "k":
+      case "K":
+        event.preventDefault()
+        this.togglePlay()
+        break
+      case "ArrowLeft":
+        event.preventDefault()
+        if (event.shiftKey) {
+          this.skipBackward()
+        } else {
+          this.previousFrame()
+        }
+        break
+      case "ArrowRight":
+        event.preventDefault()
+        if (event.shiftKey) {
+          this.skipForward()
+        } else {
+          this.nextFrame()
+        }
+        break
+      case "m":
+      case "M":
+        event.preventDefault()
+        this.toggleMute()
+        break
+      case "i":
+      case "I":
+        event.preventDefault()
+        this.setStartMarker()
+        break
+      case "o":
+      case "O":
+        event.preventDefault()
+        this.setEndMarker()
+        break
+      case "l":
+      case "L":
+        event.preventDefault()
+        this.toggleLoop()
+        break
+      case "Escape":
+        event.preventDefault()
+        this.close()
+        break
+      case "0":
+      case "1":
+      case "2":
+      case "3":
+      case "4":
+      case "5":
+      case "6":
+      case "7":
+      case "8":
+      case "9":
+        event.preventDefault()
+        const percent = parseInt(event.key) / 10
+        this.videoTarget.currentTime = this.videoTarget.duration * percent
+        break
+    }
+  }
+
+  // Helper methods
+  formatTime(seconds) {
+    if (isNaN(seconds)) return "0:00"
+    
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    const ms = Math.floor((seconds % 1) * 100)
+    return `${mins}:${secs.toString().padStart(2, "0")}.${ms.toString().padStart(2, "0")}`
+  }
+
+  playIcon() {
+    return `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />`
+  }
+
+  pauseIcon() {
+    return `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />`
+  }
+
+  volumeIcon() {
+    return `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />`
+  }
+
+  mutedIcon() {
+    return `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />`
+  }
+}

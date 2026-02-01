@@ -40,7 +40,7 @@ class ReportRepo < DB::Repo
   def for_race(race_id)
     Report
       .where(race_id: race_id)
-      .includes(:race_location, :incident, :user, race_participation: :athlete)
+      .includes(:race_location, :incident, :user, race_participation: :athlete, videos_attachments: :blob)
       .order(created_at: :desc)
       .map { |record| build_summary(record) }
   end
@@ -51,7 +51,7 @@ class ReportRepo < DB::Repo
   def pending_for_race(race_id)
     Report
       .where(race_id: race_id, status: "pending_review")
-      .includes(:race_location, :user, race_participation: :athlete)
+      .includes(:race_location, :user, race_participation: :athlete, videos_attachments: :blob)
       .order(created_at: :desc)
       .map { |record| build_summary(record) }
   end
@@ -62,7 +62,7 @@ class ReportRepo < DB::Repo
   def confirmed_for_race(race_id)
     Report
       .where(race_id: race_id, status: "confirmed")
-      .includes(:race_location, :user, race_participation: :athlete)
+      .includes(:race_location, :user, race_participation: :athlete, videos_attachments: :blob)
       .order(created_at: :desc)
       .map { |record| build_summary(record) }
   end
@@ -148,11 +148,11 @@ class ReportRepo < DB::Repo
   protected
 
   def base_scope
-    Report.includes(:race_location, :user, race_participation: :athlete)
+    Report.includes(:race_location, :user, race_participation: :athlete, videos_attachments: :blob)
   end
 
   def build_struct(record)
-    record = record.is_a?(Report) ? record : Report.includes(:race_location, :user, race_participation: :athlete).find(record)
+    record = record.is_a?(Report) ? record : Report.includes(:race_location, :user, race_participation: :athlete, videos_attachments: :blob).find(record)
 
     Structs::Report.new(
       id: record.id,
@@ -168,6 +168,7 @@ class ReportRepo < DB::Repo
       status: record.status,
       created_at: record.created_at,
       updated_at: record.updated_at,
+      videos: record.videos.attached? ? record.videos.blobs.to_a : [],
       race_location_name: record.race_location&.name,
       athlete_name: build_athlete_name(record),
       athlete_country: build_athlete_country(record),
@@ -199,7 +200,8 @@ class ReportRepo < DB::Repo
       athlete_country: build_athlete_country(record),
       user_name: record.user&.display_name,
       status: record.status,
-      created_at: record.created_at
+      created_at: record.created_at,
+      videos_count: record.videos.count
     )
   end
 

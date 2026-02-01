@@ -132,6 +132,12 @@ class AppContainer
         Operations::Races::PopulateLocations.new
       end
     end
+
+    namespace :reports do
+      register :attach_videos, memoize: true do
+        Operations::Reports::AttachVideos.new
+      end
+    end
   end
 
   # ============================================================================

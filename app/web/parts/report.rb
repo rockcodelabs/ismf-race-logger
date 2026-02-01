@@ -195,6 +195,66 @@ module Web
         else base + "border-gray-400 bg-gray-50"
         end
       end
+
+      # Check if report has videos attached
+      def has_videos?
+        if value.respond_to?(:has_videos?)
+          value.has_videos?
+        elsif value.respond_to?(:videos_count)
+          value.videos_count&.positive?
+        elsif value.respond_to?(:videos)
+          value.videos&.any?
+        else
+          false
+        end
+      end
+
+      # Get video count
+      def videos_count
+        if value.respond_to?(:videos_count)
+          value.videos_count || 0
+        elsif value.respond_to?(:videos)
+          value.videos&.count || 0
+        else
+          0
+        end
+      end
+
+      # Get videos array
+      def videos
+        value.respond_to?(:videos) ? value.videos : []
+      end
+
+      # Video count badge text
+      def video_count_badge
+        count = videos_count
+        return nil if count.zero?
+        
+        "#{count} video#{count == 1 ? '' : 's'}"
+      end
+
+      # Display video thumbnails (for detail views)
+      def video_thumbnails
+        videos.map do |video|
+          {
+            url: helpers.url_for(video),
+            preview_url: helpers.url_for(video.preview(resize_to_limit: [150, 100])),
+            filename: video.filename.to_s,
+            size: helpers.number_to_human_size(video.byte_size),
+            content_type: video.content_type
+          }
+        rescue StandardError => e
+          # Fallback for videos without previews
+          {
+            url: helpers.url_for(video),
+            preview_url: nil,
+            filename: video.filename.to_s,
+            size: helpers.number_to_human_size(video.byte_size),
+            content_type: video.content_type,
+            error: e.message
+          }
+        end
+      end
     end
   end
 end

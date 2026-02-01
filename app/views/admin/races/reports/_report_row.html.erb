@@ -1,4 +1,16 @@
-<tr class="<%= report.row_class %>" id="report_<%= report.id %>" data-report-selection-target="row">
+<tr class="<%= report.row_class %> hover:bg-gray-50 transition-all duration-200 relative" 
+    id="report_<%= report.id %>" 
+    data-report-selection-target="row"
+    data-controller="video-upload"
+    data-video-upload-report-id-value="<%= report.id %>"
+    data-video-upload-race-id-value="<%= race.id %>"
+    data-video-upload-direct-upload-url-value="<%= rails_direct_uploads_url %>"
+    data-video-upload-attach-url-value="<%= admin_race_report_videos_path(race, report) %>"
+    data-action="dragenter->video-upload#dragEnter 
+                 dragover->video-upload#dragOver 
+                 dragleave->video-upload#dragLeave 
+                 drop->video-upload#drop"
+    title="Drag MP4 videos here to upload">
   <td>
     <input type="checkbox" 
            data-report-selection-target="checkbox" 
@@ -41,6 +53,38 @@
       <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
         <%= report.incident_name_display %>
       </span>
+    <% end %>
+  </td>
+  <td class="py-3">
+    <% if report.has_videos? %>
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-full">
+          <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          <span class="text-xs font-semibold text-blue-700"><%= report.videos_count %></span>
+        </div>
+        <%= turbo_frame_tag "report_#{report.id}_video_thumbnails", src: video_thumbnails_admin_race_report_path(race, report), loading: :lazy do %>
+          <div class="flex gap-1">
+            <% 4.times do |i| %>
+              <div class="inline-block w-12 h-12 rounded-lg border-2 border-gray-200 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse">
+                <div class="w-full h-full flex items-center justify-center">
+                  <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="flex items-center gap-2 text-gray-400">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+        </svg>
+        <span class="text-xs italic">Drop videos here</span>
+      </div>
     <% end %>
   </td>
   <td class="text-right">

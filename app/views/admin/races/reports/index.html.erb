@@ -1,6 +1,11 @@
 <%= turbo_stream_from "race_#{@race.id}_reports" %>
 
-<div class="space-y-6" data-controller="report-selection" data-report-selection-race-id-value="<%= @race.id %>">
+<!-- Video Player Modal -->
+<%= render "shared/video_player_modal" %>
+
+<div class="space-y-6" 
+     data-controller="report-selection upload-queue upload-progress" 
+     data-report-selection-race-id-value="<%= @race.id %>">
   <!-- Page header -->
   <div class="flex items-center justify-between">
     <div>
@@ -29,6 +34,75 @@
           <span>New Report</span>
         <% end %>
       <% end %>
+    </div>
+  </div>
+
+  <!-- Upload Queue Context (hidden) -->
+  <div class="hidden" 
+       data-upload-queue-direct-upload-url-value="<%= rails_direct_uploads_url %>"
+       data-upload-queue-attach-url-value="<%= admin_race_report_videos_path(@race, ':report_id') %>">
+  </div>
+
+  <!-- Upload Progress Bar -->
+  <div data-upload-progress-target="container" 
+       class="hidden fixed bottom-6 right-6 z-50 bg-white rounded-lg shadow-2xl border border-gray-200 max-w-md">
+    <!-- Expanded View -->
+    <div data-upload-progress-target="expanded" class="p-4">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-blue-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span class="font-semibold text-gray-900">Uploading</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button data-action="click->upload-progress#toggleMinimize" 
+                  class="text-gray-400 hover:text-gray-600"
+                  title="Minimize">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+            </svg>
+          </button>
+          <button data-action="click->upload-progress#close" 
+                  class="text-gray-400 hover:text-gray-600"
+                  title="Cancel">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="mb-2">
+        <div class="flex justify-between text-sm text-gray-600 mb-1">
+          <span>
+            Uploading to <span data-upload-progress-target="batchCount">0 reports</span>
+            (<span data-upload-progress-target="fileCount">0 files</span>)
+          </span>
+          <span data-upload-progress-target="progressText" class="font-medium">0%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2.5">
+          <div data-upload-progress-target="progressBar" 
+               class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
+               style="width: 0%"
+               role="progressbar"
+               aria-valuenow="0"
+               aria-valuemin="0"
+               aria-valuemax="100"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Minimized View -->
+    <div data-upload-progress-target="minimized" class="hidden p-3 cursor-pointer" data-action="click->upload-progress#toggleMinimize">
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 text-blue-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        <span class="text-sm font-medium">
+          📤 <span data-upload-progress-target="fileCount">0</span>
+          <span data-upload-progress-target="progressText">0%</span>
+        </span>
+      </div>
     </div>
   </div>
 
@@ -89,6 +163,20 @@
 
   <!-- Reports table -->
   <div class="card">
+    <!-- Drag and drop hint -->
+    <div class="px-6 py-3 bg-blue-50 border-b border-blue-100 flex items-center gap-3">
+      <svg class="w-5 h-5 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+      </svg>
+      <div class="flex-1">
+        <p class="text-sm font-medium text-blue-900">Drag & Drop Video Upload</p>
+        <p class="text-xs text-blue-700">Drag MP4 video files (10-50MB) from your folder directly onto any report row to upload</p>
+      </div>
+      <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+    
     <div class="table-container border-0 rounded-none">
       <table class="table">
         <thead>
@@ -105,91 +193,18 @@
             <th>Reporter</th>
             <th>Athlete</th>
             <th>Status</th>
+            <th>Videos</th>
             <th class="text-right">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200 bg-white" id="reports-table-body">
           <% if @reports.any? %>
             <% @reports.each do |report| %>
-              <tr class="<%= report.row_class %>" id="report_<%= report.id %>" data-report-selection-target="row">
-                <td>
-                  <input type="checkbox" 
-                         data-report-selection-target="checkbox" 
-                         data-report-id="<%= report.id %>"
-                         data-incident-id="<%= report.incident_id %>"
-                         data-incident-status="<%= report.incident_status %>"
-                         data-has-decision="<%= report.incident_has_decision? %>"
-                         data-action="change->report-selection#updateSelection"
-                         class="w-4 h-4 rounded border-gray-300 text-ismf-blue focus:ring-ismf-blue">
-                </td>
-                <td>
-                  <%= link_to admin_race_report_path(@race, report), class: "block" do %>
-                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ismf-navy text-white font-bold text-sm">
-                      <%= report.bib_badge %>
-                    </span>
-                  <% end %>
-                </td>
-                <td class="text-ismf-gray text-sm">
-                  <%= link_to admin_race_report_path(@race, report), class: "block hover:text-ismf-blue transition-colors" do %>
-                    <div><%= report.location_name %></div>
-                    <div class="text-xs text-gray-500">
-                      <%= report.created_at_with_seconds %> 
-                      <span class="text-gray-400">(<%= report.time_ago %>)</span>
-                    </div>
-                  <% end %>
-                </td>
-                <td class="text-ismf-gray text-sm">
-                  <%= link_to admin_race_report_path(@race, report), class: "block hover:text-ismf-blue transition-colors" do %>
-                    <%= report.reporter_name_display %>
-                  <% end %>
-                </td>
-                <td>
-                  <div class="font-medium text-ismf-navy"><%= report.athlete_name_display %></div>
-                </td>
-                <td>
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= report.status_badge[:class] %>">
-                    <%= report.status_badge[:label] %>
-                  </span>
-                  <% if report.linked_to_incident? %>
-                    <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                      <%= report.incident_name_display %>
-                    </span>
-                  <% end %>
-                </td>
-                <td class="text-right">
-                  <div class="flex items-center justify-end gap-1">
-                    <%= link_to admin_race_report_path(@race, report), class: "inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-ismf-blue hover:bg-blue-50 transition-all", title: "View" do %>
-                      <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    <% end %>
-                    <% if report.can_confirm? %>
-                      <%= button_to confirm_admin_race_report_path(@race, report), method: :post, class: "inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-green-600 hover:bg-green-50 transition-all", title: "Confirm" do %>
-                        <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                      <% end %>
-                      <%= button_to reject_admin_race_report_path(@race, report), method: :post, class: "inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all", title: "Reject" do %>
-                        <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      <% end %>
-                    <% end %>
-                    <% if report.can_reopen? %>
-                      <%= button_to reopen_admin_race_report_path(@race, report), method: :post, class: "inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 transition-all", title: "Reopen" do %>
-                        <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                      <% end %>
-                    <% end %>
-                  </div>
-                </td>
-              </tr>
+              <%= render "report_row", report: report, race: @race %>
             <% end %>
           <% else %>
             <tr>
-              <td colspan="7" class="text-center py-12">
+              <td colspan="8" class="text-center py-12">
                 <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>

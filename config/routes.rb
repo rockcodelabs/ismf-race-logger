@@ -11,6 +11,10 @@ Rails.application.routes.draw do
     resources :users
     resources :penalties, only: [:index]
     
+    # Video markers (for ActiveStorage blobs)
+    post "videos/markers", to: "videos#create_markers"
+    get "videos/markers/:id", to: "videos#show_markers"
+    
     # Race type location templates
     resources :race_types, only: [] do
       resources :location_templates, controller: "race_types/location_templates" do
@@ -49,7 +53,11 @@ Rails.application.routes.draw do
           post :confirm
           post :reject
           post :reopen
+          get :video_thumbnails
         end
+        
+        # Video attachments for reports
+        resources :videos, only: [:create], controller: "reports/videos"
       end
 
       resources :incidents, controller: "races/incidents", only: [:index, :show, :new, :create, :edit, :update, :destroy] do

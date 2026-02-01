@@ -23,7 +23,7 @@ module Web
           include Dry::Monads[:result]
 
           before_action :set_race
-          before_action :set_report, only: [ :show, :confirm, :reject, :reopen ]
+          before_action :set_report, only: [ :show, :confirm, :reject, :reopen, :video_thumbnails ]
 
           def index
             authorize Report, :index?
@@ -227,6 +227,14 @@ module Web
                             alert: "Error reopening report: #{error.inspect}"
               end
             end
+          end
+
+          def video_thumbnails
+            authorize @report, :show?
+            
+            @report = parts_factory.wrap(@report)
+            
+            render partial: "video_thumbnails", locals: { report: @report, race: @race }
           end
 
           def delete_multiple

@@ -22,6 +22,9 @@ class Report < ApplicationRecord
   belongs_to :race_location
   belongs_to :race_participation
 
+  # Video attachments (multiple videos per report)
+  has_many_attached :videos
+
   # Generate client_uuid before validation if not present
   before_validation :ensure_client_uuid, on: :create
 

@@ -1,0 +1,41 @@
+<%= turbo_frame_tag "report_#{report.id}_video_thumbnails" do %>
+  <div class="flex gap-1" data-controller="video-trigger">
+    <% report.videos.first(4).each do |video| %>
+      <button data-action="click->video-trigger#open"
+              data-video-url="<%= rails_blob_path(video, disposition: "inline") %>"
+              data-video-blob-id="<%= video.id %>"
+              class="group relative inline-block w-12 h-12 rounded-lg border-2 border-gray-200 overflow-hidden hover:border-blue-400 hover:shadow-lg transition-all hover:scale-105 cursor-pointer"
+              title="<%= video.filename.to_s %> - Click to play">
+        <% if video.previewable? %>
+          <% begin %>
+            <%= image_tag video.preview(resize_to_limit: [100, 100]), class: "w-full h-full object-cover", alt: video.filename.to_s %>
+            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center">
+              <svg class="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+              </svg>
+            </div>
+          <% rescue => e %>
+            <div class="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex flex-col items-center justify-center p-1">
+              <svg class="w-6 h-6 text-blue-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              <span class="text-[8px] text-blue-700 font-medium text-center leading-tight">Error</span>
+            </div>
+          <% end %>
+        <% else %>
+          <div class="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex flex-col items-center justify-center p-1">
+            <svg class="w-6 h-6 text-blue-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <span class="text-[8px] text-blue-700 font-medium text-center leading-tight">MP4</span>
+          </div>
+        <% end %>
+      </button>
+    <% end %>
+    <% if report.videos_count > 4 %>
+      <div class="inline-flex items-center justify-center w-12 h-12 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 text-xs font-bold text-gray-600">
+        +<%= report.videos_count - 4 %>
+      </div>
+    <% end %>
+  </div>
+<% end %>

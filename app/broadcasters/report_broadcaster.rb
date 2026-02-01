@@ -130,6 +130,25 @@ class ReportBroadcaster < BaseBroadcaster
     broadcast_flash_notice(race_id, "Deleted #{count} report#{count == 1 ? '' : 's'} successfully.")
   end
 
+  # Broadcast when videos are attached to a report
+  # Replaces the report row with updated HTML showing video thumbnails
+  def videos_attached(report)
+    race = Race.find(report.race_id)
+    part = wrap(report)
+    
+    # Broadcast updated table row for desktop (reports table tbody)
+    Turbo::StreamsChannel.broadcast_replace_to(
+      stream_name(report.race_id),
+      target: dom_id(report),
+      partial: "admin/races/reports/report_row",
+      locals: { report: part, race: race }
+    )
+    
+    # Broadcast flash message to all devices
+    count = report.videos.count
+    broadcast_flash_notice(report.race_id, "#{count} video#{count == 1 ? '' : 's'} added to report ##{report.bib_number}.")
+  end
+
   private
 
   # Stream name for race-specific report updates

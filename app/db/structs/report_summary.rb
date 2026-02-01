@@ -26,7 +26,8 @@ module Structs
     :athlete_country,
     :user_name,
     :status,
-    :created_at
+    :created_at,
+    :videos_count
   ) do
     # Check if report is pending review
     def pending_review?
@@ -82,6 +83,11 @@ module Structs
       when "rejected" then "Rejected"
       else status.to_s.titleize
       end
+    end
+
+    # Check if report has videos attached
+    def has_videos?
+      videos_count && videos_count > 0
     end
 
     # Returns bib display with position indicator for team races
