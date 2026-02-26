@@ -76,6 +76,7 @@ Rails.application.routes.draw do
           post :reject_with_incident
           post :reopen
           patch :update_bib
+          get :video_thumbnails
         end
         
         # Video attachments for reports

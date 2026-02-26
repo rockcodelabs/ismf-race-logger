@@ -613,10 +613,11 @@ export default class extends Controller {
       </div>
     `
     
-    // Reload the row content after 2 seconds to show the thumbnails
+    // The Turbo Stream broadcast will automatically update the row with video thumbnails
+    // No need to reload - just clear the success message after a brief moment
     setTimeout(() => {
-      window.location.reload()
-    }, 2000)
+      videosCell.querySelector('.animate-pulse')?.classList.remove('animate-pulse')
+    }, 1500)
   }
 
   // Show success message
