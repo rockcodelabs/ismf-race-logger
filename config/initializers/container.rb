@@ -85,6 +85,10 @@ class AppContainer
     register :incident, memoize: true do
       IncidentRepo.new
     end
+
+    register :expenses_justification, memoize: true do
+      ExpensesJustificationRepo.new
+    end
   end
 
   # ============================================================================
@@ -118,6 +122,10 @@ class AppContainer
 
     register :report, memoize: true do
       ReportBroadcaster.new
+    end
+
+    register :expenses_justification, memoize: true do
+      ExpensesJustificationBroadcaster.new
     end
   end
 

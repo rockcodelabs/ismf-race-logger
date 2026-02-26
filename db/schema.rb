@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_01_223532) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_26_202255) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -69,6 +69,50 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_01_223532) do
     t.index ["country"], name: "index_competitions_on_country"
     t.index ["start_date", "end_date"], name: "index_competitions_on_start_date_and_end_date"
     t.index ["start_date"], name: "index_competitions_on_start_date"
+  end
+
+  create_table "expenses_justifications", force: :cascade do |t|
+    t.jsonb "accommodation", default: {}
+    t.text "address", null: false
+    t.jsonb "allowances", default: {}
+    t.datetime "approved_at"
+    t.bigint "approved_by_id"
+    t.string "bank_iban", null: false
+    t.string "bank_swift", null: false
+    t.jsonb "car_rental", default: {}
+    t.string "charged_of"
+    t.bigint "competition_id", null: false
+    t.string "country"
+    t.datetime "created_at", null: false
+    t.string "identity_document_number", null: false
+    t.string "name", null: false
+    t.jsonb "other_travelling", default: {}
+    t.boolean "paid", default: false, null: false
+    t.datetime "paid_at"
+    t.string "place"
+    t.jsonb "private_vehicle", default: {}
+    t.string "reason_of_travel", null: false
+    t.jsonb "regular_transport", default: {}
+    t.datetime "rejected_at"
+    t.bigint "rejected_by_id"
+    t.text "rejection_reason"
+    t.jsonb "special_expenses", default: {}
+    t.string "status", default: "draft", null: false
+    t.datetime "submitted_at"
+    t.decimal "total_amount", precision: 10, scale: 2, default: "0.0", null: false
+    t.integer "travel_days", null: false
+    t.date "travel_end_date", null: false
+    t.date "travel_start_date", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["approved_by_id"], name: "index_expenses_justifications_on_approved_by_id"
+    t.index ["competition_id", "status"], name: "index_expenses_justifications_on_competition_id_and_status"
+    t.index ["competition_id"], name: "index_expenses_justifications_on_competition_id"
+    t.index ["paid"], name: "index_expenses_justifications_on_paid"
+    t.index ["rejected_by_id"], name: "index_expenses_justifications_on_rejected_by_id"
+    t.index ["status"], name: "index_expenses_justifications_on_status"
+    t.index ["user_id", "status"], name: "index_expenses_justifications_on_user_id_and_status"
+    t.index ["user_id"], name: "index_expenses_justifications_on_user_id"
   end
 
   create_table "incident_penalties", force: :cascade do |t|
@@ -264,9 +308,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_01_223532) do
   end
 
   create_table "users", force: :cascade do |t|
+    t.text "address"
     t.boolean "admin", default: false, null: false
+    t.string "bank_iban"
+    t.string "bank_swift"
+    t.string "country"
     t.datetime "created_at", null: false
     t.string "email_address", null: false
+    t.string "full_name"
+    t.string "identity_document_number"
     t.string "name", default: "", null: false
     t.string "password_digest", null: false
     t.string "pin_digest"
@@ -278,6 +328,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_01_223532) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "expenses_justifications", "competitions"
+  add_foreign_key "expenses_justifications", "users"
+  add_foreign_key "expenses_justifications", "users", column: "approved_by_id"
+  add_foreign_key "expenses_justifications", "users", column: "rejected_by_id"
   add_foreign_key "incident_penalties", "incidents"
   add_foreign_key "incident_penalties", "penalties"
   add_foreign_key "incidents", "race_locations"

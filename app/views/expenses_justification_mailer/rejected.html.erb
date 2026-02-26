@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background-color: #dc2626;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      border-radius: 5px 5px 0 0;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .alert-icon {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+    .content {
+      background-color: #f9fafb;
+      padding: 30px;
+      border: 1px solid #e5e7eb;
+      border-top: none;
+    }
+    .info-box {
+      background-color: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 5px;
+      padding: 15px;
+      margin: 15px 0;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .info-row:last-child {
+      border-bottom: none;
+    }
+    .label {
+      font-weight: bold;
+      color: #6b7280;
+    }
+    .value {
+      color: #111827;
+    }
+    .amount {
+      font-size: 1.5em;
+      font-weight: bold;
+      color: #6b7280;
+      text-align: center;
+      padding: 15px;
+      background-color: #f3f4f6;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .alert-danger {
+      background-color: #fee2e2;
+      border-left: 4px solid #dc2626;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 5px;
+    }
+    .rejection-reason {
+      background-color: #fef2f2;
+      border: 2px solid #fca5a5;
+      border-radius: 5px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .rejection-reason h3 {
+      margin-top: 0;
+      color: #991b1b;
+    }
+    .rejection-reason p {
+      color: #7f1d1d;
+      font-size: 1em;
+      line-height: 1.6;
+    }
+    .button {
+      display: inline-block;
+      background-color: #2563eb;
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .button-secondary {
+      display: inline-block;
+      background-color: #6b7280;
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .footer {
+      text-align: center;
+      color: #6b7280;
+      font-size: 0.875em;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .help-box {
+      background-color: #dbeafe;
+      border: 1px solid #60a5fa;
+      border-radius: 5px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="alert-icon">✗</div>
+    <h1>Expense Justification Rejected</h1>
+  </div>
+
+  <div class="content">
+    <p>Dear <%= @user.name %>,</p>
+
+    <div class="alert-danger">
+      <strong>We regret to inform you</strong> that your expense justification has been rejected by ISMF staff.
+    </div>
+
+    <div class="rejection-reason">
+      <h3>📋 Reason for Rejection</h3>
+      <p><%= simple_format(@rejection_reason) %></p>
+    </div>
+
+    <div class="info-box">
+      <h3 style="margin-top: 0;">Expense Details</h3>
+      <div class="info-row">
+        <span class="label">Competition:</span>
+        <span class="value"><%= @competition.name %></span>
+      </div>
+      <div class="info-row">
+        <span class="label">Reason of Travel:</span>
+        <span class="value"><%= @expenses_justification.reason_of_travel %></span>
+      </div>
+      <div class="info-row">
+        <span class="label">Travel Period:</span>
+        <span class="value">
+          <%= @expenses_justification.travel_start_date.strftime("%d/%m/%Y") %> - 
+          <%= @expenses_justification.travel_end_date.strftime("%d/%m/%Y") %>
+        </span>
+      </div>
+      <div class="info-row">
+        <span class="label">Rejected By:</span>
+        <span class="value"><%= @rejected_by.name %></span>
+      </div>
+      <div class="info-row">
+        <span class="label">Rejected On:</span>
+        <span class="value"><%= @expenses_justification.rejected_at.strftime("%d/%m/%Y at %H:%M") %></span>
+      </div>
+    </div>
+
+    <div class="amount">
+      Requested Amount: € <%= number_with_precision(@expenses_justification.total_amount, precision: 2) %>
+    </div>
+
+    <div class="help-box">
+      <h4 style="margin-top: 0; color: #1e40af;">💡 What You Can Do</h4>
+      <ul style="margin: 5px 0; padding-left: 20px; color: #1e3a8a;">
+        <li>Review the rejection reason carefully</li>
+        <li>Address the issues mentioned in the rejection reason</li>
+        <li>Submit a new expense justification with the corrected information</li>
+        <li>Contact ISMF administration if you have questions or need clarification</li>
+      </ul>
+    </div>
+
+    <div style="text-align: center;">
+      <%= link_to "View Expense Justification", 
+          expenses_justification_url(@expenses_justification, host: ENV.fetch("APP_HOST", "localhost:3005")),
+          class: "button" %>
+    </div>
+
+    <p style="margin-top: 30px; font-size: 0.875em; color: #6b7280;">
+      <strong>Need Help?</strong><br>
+      If you believe this rejection was made in error, or if you need assistance understanding the rejection reason, 
+      please contact ISMF administration directly. They will be happy to help clarify the requirements and guide you 
+      through the resubmission process.
+    </p>
+  </div>
+
+  <div class="footer">
+    <p>
+      This is an automated email from the ISMF Race Logger system.<br>
+      If you have questions about this rejection, please contact ISMF administration.
+    </p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background-color: #003366;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      border-radius: 5px 5px 0 0;
+    }
+    .content {
+      background-color: #f9fafb;
+      padding: 30px;
+      border: 1px solid #e5e7eb;
+      border-top: none;
+    }
+    .info-box {
+      background-color: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 5px;
+      padding: 15px;
+      margin: 15px 0;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .info-row:last-child {
+      border-bottom: none;
+    }
+    .label {
+      font-weight: bold;
+      color: #6b7280;
+    }
+    .value {
+      color: #111827;
+    }
+    .amount {
+      font-size: 1.5em;
+      font-weight: bold;
+      color: #059669;
+      text-align: center;
+      padding: 15px;
+      background-color: #d1fae5;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .button {
+      display: inline-block;
+      background-color: #2563eb;
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .footer {
+      text-align: center;
+      color: #6b7280;
+      font-size: 0.875em;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 style="margin: 0;">New Expense Justification Submitted</h1>
+  </div>
+
+  <div class="content">
+    <p>Hello ISMF Staff,</p>
+
+    <p>A new expense justification has been submitted and is awaiting your review.</p>
+
+    <div class="info-box">
+      <h3 style="margin-top: 0;">Submitted By</h3>
+      <div class="info-row">
+        <span class="label">Name:</span>
+        <span class="value"><%= @user.name %></span>
+      </div>
+      <div class="info-row">
+        <span class="label">Email:</span>
+        <span class="value"><%= @user.email_address %></span>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <h3 style="margin-top: 0;">Expense Details</h3>
+      <div class="info-row">
+        <span class="label">Competition:</span>
+        <span class="value"><%= @competition.name %></span>
+      </div>
+      <div class="info-row">
+        <span class="label">Reason of Travel:</span>
+        <span class="value"><%= @expenses_justification.reason_of_travel %></span>
+      </div>
+      <div class="info-row">
+        <span class="label">Travel Period:</span>
+        <span class="value">
+          <%= @expenses_justification.travel_start_date.strftime("%d/%m/%Y") %> - 
+          <%= @expenses_justification.travel_end_date.strftime("%d/%m/%Y") %>
+          (<%= @expenses_justification.travel_days %> days)
+        </span>
+      </div>
+      <div class="info-row">
+        <span class="label">Charged Of (Role):</span>
+        <span class="value"><%= @expenses_justification.charged_of || "N/A" %></span>
+      </div>
+      <div class="info-row">
+        <span class="label">Place:</span>
+        <span class="value"><%= @expenses_justification.place || "N/A" %></span>
+      </div>
+      <div class="info-row">
+        <span class="label">Country:</span>
+        <span class="value"><%= @expenses_justification.country || "N/A" %></span>
+      </div>
+    </div>
+
+    <div class="amount">
+      Total Amount: € <%= number_with_precision(@expenses_justification.total_amount, precision: 2) %>
+    </div>
+
+    <div style="text-align: center;">
+      <%= link_to "Review Expense Justification", 
+          admin_expenses_justification_url(@expenses_justification, host: ENV.fetch("APP_HOST", "localhost:3005")),
+          class: "button" %>
+    </div>
+
+    <p style="margin-top: 30px; font-size: 0.875em; color: #6b7280;">
+      <strong>Next Steps:</strong><br>
+      Please review this expense justification and either approve or reject it. 
+      The user will be notified of your decision by email.
+    </p>
+  </div>
+
+  <div class="footer">
+    <p>
+      This is an automated email from the ISMF Race Logger system.<br>
+      Please do not reply to this email.
+    </p>
+  </div>
+</body>
+</html>

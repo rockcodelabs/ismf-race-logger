@@ -1,0 +1,41 @@
+<!-- Invoices -->
+<div class="bg-white shadow rounded-lg overflow-hidden">
+  <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+    <h2 class="text-lg font-semibold text-gray-900">Invoices & Receipts</h2>
+  </div>
+  <div class="px-6 py-4">
+    <div>
+      <%= f.label :invoices, "Upload Invoices", class: "block text-sm font-medium text-gray-700" %>
+      <%= f.file_field :invoices, 
+          multiple: true, 
+          accept: "image/*,application/pdf",
+          class: "mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" %>
+      <p class="mt-2 text-xs text-gray-500">
+        Upload one or more invoice files. Accepted formats: PDF, JPG, PNG, etc. No file size limit.
+      </p>
+      
+      <!-- Show existing invoices if editing -->
+      <% if defined?(existing_invoices) && existing_invoices.present? && existing_invoices.any? %>
+        <div class="mt-4">
+          <p class="text-sm font-medium text-gray-700 mb-2">Current invoices:</p>
+          <ul class="space-y-2">
+            <% existing_invoices.each do |invoice| %>
+              <li class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <div class="flex items-center">
+                  <svg class="h-5 w-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span class="text-sm text-gray-700"><%= invoice.filename %></span>
+                  <span class="ml-2 text-xs text-gray-500">(<%= number_to_human_size(invoice.byte_size) %>)</span>
+                </div>
+                <%= link_to rails_blob_path(invoice, disposition: "attachment"), class: "text-xs text-blue-600 hover:text-blue-800" do %>
+                  Download
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

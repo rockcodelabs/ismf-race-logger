@@ -1,0 +1,27 @@
+<!-- Save to Profile Option -->
+<div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+  <div class="flex items-start">
+    <div class="flex items-center h-5">
+      <%= check_box_tag :save_to_profile, "1", false, 
+          class: "h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500",
+          id: "save_to_profile_checkbox" %>
+    </div>
+    <div class="ml-3">
+      <%= label_tag :save_to_profile_checkbox, class: "font-medium text-gray-900" do %>
+        <span class="flex items-center">
+          Save this information to my profile
+          <svg class="ml-1 h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+          </svg>
+        </span>
+      <% end %>
+      <p class="text-sm text-gray-600 mt-1">
+        Update your user profile with the personal information and bank details from this form. 
+        This will auto-fill future expense submissions, saving you time.
+      </p>
+      <div class="mt-2 text-xs text-gray-500 bg-white rounded p-2 border border-blue-100">
+        <strong>What gets saved:</strong> Name, Address, Identity Document Number, Bank SWIFT, Bank IBAN, Country
+      </div>
+    </div>
+  </div>
+</div>

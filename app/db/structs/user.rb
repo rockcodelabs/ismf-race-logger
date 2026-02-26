@@ -71,6 +71,10 @@ module Structs
       role_name == "broadcast_viewer"
     end
 
+    def ismf_staff?
+      role_name == "ismf_staff"
+    end
+
     def referee?
       national_referee? || international_referee?
     end

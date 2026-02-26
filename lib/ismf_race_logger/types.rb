@@ -22,7 +22,8 @@ module IsmfRaceLogger
       "international_referee",
       "jury_president",
       "referee_manager",
-      "broadcast_viewer"
+      "broadcast_viewer",
+      "ismf_staff"
     )
 
     # Incident statuses
@@ -38,6 +39,9 @@ module IsmfRaceLogger
       "rejected",
       "no_action"
     )
+
+    # Expenses Justification statuses
+    ExpensesJustificationStatus = Strict::String.enum("draft", "sent", "approved", "rejected")
 
     # Gender types
     Gender = Strict::String.enum("M", "F")

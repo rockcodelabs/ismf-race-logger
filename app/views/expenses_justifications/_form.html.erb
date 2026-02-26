@@ -1,0 +1,45 @@
+<%= form_with model: expenses_justification, url: form_url, method: form_method, class: "space-y-6" do |f| %>
+  <!-- Error messages -->
+  <% if defined?(@errors) && @errors.present? %>
+    <div class="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+      <strong class="font-bold">Please fix the following errors:</strong>
+      <ul class="mt-2 list-disc list-inside">
+        <% @errors.each do |field, messages| %>
+          <% Array(messages).each do |message| %>
+            <li><%= field.to_s.humanize %>: <%= message %></li>
+          <% end %>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <!-- Competition Selection -->
+  <%= render "expenses_justifications/form_sections/competition", f: f, competitions: @competitions %>
+
+  <!-- Personal Information -->
+  <%= render "expenses_justifications/form_sections/personal_info", f: f %>
+
+  <!-- Bank Information -->
+  <%= render "expenses_justifications/form_sections/bank_info", f: f %>
+
+  <!-- Trip Details -->
+  <%= render "expenses_justifications/form_sections/trip_details", f: f %>
+
+  <!-- Total Amount -->
+  <%= render "expenses_justifications/form_sections/total_amount", f: f %>
+
+  <!-- Invoices -->
+  <%= render "expenses_justifications/form_sections/invoices", f: f, existing_invoices: expenses_justification.invoices %>
+
+  <!-- Save to Profile Option -->
+  <%= render "expenses_justifications/form_sections/save_to_profile" %>
+
+  <!-- Form actions -->
+  <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
+    <%= link_to "Cancel", 
+        expenses_justifications_path, 
+        class: "inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
+    <%= f.submit submit_label, 
+        class: "inline-flex items-center px-6 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
+  </div>
+<% end %>

@@ -35,4 +35,8 @@ class User < ApplicationRecord
   def display_name
     name.presence || email_address.split("@").first
   end
+
+  # Encrypt sensitive bank information
+  encrypts :bank_swift
+  encrypts :bank_iban
 end

@@ -1,0 +1,18 @@
+<!-- Competition Selection -->
+<div class="bg-white shadow rounded-lg overflow-hidden">
+  <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+    <h2 class="text-lg font-semibold text-gray-900">Competition</h2>
+  </div>
+  <div class="px-6 py-4">
+    <div>
+      <%= f.label :competition_id, "Competition", class: "block text-sm font-medium text-gray-700" %>
+      <%= f.collection_select :competition_id, 
+          competitions, 
+          :id, 
+          :name, 
+          { prompt: "Select a competition" }, 
+          class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" %>
+      <p class="mt-1 text-xs text-gray-500">Select the competition this expense is related to</p>
+    </div>
+  </div>
+</div>

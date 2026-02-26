@@ -57,11 +57,14 @@ module Web
             user = Current.user
             return root_url unless user
             
+            # Users without a role should go to root
+            return root_url unless user.role.present?
+            
             # Find active race or next scheduled race
             active_race = Race.find_by(status: "in_progress")
             next_race = active_race || Race.where(status: "scheduled").order(:scheduled_at).first
             
-            role_name = user.role&.name
+            role_name = user.role.name
             is_management = role_name.in?(%w[var_operator jury_president referee_manager])
             is_admin = user.admin?
             

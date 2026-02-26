@@ -22,13 +22,15 @@
 #   end
 #
 class BaseBroadcaster
-  include Import["parts.factory"]
+  def initialize(parts_factory: AppContainer["parts.factory"])
+    @parts_factory = parts_factory
+  end
 
   private
 
-  # Access the parts factory (injected as `factory` by dry-auto_inject)
+  # Access the parts factory
   def parts_factory
-    @parts_factory ||= factory
+    @parts_factory
   end
 
   # Wrap a struct in its part for rendering

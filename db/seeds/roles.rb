@@ -12,7 +12,8 @@ roles_data = [
   "jury_president",
   "referee_manager",
   "broadcast_viewer",
-  "broadcast_referee"
+  "broadcast_referee",
+  "ismf_staff"
 ]
 
 roles_data.each do |role_name|

@@ -102,6 +102,22 @@ Rails.application.routes.draw do
     resources :races, only: [] do
       resource :imports, only: [:new, :create], controller: "races/imports", as: :import
     end
+    
+    # Expenses Justifications (admin routes)
+    resources :expenses_justifications, only: [:index, :show, :edit, :update, :destroy] do
+      member do
+        patch :approve
+        patch :reject
+        patch :mark_as_paid
+      end
+    end
+  end
+
+  # Expenses Justifications (user routes)
+  resources :expenses_justifications, controller: "web/controllers/expenses_justifications" do
+    member do
+      patch :submit
+    end
   end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

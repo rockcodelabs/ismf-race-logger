@@ -6,12 +6,13 @@
 
 # Get roles for assignment
 referee_manager_role = Role.find_by(name: "referee_manager")
+var_operator_role = Role.find_by(name: "var_operator")
 national_referee_role = Role.find_by(name: "national_referee")
 international_referee_role = Role.find_by(name: "international_referee")
-var_operator_role = Role.find_by(name: "var_operator")
 jury_president_role = Role.find_by(name: "jury_president")
 broadcast_viewer_role = Role.find_by(name: "broadcast_viewer")
 broadcast_referee_role = Role.find_by(name: "broadcast_referee")
+ismf_staff_role = Role.find_by(name: "ismf_staff")
 
 # Create PIN-enabled users
 puts "\nCreating PIN-enabled users..."
@@ -24,7 +25,8 @@ users_data = [
   { name: "Brent Harris", email: "brent.harris@ismf-ski.com", role: jury_president_role, admin: false },
   { name: "Christian Schieder", email: "christian.schieder@ismf-ski.com", role: international_referee_role, admin: false },
   { name: "Jordi Millastre", email: "jordi.millastre@ismf-ski.com", role: broadcast_viewer_role, admin: false },
-  { name: "Marion Maneglia", email: "marion.maneglia@ismf-ski.com", role: broadcast_referee_role, admin: false }
+  { name: "Marion Maneglia", email: "marion.maneglia@ismf-ski.com", role: broadcast_referee_role, admin: false },
+  { name: "Valeria Ponzo", email: "valeria.ponzo@ismf-ski.org", role: ismf_staff_role, admin: false }
 ]
 
 users_data.each do |user_data|
