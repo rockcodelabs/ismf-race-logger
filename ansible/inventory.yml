@@ -7,7 +7,7 @@ all:
       hosts:
         # Example kiosk hosts
         pi5cam:
-          ansible_host: pi5cam.local
+          ansible_host: pi5display.local
           kiosk_url: http://192.168.1.233:3005/?touch=1
           display_rotation: rotate-90  # Options: rotate-90, rotate-180, rotate-270, normal
           
