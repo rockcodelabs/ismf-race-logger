@@ -8,7 +8,7 @@ image: regedarek/ismf-race-logger
 servers:
   web:
     hosts:
-      - pi5main.local
+      - 100.80.65.119
 
 # Docker registry configuration
 registry:
@@ -64,7 +64,7 @@ accessories:
   postgres:
     service: ismf-race-logger-postgres
     image: postgres:16.0
-    host: pi5main.local
+    host: 100.80.65.119
     port: "5434:5432"
     env:
       clear:

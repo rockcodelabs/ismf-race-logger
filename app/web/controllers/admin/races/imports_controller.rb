@@ -29,10 +29,18 @@ module Web
           # Processes the JSON import and redirects to race show page on success
           def create
             authorize Race, :update?
-            result = import_operation.call(
-              race_id: @race.id,
-              athletes_json: params[:athletes_json]
-            )
+
+            result = if relay_race?
+              import_operation.call(
+                race_id: @race.id,
+                teams_json: params[:athletes_json]
+              )
+            else
+              import_operation.call(
+                race_id: @race.id,
+                athletes_json: params[:athletes_json]
+              )
+            end
 
             if result.success?
               summary = result.value!
@@ -91,7 +99,12 @@ module Web
           end
 
           def import_operation
-            Operations::Athletes::BulkImport.new
+            relay_race? ? Operations::Teams::BulkImport.new : Operations::Athletes::BulkImport.new
+          end
+
+          def relay_race?
+            @race.race_type_name&.downcase&.include?("relay") ||
+              @race.race_type_name&.downcase&.include?("team")
           end
 
           def race_repo
