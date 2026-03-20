@@ -17,7 +17,7 @@
       <div>
         <h1 class="text-2xl font-bold text-ismf-navy">Import Athletes</h1>
         <p class="mt-1 text-sm text-ismf-gray">
-          <% if @race.race_type_name == "Mixed Relay" || @race.race_type_name == "Team" %>
+          <% if @race.stage_type != "Qualification" && (@race.race_type_name == "Mixed Relay" || @race.race_type_name == "Team") %>
             Bulk import teams (male + female per bib) for <%= @race.name %>
           <% else %>
             Bulk import athletes for <%= @race.name %>
@@ -89,7 +89,7 @@
           </p>
         </div>
         
-        <% is_relay = @race.race_type_name == "Mixed Relay" || @race.race_type_name == "Team" %>
+        <% is_relay = @race.stage_type != "Qualification" && (@race.race_type_name == "Mixed Relay" || @race.race_type_name == "Team") %>
         <%= form_with url: admin_race_import_path(@race), method: :post, local: true, class: "p-6" do |f| %>
           <div class="space-y-4">
             <!-- JSON textarea -->

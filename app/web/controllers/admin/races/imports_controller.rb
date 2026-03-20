@@ -30,7 +30,7 @@ module Web
           def create
             authorize Race, :update?
 
-            result = if relay_race?
+            result = if @race.team_race?
               import_operation.call(
                 race_id: @race.id,
                 teams_json: params[:athletes_json]
@@ -99,15 +99,9 @@ module Web
           end
 
           def import_operation
-            relay_race? ? Operations::Teams::BulkImport.new : Operations::Athletes::BulkImport.new
+            @race.team_race? ? Operations::Teams::BulkImport.new : Operations::Athletes::BulkImport.new
           end
 
-          def relay_race?
-            return false if @race.stage_type == "Qualification"
-
-            @race.race_type_name&.downcase&.include?("relay") ||
-              @race.race_type_name&.downcase&.include?("team")
-          end
 
           def race_repo
             @race_repo ||= AppContainer["repos.race"]

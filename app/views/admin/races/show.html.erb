@@ -145,7 +145,7 @@
   <!-- Participants Section -->
   <div class="card">
     <div class="px-6 py-5 border-b border-gray-200 bg-gray-50">
-      <% is_relay = @race.race_type_name&.include?("Relay") || @race.race_type_name&.include?("Team") %>
+      <% is_relay = @race.stage_type != "Qualification" && (@race.race_type_name&.include?("Relay") || @race.race_type_name&.include?("Team")) %>
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-center gap-4">
           <h3 class="text-lg font-medium text-ismf-navy">Participants</h3>
