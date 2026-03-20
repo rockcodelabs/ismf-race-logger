@@ -10,6 +10,11 @@ all:
           ansible_host: pi5display.local
           kiosk_url: http://192.168.1.233:3005/?touch=1
           display_rotation: rotate-90  # Options: rotate-90, rotate-180, rotate-270, normal
+
+        pi5display:
+          ansible_host: pi5display.local
+          kiosk_url: https://ismf.taterniczek.pl/?touch=1
+          display_rotation: rotate-90
           
         # Add more kiosks as needed
         # pi5kiosk2:

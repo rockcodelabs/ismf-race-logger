@@ -792,3 +792,88 @@ Alternatives: Set the `ansible_managed` variable, or use any custom variable in 
 2026-01-28 23:37:58,421 p=38824 u=rege n=ansible INFO| Set GPU memory in config.txt -------------------------------------------- 0.38s
 2026-01-28 23:37:58,421 p=38824 u=rege n=ansible INFO| Read current cmdline.txt ------------------------------------------------ 0.38s
 2026-01-28 23:37:58,421 p=38824 u=rege n=ansible INFO| Create Weston config directory ------------------------------------------ 0.36s
+2026-03-19 22:34:56,862 p=95802 u=rege n=ansible WARNING| [WARNING]: Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+
+2026-03-19 22:34:56,863 p=95802 u=rege n=ansible INFO| [DEPRECATION WARNING]: DEFAULT_MANAGED_STR option. Reason: The `ansible_managed` variable can be set just like any other variable, or a different variable can be used.
+Alternatives: Set the `ansible_managed` variable, or use any custom variable in templates. This feature will be removed from ansible-core version 2.23.
+
+
+2026-03-19 22:34:57,154 p=95802 u=rege n=ansible INFO| Using /Users/rege/code/ismf-race-logger/ansible/ansible.cfg as config file
+2026-03-19 22:34:57,491 p=95802 u=rege n=ansible INFO| PLAY [Update Kiosk URL] ********************************************************
+2026-03-19 22:34:57,497 p=95802 u=rege n=ansible INFO| TASK [Validate new_url is provided] ********************************************
+2026-03-19 22:34:57,498 p=95802 u=rege n=ansible INFO| Thursday 19 March 2026  22:34:57 +0100 (0:00:00.008)       0:00:00.008 ******** 
+2026-03-19 22:34:57,514 p=95802 u=rege n=ansible INFO| skipping: [pi5display] => {"changed": false, "false_condition": "new_url is not defined or new_url == \"\"", "skip_reason": "Conditional result was False"}
+2026-03-19 22:34:57,515 p=95802 u=rege n=ansible INFO| TASK [Display update information] **********************************************
+2026-03-19 22:34:57,515 p=95802 u=rege n=ansible INFO| Thursday 19 March 2026  22:34:57 +0100 (0:00:00.017)       0:00:00.026 ******** 
+2026-03-19 22:34:57,538 p=95802 u=rege n=ansible INFO| ok: [pi5display] => {
+    "msg": "============================================================\nUpdating Kiosk URL on pi5display\n============================================================\nCurrent URL: https://ismf.taterniczek.pl/?touch=1\nNew URL: https://ismf.taterniczek.pl/?touch=1\n"
+}
+2026-03-19 22:34:57,540 p=95802 u=rege n=ansible INFO| TASK [Check if kiosk service exists] *******************************************
+2026-03-19 22:34:57,540 p=95802 u=rege n=ansible INFO| Thursday 19 March 2026  22:34:57 +0100 (0:00:00.024)       0:00:00.050 ******** 
+2026-03-19 22:34:58,546 p=95802 u=rege n=ansible INFO| ok: [pi5display] => {"changed": false, "stat": {"atime": 1772099539.163609, "attr_flags": "e", "attributes": ["extents"], "block_size": 4096, "blocks": 8, "charset": "us-ascii", "checksum": "6c831404afe638ae29e9880617d93006f153f76e", "ctime": 1772099539.1598494, "dev": 66306, "device_type": 0, "executable": false, "exists": true, "gid": 0, "gr_name": "root", "inode": 677351, "isblk": false, "ischr": false, "isdir": false, "isfifo": false, "isgid": false, "islnk": false, "isreg": true, "issock": false, "isuid": false, "mimetype": "text/plain", "mode": "0644", "mtime": 1772099539.1636095, "nlink": 1, "path": "/etc/systemd/system/kiosk.service", "pw_name": "root", "readable": true, "rgrp": true, "roth": true, "rusr": true, "size": 1566, "uid": 0, "version": "3009641129", "wgrp": false, "woth": false, "writeable": true, "wusr": true, "xgrp": false, "xoth": false, "xusr": false}}
+2026-03-19 22:34:58,548 p=95802 u=rege n=ansible INFO| TASK [Fail if kiosk service doesn't exist] *************************************
+2026-03-19 22:34:58,548 p=95802 u=rege n=ansible INFO| Thursday 19 March 2026  22:34:58 +0100 (0:00:01.007)       0:00:01.058 ******** 
+2026-03-19 22:34:58,558 p=95802 u=rege n=ansible INFO| skipping: [pi5display] => {"changed": false, "false_condition": "not service_file.stat.exists", "skip_reason": "Conditional result was False"}
+2026-03-19 22:34:58,559 p=95802 u=rege n=ansible INFO| TASK [Read current service file] ***********************************************
+2026-03-19 22:34:58,559 p=95802 u=rege n=ansible INFO| Thursday 19 March 2026  22:34:58 +0100 (0:00:00.011)       0:00:01.070 ******** 
+2026-03-19 22:34:58,967 p=95802 u=rege n=ansible INFO| ok: [pi5display] => {"changed": false, "content": "IyBTeXN0ZW1kIFNlcnZpY2UgZm9yIElTTUYgUmFjZSBMb2dnZXIgS2lvc2sKIyBNYW5hZ2VkIGJ5IEFuc2libGUgLSBETyBOT1QgRURJVCBNQU5VQUxMWQojIFRlbXBsYXRlOiB0ZW1wbGF0ZXMva2lvc2suc2VydmljZS5qMgoKW1VuaXRdCkRlc2NyaXB0aW9uPVdlYiBLaW9zayBmb3IgSVNNRiBSYWNlIExvZ2dlcgpEb2N1bWVudGF0aW9uPWh0dHBzOi8vZ2l0aHViLmNvbS95b3VydXNlcm5hbWUvaXNtZi1yYWNlLWxvZ2dlcgpBZnRlcj1uZXR3b3JrLW9ubGluZS50YXJnZXQgc2VhdGQuc2VydmljZQpXYW50cz1uZXR3b3JrLW9ubGluZS50YXJnZXQKUmVxdWlyZXM9c2VhdGQuc2VydmljZQoKW1NlcnZpY2VdClR5cGU9c2ltcGxlClVzZXI9cmVnZQpFbnZpcm9ubWVudD1YREdfUlVOVElNRV9ESVI9L3J1bi91c2VyLzEwMDAKRW52aXJvbm1lbnQ9V0FZTEFORF9ESVNQTEFZPXdheWxhbmQtMQoKIyBXYWl0IGEgZmV3IHNlY29uZHMgZm9yIHN5c3RlbSB0byBzdGFiaWxpemUKRXhlY1N0YXJ0UHJlPS9iaW4vc2xlZXAgMwoKIyBTdGFydCBXZXN0b24gd2l0aCBDaHJvbWl1bSBpbiBraW9zayBtb2RlCkV4ZWNTdGFydD0vdXNyL2Jpbi93ZXN0b24gXAogIC0tYmFja2VuZD1kcm0tYmFja2VuZC5zbyBcCiAgLS1zaGVsbD1raW9zay1zaGVsbC5zbyBcCiAgLS1pZGxlLXRpbWU9MCBcCiAgLS0gXAogIC91c3IvYmluL2Nocm9taXVtIFwKICAgIC0ta2lvc2sgXAogICAgLS1vem9uZS1wbGF0Zm9ybT13YXlsYW5kIFwKICAgIC0tZW5hYmxlLWZlYXR1cmVzPVVzZU96b25lUGxhdGZvcm0gXAogICAgLS1ub2VycmRpYWxvZ3MgXAogICAgLS1kaXNhYmxlLWluZm9iYXJzIFwKICAgIC0tZGlzYWJsZS1zZXNzaW9uLWNyYXNoZWQtYnViYmxlIFwKICAgIC0tZGlzYWJsZS1mZWF0dXJlcz1UcmFuc2xhdGVVSSxWaXJ0dWFsS2V5Ym9hcmQgXAogICAgLS1kaXNhYmxlLXN5bmMgXAogICAgLS1kaXNhYmxlLXRyYW5zbGF0ZSBcCiAgICAtLWRpc2FibGUtYmFja2dyb3VuZC10aW1lci10aHJvdHRsaW5nIFwKICAgIC0tZGlzYWJsZS1yZW5kZXJlci1iYWNrZ3JvdW5kaW5nIFwKICAgIC0tZGlzYWJsZS1iYWNrZ3JvdW5kaW5nLW9jY2x1ZGVkLXdpbmRvd3MgXAogICAgLS1lbmFibGUtZ3B1LXJhc3Rlcml6YXRpb24gXAogICAgLS1lbmFibGUtemVyby1jb3B5IFwKICAgIC0taWdub3JlLWdwdS1ibG9ja2xpc3QgXAogICAgLS1uby1maXJzdC1ydW4gXAogICAgLS1pbmNvZ25pdG8gXAogICAgLS10b3VjaC1ldmVudHM9ZW5hYmxlZCBcCiAgICAtLWRpc2FibGUtdG91Y2gta2V5Ym9hcmQgXAogICAgaHR0cDovLzE5Mi4xNjguMS4yMzM6MzAwNS8/dG91Y2g9MQoKIyBSZXN0YXJ0IHBvbGljeQpSZXN0YXJ0PWFsd2F5cwpSZXN0YXJ0U2VjPTMKCiMgUmVzb3VyY2UgbGltaXRzIChvcHRpb25hbCwgYWRqdXN0IGFzIG5lZWRlZCkKIyBNZW1vcnlMaW1pdD01MTJNCiMgQ1BVUXVvdGE9ODAlCgojIExvZ2dpbmcKU3RhbmRhcmRPdXRwdXQ9am91cm5hbApTdGFuZGFyZEVycm9yPWpvdXJuYWwKU3lzbG9nSWRlbnRpZmllcj1raW9zawoKW0luc3RhbGxdCldhbnRlZEJ5PW11bHRpLXVzZXIudGFyZ2V0", "encoding": "base64", "source": "/etc/systemd/system/kiosk.service"}
+2026-03-19 22:34:58,969 p=95802 u=rege n=ansible INFO| TASK [Extract current URL from service file] ***********************************
+2026-03-19 22:34:58,970 p=95802 u=rege n=ansible INFO| Thursday 19 March 2026  22:34:58 +0100 (0:00:00.410)       0:00:01.480 ******** 
+2026-03-19 22:34:58,991 p=95802 u=rege n=ansible INFO| ok: [pi5display] => {"ansible_facts": {"current_url": "https://github.com/yourusername/ismf-race-logger"}, "changed": false}
+2026-03-19 22:34:58,992 p=95802 u=rege n=ansible INFO| TASK [Display current URL] *****************************************************
+2026-03-19 22:34:58,992 p=95802 u=rege n=ansible INFO| Thursday 19 March 2026  22:34:58 +0100 (0:00:00.022)       0:00:01.503 ******** 
+2026-03-19 22:34:59,010 p=95802 u=rege n=ansible INFO| ok: [pi5display] => {
+    "msg": "Current URL in service file: https://github.com/yourusername/ismf-race-logger"
+}
+2026-03-19 22:34:59,012 p=95802 u=rege n=ansible INFO| TASK [Backup current service file] *********************************************
+2026-03-19 22:34:59,012 p=95802 u=rege n=ansible INFO| Thursday 19 March 2026  22:34:59 +0100 (0:00:00.019)       0:00:01.523 ******** 
+2026-03-19 22:34:59,022 p=95802 u=rege n=ansible ERROR| [ERROR]: Task failed: Finalization of task args for 'ansible.builtin.copy' failed: Error while resolving value for 'dest': 'ansible_date_time' is undefined
+
+Task failed.
+Origin: /Users/rege/code/ismf-race-logger/ansible/update-kiosk-url.yml:68:7
+
+66         msg: "Current URL in service file: {{ current_url | default('not found') }}"
+67
+68     - name: Backup current service file
+         ^ column 7
+
+<<< caused by >>>
+
+Finalization of task args for 'ansible.builtin.copy' failed.
+Origin: /Users/rege/code/ismf-race-logger/ansible/update-kiosk-url.yml:69:7
+
+67
+68     - name: Backup current service file
+69       copy:
+         ^ column 7
+
+<<< caused by >>>
+
+Error while resolving value for 'dest': 'ansible_date_time' is undefined
+Origin: /Users/rege/code/ismf-race-logger/ansible/update-kiosk-url.yml:71:15
+
+69       copy:
+70         src: "{{ systemd_service_dir }}/{{ kiosk_service_name }}"
+71         dest: "{{ systemd_service_dir }}/{{ kiosk_service_name }}.backup.{{ ansible_date_time.epoch }}"
+                 ^ column 15
+
+
+2026-03-19 22:34:59,022 p=95802 u=rege n=ansible INFO| fatal: [pi5display]: FAILED! => {"changed": false, "msg": "Task failed: Finalization of task args for 'ansible.builtin.copy' failed: Error while resolving value for 'dest': 'ansible_date_time' is undefined"}
+2026-03-19 22:34:59,023 p=95802 u=rege n=ansible INFO| 	to retry, use: --limit @/Users/rege/.ansible-retry/update-kiosk-url.retry
+
+2026-03-19 22:34:59,023 p=95802 u=rege n=ansible INFO| PLAY RECAP *********************************************************************
+2026-03-19 22:34:59,023 p=95802 u=rege n=ansible INFO| pi5display                 : ok=5    changed=0    unreachable=0    failed=1    skipped=2    rescued=0    ignored=0   
+2026-03-19 22:34:59,023 p=95802 u=rege n=ansible INFO| PLAYBOOK RECAP *****************************************************************
+2026-03-19 22:34:59,023 p=95802 u=rege n=ansible INFO| Playbook run took 0 days, 0 hours, 0 minutes, 1 seconds
+
+2026-03-19 22:34:59,023 p=95802 u=rege n=ansible INFO| TASKS RECAP ********************************************************************
+2026-03-19 22:34:59,023 p=95802 u=rege n=ansible INFO| Thursday 19 March 2026  22:34:59 +0100 (0:00:00.010)       0:00:01.534 ******** 
+2026-03-19 22:34:59,023 p=95802 u=rege n=ansible INFO| =============================================================================== 
+2026-03-19 22:34:59,023 p=95802 u=rege n=ansible INFO| Check if kiosk service exists ------------------------------------------- 1.01s
+2026-03-19 22:34:59,023 p=95802 u=rege n=ansible INFO| Read current service file ----------------------------------------------- 0.41s
+2026-03-19 22:34:59,023 p=95802 u=rege n=ansible INFO| Display update information ---------------------------------------------- 0.02s
+2026-03-19 22:34:59,023 p=95802 u=rege n=ansible INFO| Extract current URL from service file ----------------------------------- 0.02s
+2026-03-19 22:34:59,023 p=95802 u=rege n=ansible INFO| Display current URL ----------------------------------------------------- 0.02s
+2026-03-19 22:34:59,023 p=95802 u=rege n=ansible INFO| Validate new_url is provided -------------------------------------------- 0.02s
+2026-03-19 22:34:59,023 p=95802 u=rege n=ansible INFO| Fail if kiosk service doesn't exist ------------------------------------- 0.01s
+2026-03-19 22:34:59,023 p=95802 u=rege n=ansible INFO| Backup current service file --------------------------------------------- 0.01s
