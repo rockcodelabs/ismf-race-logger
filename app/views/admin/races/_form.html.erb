@@ -1,5 +1,6 @@
 <% 
   is_new = !race.respond_to?(:id) || race.id.nil?
+  is_test_checked = race.respond_to?(:is_test) ? race.is_test : false
   form_url = is_new ? admin_competition_races_path(@competition) : admin_competition_race_path(@competition, race.id)
   form_method = is_new ? :post : :patch
 %>
@@ -191,6 +192,34 @@
         <% end %>
       </div>
     <% end %>
+  </div>
+
+  <!-- Pre-Event Test Mode -->
+  <div class="sm:col-span-2">
+    <div class="rounded-lg border-2 border-orange-200 bg-orange-50 p-4">
+      <div class="flex items-start gap-3">
+        <div class="flex items-center h-5 mt-0.5">
+          <%= form.check_box :is_test,
+              { class: "w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500",
+                checked: is_test_checked },
+              "1", "0" %>
+        </div>
+        <div class="flex-1">
+          <label for="race_is_test" class="font-medium text-orange-800 cursor-pointer">
+            Pre-Event Test Mode
+          </label>
+          <p class="mt-1 text-sm text-orange-700">
+            When enabled, reports can be submitted regardless of race status (scheduled, completed, etc.).
+            Use this to test the system before the event starts.
+          </p>
+        </div>
+        <div class="shrink-0">
+          <span class="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-orange-200 text-orange-800 uppercase tracking-wide">
+            TEST
+          </span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Form actions -->

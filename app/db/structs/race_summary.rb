@@ -26,7 +26,8 @@ module Structs
     :scheduled_at,
     :status,
     :race_type_name,
-    :gender_category
+    :gender_category,
+    :is_test
   ) do
     # Display name is just the race name
     def display_name
@@ -52,6 +53,14 @@ module Structs
 
     def can_edit?
       !completed?
+    end
+
+    def test?
+      is_test == true
+    end
+
+    def can_report?
+      in_progress? || test?
     end
 
     # Time formatting

@@ -96,8 +96,11 @@
                     <div class="flex items-center gap-2">
                       <%= race_part.status_dot %>
                       <div>
-                        <div class="font-medium text-ismf-navy">
+                        <div class="font-medium text-ismf-navy flex items-center gap-2">
                           <%= race.name %>
+                          <% if race.is_test %>
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-orange-100 text-orange-700 uppercase tracking-wide">TEST</span>
+                          <% end %>
                         </div>
                         <div class="text-xs text-gray-500">
                           Position: #<%= race.position + 1 %>

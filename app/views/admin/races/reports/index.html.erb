@@ -215,7 +215,7 @@
                 </svg>
                 <h3 class="mt-2 text-sm font-medium text-ismf-navy">No reports</h3>
                 <p class="mt-1 text-sm text-ismf-gray">No reports have been created for this race yet.</p>
-                <% if @race.status == "in_progress" %>
+                <% if @race.can_report? %>
                   <div class="mt-6">
                     <%= link_to new_admin_race_report_path(@race), class: "btn-primary whitespace-nowrap" do %>
                       <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

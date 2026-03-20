@@ -44,6 +44,7 @@ module Operations
         # Optional fields
         optional(:heat_number).maybe(:integer)
         optional(:scheduled_at).maybe(:time)
+        optional(:is_test).maybe(:bool)
       end
 
       # Validate name length

@@ -197,6 +197,7 @@ class RaceRepo < DB::Repo
       position: record.position,
       status: record.status,
       gender_category: record.gender_category,
+      is_test: record.is_test,
       created_at: record.created_at,
       updated_at: record.updated_at,
       race_type_name: record.race_type&.name,
@@ -219,7 +220,8 @@ class RaceRepo < DB::Repo
       scheduled_at: record.scheduled_at,
       status: record.status,
       race_type_name: record.race_type&.name,
-      gender_category: record.gender_category
+      gender_category: record.gender_category,
+      is_test: record.is_test
     )
   end
 end

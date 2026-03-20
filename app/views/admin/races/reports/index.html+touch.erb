@@ -206,7 +206,7 @@
   <% end %>
 </div>
 
-<% unless @race.status == "in_progress" %>
+<% unless @race.can_report? %>
   <!-- Race Not In Progress Overlay -->
   <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
     <div class="bg-white rounded-2xl p-6 mx-4 max-w-sm text-center shadow-xl">

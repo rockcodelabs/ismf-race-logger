@@ -47,6 +47,9 @@ module Structs
     attribute? :race_type_name, Types::String.optional
     attribute? :competition_name, Types::String.optional
 
+    # Test mode flag
+    attribute :is_test, Types::Bool.default(false)
+
     # =========================================================================
     # Display methods
     # =========================================================================
@@ -112,8 +115,12 @@ module Structs
       scheduled? && scheduled_at.present? && scheduled_at <= Time.current
     end
 
+    def test?
+      is_test == true
+    end
+
     def can_report?
-      in_progress?
+      in_progress? || test?
     end
 
     def can_edit?

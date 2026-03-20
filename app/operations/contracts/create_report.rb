@@ -31,12 +31,12 @@ module Operations
         optional(:client_uuid).maybe(:string)
       end
 
-      # Validate race exists and is in progress
+      # Validate race exists and is in progress (bypassed for test races)
       rule(:race_id) do
         race = Race.find_by(id: value)
         if race.nil?
           key.failure("must be a valid race")
-        elsif race.status != "in_progress"
+        elsif race.status != "in_progress" && !race.is_test?
           key.failure("race must be in progress to create reports")
         end
       end

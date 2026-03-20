@@ -40,6 +40,7 @@ module Operations
         optional(:scheduled_at).maybe(:time)
         optional(:position).filled(:integer)
         optional(:status).filled(:string)
+        optional(:is_test).maybe(:bool)
       end
 
       # Validate name length
