@@ -85,15 +85,13 @@ module Operations
         end
       end
 
-      # Compute next position for race (last in race_type group)
+      # Compute next position for race (globally unique per competition)
+      # Position is unique across ALL race types within a competition
       # @param competition_id [Integer]
-      # @param race_type_id [Integer]
+      # @param race_type_id [Integer] unused, kept for signature compatibility
       # @return [Integer]
-      def compute_position(competition_id, race_type_id)
-        max_position = Race.where(
-          competition_id: competition_id,
-          race_type_id: race_type_id
-        ).maximum(:position) || -1
+      def compute_position(competition_id, _race_type_id)
+        max_position = Race.where(competition_id: competition_id).maximum(:position) || -1
 
         max_position + 1
       end
