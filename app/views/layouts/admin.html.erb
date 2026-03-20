@@ -73,6 +73,22 @@
               </div>
             <% end %>
             
+            <!-- Report Button - always visible, closest race (in_progress or next upcoming) -->
+            <% closest_race = active_race || Race.where(status: "scheduled").order(:scheduled_at).first %>
+            <% if closest_race %>
+              <div class="mb-4">
+                <%= link_to new_admin_race_report_path(closest_race), class: "flex items-center gap-3 px-3 py-3 text-sm font-semibold rounded-lg transition-colors bg-ismf-red text-white hover:bg-red-700 shadow-lg" do %>
+                  <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                  </svg>
+                  <div class="flex-1 min-w-0">
+                    <span class="block">Report</span>
+                    <span class="block text-xs font-normal opacity-75 truncate"><%= closest_race.name %></span>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+
             <!-- Live Timer -->
             <div class="mb-6" data-controller="live-timer">
               <div class="bg-ismf-blue/20 rounded-lg p-4 text-center">
