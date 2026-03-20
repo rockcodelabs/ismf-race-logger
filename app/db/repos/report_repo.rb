@@ -148,11 +148,11 @@ class ReportRepo < DB::Repo
   protected
 
   def base_scope
-    Report.includes(:race_location, :user, race_participation: :athlete, videos_attachments: :blob)
+    Report.includes(:race_location, :user, race_participation: { athlete: [], team: [:athlete_1, :athlete_2] }, videos_attachments: :blob)
   end
 
   def build_struct(record)
-    record = record.is_a?(Report) ? record : Report.includes(:race_location, :user, race_participation: :athlete, videos_attachments: :blob).find(record)
+    record = record.is_a?(Report) ? record : Report.includes(:race_location, :user, race_participation: { athlete: [], team: [:athlete_1, :athlete_2] }, videos_attachments: :blob).find(record)
 
     Structs::Report.new(
       id: record.id,
@@ -208,6 +208,12 @@ class ReportRepo < DB::Repo
   private
 
   def build_athlete_name(record)
+    # For relay teams with athlete_position == 2, show the female (athlete_2)
+    if record.athlete_position == 2
+      female = record.race_participation&.team&.athlete_2
+      return "#{female.first_name} #{female.last_name}" if female
+    end
+
     athlete = record.race_participation&.athlete
     return nil unless athlete
 
@@ -215,6 +221,12 @@ class ReportRepo < DB::Repo
   end
 
   def build_athlete_country(record)
+    # For relay teams with athlete_position == 2, use female athlete's country
+    if record.athlete_position == 2
+      female = record.race_participation&.team&.athlete_2
+      return female.country if female
+    end
+
     record.race_participation&.athlete&.country
   end
 

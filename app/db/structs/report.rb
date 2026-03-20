@@ -102,9 +102,10 @@ module Structs
     # Display bib number with athlete position for team races
     def bib_display
       return "NN" if bib_number.nil?
-      
+
       if athlete_position.present? && athlete_position > 0
-        "#{bib_number} (Athlete #{athlete_position})"
+        label = athlete_position == 1 ? "M" : "F"
+        "#{bib_number} (#{label})"
       else
         bib_number.to_s
       end
