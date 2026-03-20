@@ -18,6 +18,11 @@ export default class extends Controller {
     "participationInput",
     "bibInput",
     "clientUuidInput",
+    "athletePositionInput",
+    "athleteSelector",
+    "athleteSelectorBib",
+    "maleNameDisplay",
+    "femaleNameDisplay",
     "pendingQueue"
   ]
 
@@ -25,6 +30,10 @@ export default class extends Controller {
     this.selectedLocationId = null
     this.selectedLocationName = null
     this.isSubmitting = false
+    // Pending team data (set when a team bib is tapped, before M/F selection)
+    this.pendingParticipationId = null
+    this.pendingBibNumber = null
+    this.pendingButton = null
   }
 
   disconnect() {
@@ -66,46 +75,118 @@ export default class extends Controller {
 
     const participationId = event.params.participationId
     const bibNumber = event.params.bib
-    const athleteName = event.params.athlete
+    const isTeam = event.params.isTeam === true || event.params.isTeam === "true"
+    const maleName = event.params.maleName
+    const femaleName = event.params.femaleName
 
-    // Highlight the tapped bib briefly
     const button = event.currentTarget
+
+    // For relay teams: show M/F selector instead of submitting immediately
+    if (isTeam && maleName && femaleName) {
+      button.classList.add("ring-4", "ring-blue-400", "bg-blue-50")
+      this.pendingParticipationId = participationId
+      this.pendingBibNumber = bibNumber
+      this.pendingButton = button
+      this.showAthleteSelector(bibNumber, maleName, femaleName)
+      this.vibrate(20)
+      return
+    }
+
+    // Individual athlete: submit immediately (existing flow)
     button.classList.add("ring-4", "ring-green-400", "bg-green-50")
+    this.submitReport(participationId, bibNumber, null)
 
-    // Generate client UUID for idempotency
-    const clientUuid = this.generateUUID()
+    // Reset after a delay (form will navigate away on success)
+    setTimeout(() => {
+      button.classList.remove("ring-4", "ring-green-400", "bg-green-50")
+    }, 2000)
+  }
 
-    // Fill the hidden form
+  // Show the M/F athlete selector overlay
+  showAthleteSelector(bib, maleName, femaleName) {
+    if (this.hasAthleteSelectorTarget) {
+      this.athleteSelectorTarget.classList.remove("hidden")
+    }
+    if (this.hasAthleteSelectorBibTarget) {
+      this.athleteSelectorBibTarget.textContent = bib
+    }
+    if (this.hasMaleNameDisplayTarget) {
+      this.maleNameDisplayTarget.textContent = maleName
+    }
+    if (this.hasFemaleNameDisplayTarget) {
+      this.femaleNameDisplayTarget.textContent = femaleName
+    }
+  }
+
+  // Hide the M/F athlete selector overlay
+  hideAthleteSelector() {
+    if (this.hasAthleteSelectorTarget) {
+      this.athleteSelectorTarget.classList.add("hidden")
+    }
+  }
+
+  // Called when Male button is tapped in overlay
+  selectMale() {
+    this.vibrate(50)
+    this.submitReport(this.pendingParticipationId, this.pendingBibNumber, 1)
+    this.hideAthleteSelector()
+    if (this.pendingButton) {
+      setTimeout(() => {
+        this.pendingButton.classList.remove("ring-4", "ring-blue-400", "bg-blue-50")
+      }, 2000)
+    }
+  }
+
+  // Called when Female button is tapped in overlay
+  selectFemale() {
+    this.vibrate(50)
+    this.submitReport(this.pendingParticipationId, this.pendingBibNumber, 2)
+    this.hideAthleteSelector()
+    if (this.pendingButton) {
+      setTimeout(() => {
+        this.pendingButton.classList.remove("ring-4", "ring-blue-400", "bg-blue-50")
+      }, 2000)
+    }
+  }
+
+  // Cancel the M/F selector overlay
+  cancelAthleteSelector() {
+    this.hideAthleteSelector()
+    if (this.pendingButton) {
+      this.pendingButton.classList.remove("ring-4", "ring-blue-400", "bg-blue-50")
+    }
+    this.pendingParticipationId = null
+    this.pendingBibNumber = null
+    this.pendingButton = null
+  }
+
+  // Fill form and submit with optional athlete_position
+  submitReport(participationId, bibNumber, athletePosition) {
     if (this.hasLocationInputTarget) {
       this.locationInputTarget.value = this.selectedLocationId
     }
-    
     if (this.hasParticipationInputTarget) {
-      this.participationInputTarget.value = participationId
+      this.participationInputTarget.value = participationId || ""
     }
-    
     if (this.hasBibInputTarget) {
-      this.bibInputTarget.value = bibNumber
+      this.bibInputTarget.value = bibNumber || ""
     }
-    
     if (this.hasClientUuidInputTarget) {
-      this.clientUuidInputTarget.value = clientUuid
+      this.clientUuidInputTarget.value = this.generateUUID()
+    }
+    if (this.hasAthletePositionInputTarget) {
+      this.athletePositionInputTarget.value = athletePosition !== null ? athletePosition : ""
     }
 
-    // Haptic feedback
     this.vibrate(50)
-
-    // Submit the form
     this.isSubmitting = true
 
     if (this.hasFormTarget) {
       this.formTarget.requestSubmit()
     }
 
-    // Reset after a delay (form will navigate away on success)
     setTimeout(() => {
       this.isSubmitting = false
-      button.classList.remove("ring-4", "ring-green-400", "bg-green-50")
     }, 2000)
   }
 
@@ -127,32 +208,7 @@ export default class extends Controller {
     // Generate client UUID for idempotency
     const clientUuid = this.generateUUID()
 
-    // Fill the hidden form with location only (no bib or participation)
-    if (this.hasLocationInputTarget) {
-      this.locationInputTarget.value = this.selectedLocationId
-    }
-    
-    if (this.hasParticipationInputTarget) {
-      this.participationInputTarget.value = ""
-    }
-    
-    if (this.hasBibInputTarget) {
-      this.bibInputTarget.value = ""
-    }
-    
-    if (this.hasClientUuidInputTarget) {
-      this.clientUuidInputTarget.value = clientUuid
-    }
-
-    // Haptic feedback
-    this.vibrate(50)
-
-    // Submit the form
-    this.isSubmitting = true
-
-    if (this.hasFormTarget) {
-      this.formTarget.requestSubmit()
-    }
+    this.submitReport(null, null, null)
 
     // Reset after a delay
     setTimeout(() => {
