@@ -223,7 +223,8 @@ module Web
             :heat_number,
             :scheduled_at,
             :position,
-            :status
+            :status,
+            :is_test
           )
         end
 
