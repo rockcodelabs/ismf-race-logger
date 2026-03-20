@@ -49,8 +49,8 @@
               <% active_races.each do |race| %>
                 <%= link_to admin_competition_race_path(competition, race), class: "block p-3 rounded-lg border-2 border-gray-200 active:border-ismf-blue active:bg-blue-50 transition-all" do %>
                   <div class="text-center">
-                    <h4 class="text-xs font-bold text-ismf-navy mb-1 truncate">
-                      <%= race.stage_name %>
+                    <h4 class="text-xs font-bold text-ismf-navy mb-1 truncate" title="<%= race.name %>">
+                      <%= race.name %>
                     </h4>
                     <% if race.scheduled_at.present? %>
                       <div class="flex items-center justify-center gap-1 text-[10px] text-ismf-gray mb-1.5">
@@ -113,8 +113,8 @@
                   <% is_cancelled = race.cancelled? %>
                   <%= link_to admin_competition_race_path(competition, race), class: "block p-3 rounded-lg border-2 border-gray-200 active:border-gray-400 active:bg-gray-100 transition-all opacity-70" do %>
                     <div class="text-center">
-                      <h4 class="text-xs font-bold text-gray-500 mb-1 truncate">
-                        <%= race.stage_name %>
+                      <h4 class="text-xs font-bold text-gray-500 mb-1 truncate" title="<%= race.name %>">
+                        <%= race.name %>
                       </h4>
                       <% if race.scheduled_at.present? %>
                         <div class="flex items-center justify-center gap-1 text-[10px] text-gray-400 mb-1.5">
