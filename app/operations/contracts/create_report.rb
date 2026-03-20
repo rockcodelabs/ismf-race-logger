@@ -78,8 +78,9 @@ module Operations
       end
 
       # Validate athlete_position if provided (1 or 2 for team races)
+      # Skip if nil, blank string, or 0 — individual race forms submit "" which coerces to 0
       rule(:athlete_position) do
-        next if value.nil?
+        next if value.nil? || value.to_s.blank? || value == 0
 
         key.failure("must be 1 or 2") unless [ 1, 2 ].include?(value)
       end

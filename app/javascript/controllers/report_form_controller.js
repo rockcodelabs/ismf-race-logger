@@ -168,7 +168,13 @@ export default class extends Controller {
       this.clientUuidInputTarget.value = this.generateUUID()
     }
     if (this.hasAthletePositionInputTarget) {
-      this.athletePositionInputTarget.value = athletePosition !== null ? athletePosition : ""
+      if (athletePosition !== null) {
+        this.athletePositionInputTarget.value = athletePosition
+        this.athletePositionInputTarget.disabled = false
+      } else {
+        this.athletePositionInputTarget.value = ""
+        this.athletePositionInputTarget.disabled = true
+      }
     }
 
     this.isSubmitting = true
