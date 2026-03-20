@@ -19,6 +19,11 @@ export default class extends Controller {
     "participationInput",
     "bibInput",
     "clientUuidInput",
+    "athletePositionInput",
+    "athleteSelector",
+    "athleteSelectorBib",
+    "maleNameDisplay",
+    "femaleNameDisplay",
     "gridContainer"
   ]
 
@@ -26,6 +31,9 @@ export default class extends Controller {
     this.selectedLocationId = null
     this.selectedLocationName = null
     this.isSubmitting = false
+    this.pendingParticipationId = null
+    this.pendingBibNumber = null
+    this.pendingButton = null
   }
 
   disconnect() {
@@ -64,33 +72,105 @@ export default class extends Controller {
 
     const participationId = event.params.participationId
     const bibNumber = event.params.bib
-    const athleteName = event.params.athlete
+    const isTeam = event.params.isTeam === true || event.params.isTeam === "true"
+    const maleName = event.params.maleName
+    const femaleName = event.params.femaleName
 
-    // Highlight the clicked bib briefly
     const button = event.currentTarget
+
+    // For relay teams: show M/F selector instead of submitting immediately
+    if (isTeam && maleName && femaleName) {
+      button.classList.add("selected")
+      this.pendingParticipationId = participationId
+      this.pendingBibNumber = bibNumber
+      this.pendingButton = button
+      this.showAthleteSelector(bibNumber, maleName, femaleName)
+      return
+    }
+
+    // Individual athlete: submit immediately
     button.classList.add("selected")
+    this.submitReport(participationId, bibNumber, null)
 
-    // Generate client UUID for idempotency
-    const clientUuid = this.generateUUID()
+    setTimeout(() => {
+      button.classList.remove("selected")
+    }, 2000)
+  }
 
-    // Fill the hidden form
+  // Show the M/F athlete selector overlay
+  showAthleteSelector(bib, maleName, femaleName) {
+    if (this.hasAthleteSelectorTarget) {
+      this.athleteSelectorTarget.classList.remove("hidden")
+    }
+    if (this.hasAthleteSelectorBibTarget) {
+      this.athleteSelectorBibTarget.textContent = bib
+    }
+    if (this.hasMaleNameDisplayTarget) {
+      this.maleNameDisplayTarget.textContent = maleName
+    }
+    if (this.hasFemaleNameDisplayTarget) {
+      this.femaleNameDisplayTarget.textContent = femaleName
+    }
+  }
+
+  // Hide the M/F athlete selector overlay
+  hideAthleteSelector() {
+    if (this.hasAthleteSelectorTarget) {
+      this.athleteSelectorTarget.classList.add("hidden")
+    }
+  }
+
+  // Called when Male button is clicked in overlay
+  selectMale() {
+    this.submitReport(this.pendingParticipationId, this.pendingBibNumber, 1)
+    this.hideAthleteSelector()
+    if (this.pendingButton) {
+      setTimeout(() => {
+        this.pendingButton.classList.remove("selected")
+      }, 2000)
+    }
+  }
+
+  // Called when Female button is clicked in overlay
+  selectFemale() {
+    this.submitReport(this.pendingParticipationId, this.pendingBibNumber, 2)
+    this.hideAthleteSelector()
+    if (this.pendingButton) {
+      setTimeout(() => {
+        this.pendingButton.classList.remove("selected")
+      }, 2000)
+    }
+  }
+
+  // Cancel the M/F selector overlay
+  cancelAthleteSelector() {
+    this.hideAthleteSelector()
+    if (this.pendingButton) {
+      this.pendingButton.classList.remove("selected")
+    }
+    this.pendingParticipationId = null
+    this.pendingBibNumber = null
+    this.pendingButton = null
+  }
+
+  // Fill form and submit with optional athlete_position
+  submitReport(participationId, bibNumber, athletePosition) {
     if (this.hasLocationInputTarget) {
       this.locationInputTarget.value = this.selectedLocationId
     }
-    
     if (this.hasParticipationInputTarget) {
-      this.participationInputTarget.value = participationId
+      this.participationInputTarget.value = participationId || ""
     }
-    
     if (this.hasBibInputTarget) {
-      this.bibInputTarget.value = bibNumber
+      this.bibInputTarget.value = bibNumber || ""
     }
-    
     if (this.hasClientUuidInputTarget) {
-      this.clientUuidInputTarget.value = clientUuid
+      this.clientUuidInputTarget.value = this.generateUUID()
+    }
+    if (this.hasAthletePositionInputTarget) {
+      this.athletePositionInputTarget.value = athletePosition !== null ? athletePosition : ""
     }
 
-    // Submit the form
     this.isSubmitting = true
 
     if (this.hasFormTarget) {
@@ -100,10 +180,8 @@ export default class extends Controller {
       this.showError("Form not found - please refresh the page")
     }
 
-    // Reset after a delay
     setTimeout(() => {
       this.isSubmitting = false
-      button.classList.remove("selected")
     }, 2000)
   }
 
@@ -118,43 +196,12 @@ export default class extends Controller {
       return
     }
 
-    // Highlight the button briefly
     const button = event.currentTarget
     button.classList.add("selected")
 
-    // Generate client UUID for idempotency
-    const clientUuid = this.generateUUID()
+    this.submitReport(null, null, null)
 
-    // Fill the hidden form with location only (no bib or participation)
-    if (this.hasLocationInputTarget) {
-      this.locationInputTarget.value = this.selectedLocationId
-    }
-    
-    if (this.hasParticipationInputTarget) {
-      this.participationInputTarget.value = ""
-    }
-    
-    if (this.hasBibInputTarget) {
-      this.bibInputTarget.value = ""
-    }
-    
-    if (this.hasClientUuidInputTarget) {
-      this.clientUuidInputTarget.value = clientUuid
-    }
-
-    // Submit the form
-    this.isSubmitting = true
-
-    if (this.hasFormTarget) {
-      this.formTarget.requestSubmit()
-    } else {
-      console.error("Form target not found!")
-      this.showError("Form not found - please refresh the page")
-    }
-
-    // Reset after a delay
     setTimeout(() => {
-      this.isSubmitting = false
       button.classList.remove("selected")
     }, 2000)
   }

@@ -87,21 +87,39 @@
           </button>
           
           <% @participations.each do |participation| %>
+            <% is_team = participation.team_id.present? %>
+            <% team = participation.team %>
+            <% male   = team&.athlete_1 %>
+            <% female = team&.athlete_2 %>
+            <% country = is_team ? male&.country : participation.athlete&.country %>
+            <% athlete_param = is_team ? "#{male&.last_name} / #{female&.last_name}" : (participation.athlete&.display_name || 'Unknown') %>
             <button type="button"
                     class="bib-btn flex flex-col items-center justify-center p-4 rounded-xl bg-white border-2 border-gray-200 transition-all hover:border-ismf-blue hover:shadow-md opacity-40"
                     data-action="click->report-form#selectBib"
                     data-report-form-participation-id-param="<%= participation.id %>"
                     data-report-form-bib-param="<%= participation.bib_number %>"
-                    data-report-form-athlete-param="<%= participation.athlete&.display_name || 'Unknown' %>"
+                    data-report-form-athlete-param="<%= athlete_param %>"
+                    data-report-form-is-team-param="<%= is_team %>"
+                    data-report-form-male-name-param="<%= male&.last_name %>"
+                    data-report-form-female-name-param="<%= female&.last_name %>"
                     data-report-form-target="bibButton"
                     disabled>
               <span class="text-3xl font-black text-ismf-navy mb-1"><%= participation.bib_number %></span>
-              <span class="text-xs text-gray-500 truncate w-full text-center font-medium">
-                <%= participation.athlete&.last_name || 'Unknown' %>
-              </span>
-              <% if participation.athlete&.country.present? %>
+              <% if is_team && male && female %>
+                <span class="text-xs text-gray-700 font-semibold truncate w-full text-center leading-tight">
+                  <span class="text-blue-500">M</span> <%= male.last_name&.truncate(9) %>
+                </span>
+                <span class="text-xs text-pink-600 font-semibold truncate w-full text-center leading-tight">
+                  <span class="text-pink-400">F</span> <%= female.last_name&.truncate(9) %>
+                </span>
+              <% else %>
+                <span class="text-xs text-gray-500 truncate w-full text-center font-medium">
+                  <%= participation.athlete&.last_name || 'Unknown' %>
+                </span>
+              <% end %>
+              <% if country.present? %>
                 <span class="text-xs text-gray-400 mt-0.5">
-                  <%= participation.athlete.country %>
+                  <%= country_flag_emoji(country) %> <%= country %>
                 </span>
               <% end %>
             </button>
@@ -119,6 +137,35 @@
     </div>
   </div>
 
+  <!-- Athlete Position Selector Overlay (for relay teams) -->
+  <div data-report-form-target="athleteSelector" class="hidden fixed inset-0 bg-black/60 z-50 flex items-end">
+    <div class="w-full bg-white rounded-t-3xl p-8 pb-10 shadow-xl max-w-lg mx-auto">
+      <div class="text-center mb-6">
+        <span class="inline-block px-4 py-1 bg-ismf-navy text-white rounded-full text-2xl font-black mb-2" data-report-form-target="athleteSelectorBib">?</span>
+        <p class="text-sm text-gray-500 font-medium">Select athlete to report</p>
+      </div>
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <button type="button"
+                data-action="click->report-form#selectMale"
+                class="flex flex-col items-center justify-center p-6 rounded-2xl bg-blue-50 border-2 border-blue-300 hover:bg-blue-100 transition-all cursor-pointer">
+          <span class="text-4xl font-black text-blue-700 leading-none">M</span>
+          <span class="text-sm font-bold text-blue-600 mt-2 truncate max-w-full" data-report-form-target="maleNameDisplay">—</span>
+        </button>
+        <button type="button"
+                data-action="click->report-form#selectFemale"
+                class="flex flex-col items-center justify-center p-6 rounded-2xl bg-pink-50 border-2 border-pink-300 hover:bg-pink-100 transition-all cursor-pointer">
+          <span class="text-4xl font-black text-pink-600 leading-none">F</span>
+          <span class="text-sm font-bold text-pink-600 mt-2 truncate max-w-full" data-report-form-target="femaleNameDisplay">—</span>
+        </button>
+      </div>
+      <button type="button"
+              data-action="click->report-form#cancelAthleteSelector"
+              class="w-full py-3 text-gray-500 font-semibold text-sm rounded-xl bg-gray-100 hover:bg-gray-200 transition-all">
+        Cancel
+      </button>
+    </div>
+  </div>
+
   <!-- Hidden Form -->
   <%= form_with scope: :report,
                 url: admin_race_reports_path(@race), 
@@ -133,6 +180,7 @@
     <%= f.hidden_field :race_participation_id, data: { report_form_target: "participationInput" } %>
     <%= f.hidden_field :bib_number, data: { report_form_target: "bibInput" } %>
     <%= f.hidden_field :client_uuid, value: SecureRandom.uuid, data: { report_form_target: "clientUuidInput" } %>
+    <%= f.hidden_field :athlete_position, value: "", data: { report_form_target: "athletePositionInput" } %>
   <% end %>
 </div>
 
