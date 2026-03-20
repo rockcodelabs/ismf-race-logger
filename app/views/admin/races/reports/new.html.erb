@@ -107,10 +107,10 @@
               <span class="text-3xl font-black text-ismf-navy mb-1"><%= participation.bib_number %></span>
               <% if is_team && male && female %>
                 <span class="text-xs text-gray-700 font-semibold truncate w-full text-center leading-tight">
-                  <span class="text-blue-500">M</span> <%= male.last_name&.truncate(9) %>
+                  <span class="text-blue-500">M</span><span class="text-gray-400">/A</span> <%= male.last_name&.truncate(9) %>
                 </span>
                 <span class="text-xs text-pink-600 font-semibold truncate w-full text-center leading-tight">
-                  <span class="text-pink-400">F</span> <%= female.last_name&.truncate(9) %>
+                  <span class="text-pink-400">F</span><span class="text-gray-400">/B</span> <%= female.last_name&.truncate(9) %>
                 </span>
               <% else %>
                 <span class="text-xs text-gray-500 truncate w-full text-center font-medium">
@@ -138,8 +138,8 @@
   </div>
 
   <!-- Athlete Position Selector Overlay (for relay teams) -->
-  <div data-report-form-target="athleteSelector" class="hidden fixed inset-0 bg-black/60 z-50 flex items-end">
-    <div class="w-full bg-white rounded-t-3xl p-8 pb-10 shadow-xl max-w-lg mx-auto">
+  <div data-report-form-target="athleteSelector" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+    <div class="w-full bg-white rounded-3xl p-8 shadow-xl max-w-lg mx-auto">
       <div class="text-center mb-6">
         <span class="inline-block px-4 py-1 bg-ismf-navy text-white rounded-full text-2xl font-black mb-2" data-report-form-target="athleteSelectorBib">?</span>
         <p class="text-sm text-gray-500 font-medium">Select athlete to report</p>
@@ -148,13 +148,13 @@
         <button type="button"
                 data-action="click->report-form#selectMale"
                 class="flex flex-col items-center justify-center p-6 rounded-2xl bg-blue-50 border-2 border-blue-300 hover:bg-blue-100 transition-all cursor-pointer">
-          <span class="text-4xl font-black text-blue-700 leading-none">M</span>
+          <span class="text-4xl font-black text-blue-700 leading-none">M<span class="text-2xl text-gray-400">/A</span></span>
           <span class="text-sm font-bold text-blue-600 mt-2 truncate max-w-full" data-report-form-target="maleNameDisplay">—</span>
         </button>
         <button type="button"
                 data-action="click->report-form#selectFemale"
                 class="flex flex-col items-center justify-center p-6 rounded-2xl bg-pink-50 border-2 border-pink-300 hover:bg-pink-100 transition-all cursor-pointer">
-          <span class="text-4xl font-black text-pink-600 leading-none">F</span>
+          <span class="text-4xl font-black text-pink-600 leading-none">F<span class="text-2xl text-gray-400">/B</span></span>
           <span class="text-sm font-bold text-pink-600 mt-2 truncate max-w-full" data-report-form-target="femaleNameDisplay">—</span>
         </button>
       </div>

@@ -104,7 +104,7 @@
                 <%= link_to admin_competition_race_path(race.competition_id, race), class: "block p-3 rounded-lg border-2 border-gray-200 hover:border-ismf-blue hover:bg-blue-50 transition-all" do %>
                   <div class="text-center">
                     <h4 class="text-sm font-bold text-ismf-navy mb-1 truncate">
-                      <%= race.stage_name %>
+                      <%= race.name %>
                     </h4>
                     <% if race.scheduled_at.present? %>
                       <div class="flex items-center justify-center gap-1 text-xs text-ismf-gray mb-2">
@@ -176,7 +176,7 @@
                   <%= link_to admin_competition_race_path(race.competition_id, race), class: "block p-3 rounded-lg border-2 border-gray-200 hover:border-gray-400 hover:bg-gray-100 transition-all opacity-70 hover:opacity-100" do %>
                     <div class="text-center">
                       <h4 class="text-sm font-bold text-gray-500 mb-1 truncate">
-                        <%= race.stage_name %>
+                        <%= race.name %>
                       </h4>
                       <% if race.scheduled_at.present? %>
                         <div class="flex items-center justify-center gap-1 text-xs text-gray-400 mb-2">
