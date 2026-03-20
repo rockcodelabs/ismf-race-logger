@@ -86,18 +86,38 @@
           </button>
           
           <% @participations.each do |participation| %>
+            <% is_team = participation.team_id.present? %>
+            <% team = participation.team %>
+            <% male   = team&.athlete_1 %>
+            <% female = team&.athlete_2 %>
+            <% country = is_team ? male&.country : participation.athlete&.country %>
+            <% athlete_param = is_team ? "#{male&.last_name} / #{female&.last_name}" : (participation.athlete&.display_name || 'Unknown') %>
             <button type="button"
                     class="touch-bib-btn flex flex-col items-center justify-center p-2 rounded-xl bg-white border-2 border-gray-200 transition-all disabled:opacity-50"
                     data-action="click->touch-report#selectBib"
                     data-touch-report-participation-id-param="<%= participation.id %>"
                     data-touch-report-bib-param="<%= participation.bib_number %>"
-                    data-touch-report-athlete-param="<%= participation.athlete&.display_name || 'Unknown' %>"
+                    data-touch-report-athlete-param="<%= athlete_param %>"
                     data-touch-report-target="bibButton"
                     disabled>
-              <span class="text-2xl font-black text-ismf-navy"><%= participation.bib_number %></span>
-              <span class="text-xs text-gray-500 truncate w-full text-center">
-                <%= participation.athlete&.last_name&.truncate(10) || 'Unknown' %>
-              </span>
+              <span class="text-2xl font-black text-ismf-navy leading-none"><%= participation.bib_number %></span>
+              <% if is_team && male && female %>
+                <span class="text-[10px] text-gray-700 font-semibold truncate w-full text-center leading-tight mt-0.5">
+                  <span class="text-blue-500">M</span> <%= male.last_name&.truncate(8) %>
+                </span>
+                <span class="text-[10px] text-pink-600 font-semibold truncate w-full text-center leading-tight">
+                  <span class="text-pink-400">F</span> <%= female.last_name&.truncate(8) %>
+                </span>
+              <% else %>
+                <span class="text-xs text-gray-700 font-semibold truncate w-full text-center leading-tight mt-0.5">
+                  <%= participation.athlete&.last_name&.truncate(9) || 'Unknown' %>
+                </span>
+              <% end %>
+              <% if country.present? %>
+                <span class="text-[11px] leading-none mt-0.5">
+                  <%= country_flag_emoji(country) %> <span class="text-gray-400 text-[9px]"><%= country %></span>
+                </span>
+              <% end %>
             </button>
           <% end %>
         </div>

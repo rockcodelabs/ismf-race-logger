@@ -77,7 +77,7 @@ class RaceParticipationRepo < DB::Repo
     # @return [Array<Structs::RaceParticipation>]
     def for_race(race_id)
       base_scope
-        .includes(:athlete)
+        .includes(:athlete, team: [:athlete_1, :athlete_2])
         .where(race_id: race_id)
         .order(:bib_number)
         .map { |record| build_struct(record) }
@@ -146,7 +146,8 @@ class RaceParticipationRepo < DB::Repo
         rank: record.rank,
         created_at: record.created_at,
         updated_at: record.updated_at,
-        athlete: athlete_struct
+        athlete: athlete_struct,
+        team: record.team
       )
     end
 
