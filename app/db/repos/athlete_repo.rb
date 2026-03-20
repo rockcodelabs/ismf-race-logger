@@ -54,7 +54,16 @@ class AthleteRepo < DB::Repo
     # @param license_number [String, nil] Optional license number
     # @return [Array<Structs::Athlete, Boolean>] [athlete, created?]
     def find_or_create_by(first_name:, last_name:, gender:, country:, license_number: nil)
-      athlete = find_by_name(
+      # Prefer license_number lookup first — it's unique and avoids
+      # UniqueViolation when the athlete already exists under a different
+      # name capitalisation or spelling.
+      athlete = if license_number.present?
+        record = Athlete.find_by(license_number: license_number)
+        build_struct(record) if record
+      end
+
+      # Fall back to name-based lookup when no license number provided
+      athlete ||= find_by_name(
         first_name: first_name,
         last_name: last_name,
         gender: gender,

@@ -103,6 +103,8 @@ module Web
           end
 
           def relay_race?
+            return false if @race.stage_type == "Qualification"
+
             @race.race_type_name&.downcase&.include?("relay") ||
               @race.race_type_name&.downcase&.include?("team")
           end
