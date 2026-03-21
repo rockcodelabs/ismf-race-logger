@@ -77,24 +77,21 @@
 
   <%# Status %>
   <td>
-    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= report.status_badge[:class] %>">
-      <%= report.status_badge[:label] %>
-    </span>
-    <%# Show incident status badge when confirmed %>
-    <% if report.linked_to_incident? && report.respond_to?(:incident_status) && report.incident_status.present? %>
-      <div class="mt-1">
-        <%
-          incident_badge = case report.incident_status
-          when "pending"   then { class: "bg-yellow-100 text-yellow-800", label: "Pending Jury" }
-          when "approved"  then { class: "bg-green-100 text-green-800",   label: "Approved" }
-          when "rejected"  then { class: "bg-red-100 text-red-800",       label: "Rejected" }
-          else                  { class: "bg-gray-100 text-gray-800",     label: report.incident_status.titleize }
-          end
-        %>
-        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium <%= incident_badge[:class] %>">
-          <%= incident_badge[:label] %>
-        </span>
+    <% if report.respond_to?(:incident_penalties) && report.incident_penalties.present? %>
+      <%# Show penalty badges when incident has penalties %>
+      <div class="space-y-1">
+        <% report.incident_penalties.each do |penalty| %>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-orange-100 text-orange-800 text-xs font-semibold"
+                title="<%= penalty[:name] %>">
+            <%= penalty[:number] %>
+          </span>
+        <% end %>
       </div>
+    <% else %>
+      <%# Show standard status badge %>
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= report.status_badge[:class] %>">
+        <%= report.status_badge[:label] %>
+      </span>
     <% end %>
   </td>
 

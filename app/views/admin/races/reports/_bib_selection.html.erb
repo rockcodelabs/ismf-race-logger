@@ -18,12 +18,12 @@
       <div class="bg-white rounded-lg p-4 max-h-96 overflow-y-auto">
         <div class="grid grid-cols-3 gap-2">
           <% participations.each do |participation| %>
-            <%= form_with url: update_bib_admin_race_report_path(race, report), 
+            <%= form_with url: update_bib_admin_race_report_path(race, report),
                           method: :patch,
                           class: "contents" do |f| %>
               <%= f.hidden_field :race_participation_id, value: participation.id %>
               <%= f.hidden_field :bib_number, value: participation.bib_number %>
-              
+
               <%= f.button type: :submit,
                            class: "flex flex-col items-center justify-center p-3 rounded-lg bg-white border-2 border-gray-200 transition-all hover:border-ismf-blue hover:shadow-md hover:scale-105 active:scale-95" do %>
                 <span class="text-2xl font-black text-ismf-navy mb-1"><%= participation.bib_number %></span>
@@ -73,12 +73,12 @@
         <div class="grid grid-cols-3 gap-2 p-3">
           <% participations.each do |participation| %>
             <% is_current = participation.bib_number == report.bib_number %>
-            <%= form_with url: update_bib_admin_race_report_path(race, report), 
+            <%= form_with url: update_bib_admin_race_report_path(race, report),
                           method: :patch,
                           class: "contents" do |f| %>
               <%= f.hidden_field :race_participation_id, value: participation.id %>
               <%= f.hidden_field :bib_number, value: participation.bib_number %>
-              
+
               <%= f.button type: :submit,
                            disabled: is_current,
                            class: "flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all #{is_current ? 'border-ismf-blue bg-blue-50 cursor-default opacity-75' : 'border-gray-200 bg-white hover:border-ismf-blue hover:shadow-md hover:scale-105 active:scale-95'}" do %>

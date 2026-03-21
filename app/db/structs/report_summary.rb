@@ -29,7 +29,8 @@ module Structs
     :status,
     :created_at,
     :videos_count,
-    :merged_reports_count
+    :merged_reports_count,
+    :incident_penalties
   ) do
     # Check if report is pending review
     def pending_review?
@@ -54,6 +55,11 @@ module Structs
     # Can this report be merged into an incident?
     def can_merge?
       confirmed? && !linked_to_incident?
+    end
+
+    # Check if incident has penalties attached
+    def has_incident_penalties?
+      incident_penalties.present? && incident_penalties.any?
     end
 
     # Check if report has other reports merged into same incident

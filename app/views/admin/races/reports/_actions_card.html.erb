@@ -1,6 +1,5 @@
 <%# Actions card for report show page %>
-<%# Locals: report (Parts::Report), race %>
-<%# Instance variables: @incident (Structs::Incident), @penalties, @attached_penalty_ids %>
+<%# Locals: report (Parts::Report), race, incident (Structs::Incident or nil), penalties (Array), attached_penalty_ids (Array) %>
 
 <div class="card" id="report-actions-card">
   <div class="p-6">
@@ -34,27 +33,22 @@
         <% end %>
 
         <p class="text-xs text-ismf-gray text-center">
-          Confirming creates an incident and unlocks penalties &amp; incident notes.
+          Confirming creates an incident and unlocks penalties &amp; notes.
         </p>
       </div>
 
     <%# ────────────────────────────────────────────────────────────────────── %>
-    <%# CASE 2 — Confirmed + incident exists + incident is PENDING            %>
+    <%# CASE 2 — Confirmed + incident PENDING: penalties + remove             %>
     <%# ────────────────────────────────────────────────────────────────────── %>
-    <% elsif report.linked_to_incident? && defined?(@incident) && @incident.present? && @incident.pending? %>
+    <% elsif report.linked_to_incident? && incident.present? && incident.pending? %>
       <div class="space-y-4">
-        <%# Approve form %>
-        <%= form_with url: decide_admin_race_incident_path(race, @incident),
+
+        <%# Penalty selector %>
+        <%= form_with url: attach_penalties_admin_race_incident_path(race, incident),
                       method: :post,
                       local: true,
-                      id: "approve-incident-form",
-                      class: "space-y-4" do |f| %>
+                      class: "space-y-3" do |f| %>
 
-          <%= hidden_field_tag :redirect_to_reports, "true" %>
-          <%= hidden_field_tag :report_id, report.id %>
-          <%= hidden_field_tag :status, "approved" %>
-
-          <%# Penalty picker (collapsible) %>
           <div>
             <button type="button"
                     class="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
@@ -77,18 +71,18 @@
 
               <div class="space-y-1 max-h-44 overflow-y-auto border border-gray-200 rounded-lg p-2"
                    id="penalty-list-actions">
-                <% if defined?(@penalties) && @penalties.present? %>
-                  <% @penalties.group_by(&:category).each do |category, penalties| %>
+                <% if penalties.present? %>
+                  <% penalties.group_by(&:category).each do |category, cat_penalties| %>
                     <div class="mb-2 penalty-category-actions" data-category="<%= category %>">
                       <p class="text-xs font-semibold text-ismf-gray px-1 mb-1">Category <%= category %></p>
-                      <% penalties.each do |penalty| %>
+                      <% cat_penalties.each do |penalty| %>
                         <label class="flex items-center gap-2 p-1.5 rounded hover:bg-gray-50 cursor-pointer penalty-item-actions text-xs"
                                data-penalty-number="<%= penalty.penalty_number.downcase %>"
                                data-penalty-name="<%= penalty.name.downcase %>">
                           <input type="checkbox"
                                  name="penalty_ids[]"
                                  value="<%= penalty.id %>"
-                                 <%= 'checked' if defined?(@attached_penalty_ids) && @attached_penalty_ids.include?(penalty.id) %>
+                                 <%= 'checked' if attached_penalty_ids.include?(penalty.id) %>
                                  class="h-4 w-4 rounded border-gray-300 text-ismf-blue focus:ring-ismf-blue">
                           <span class="inline-flex items-center justify-center w-10 h-5 rounded bg-orange-100 text-orange-800 font-bold text-xs shrink-0">
                             <%= penalty.penalty_number %>
@@ -103,57 +97,44 @@
             </div>
           </div>
 
-          <%# Decision notes %>
-          <div>
-            <label for="approve-description" class="block text-sm font-medium text-ismf-navy mb-1">
-              Decision Notes
-              <span class="text-xs text-ismf-gray">(penalty or description required)</span>
-            </label>
-            <textarea name="description"
-                      id="approve-description"
-                      rows="2"
-                      placeholder="Add notes about your decision..."
-                      class="block w-full rounded-md border-gray-300 shadow-sm focus:border-ismf-blue focus:ring-ismf-blue text-sm"><%= @incident.description %></textarea>
-          </div>
-
           <button type="submit"
-                  class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-green-500 hover:bg-green-600 text-white font-semibold transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-semibold text-sm transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
-            Approve Incident
+            Save Penalties
           </button>
         <% end %>
 
-        <%# Reject incident button (separate form) %>
-        <%= button_to reject_with_incident_admin_race_report_path(race, report),
-                      method: :post,
-                      class: "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-500 hover:bg-red-600 text-white font-semibold transition-colors" do %>
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        <%# Divider %>
+        <div class="border-t border-gray-200"></div>
+
+        <%# Remove incident + all linked reports %>
+        <%= button_to admin_race_incident_path(race, incident),
+                      method: :delete,
+                      data: { turbo_confirm: "This will permanently delete the incident and all its linked reports. Are you sure?" },
+                      class: "w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 font-medium text-sm border border-red-200 transition-colors" do %>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
           </svg>
-          Reject Incident
+          Remove Incident &amp; Reports
         <% end %>
 
-        <div class="pt-2 border-t border-gray-100 text-xs text-ismf-gray space-y-1">
-          <p><strong>Approve:</strong> Confirms the incident (penalty or description required).</p>
-          <p><strong>Reject:</strong> Rejects the incident and all its reports.</p>
-        </div>
       </div>
 
     <%# ────────────────────────────────────────────────────────────────────── %>
     <%# CASE 3 — Confirmed + incident APPROVED or REJECTED → Reopen          %>
     <%# ────────────────────────────────────────────────────────────────────── %>
-    <% elsif report.linked_to_incident? && defined?(@incident) && @incident.present? && !@incident.pending? %>
+    <% elsif report.linked_to_incident? && incident.present? && !incident.pending? %>
       <div class="space-y-3">
         <%
-          decided_badge = @incident.approved? ?
+          decided_badge = incident.approved? ?
             { class: "bg-green-100 text-green-800", label: "Approved" } :
             { class: "bg-red-100 text-red-800",     label: "Rejected" }
         %>
         <div class="flex items-center justify-center gap-2 p-3 rounded-lg <%= decided_badge[:class] %>">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <% if @incident.approved? %>
+            <% if incident.approved? %>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             <% else %>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -162,14 +143,14 @@
           <span class="font-semibold">Incident <%= decided_badge[:label] %></span>
         </div>
 
-        <%= button_to reopen_admin_race_incident_path(race, @incident),
-                        method: :post,
-                        class: "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white font-semibold transition-colors" do %>
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Reopen Incident
-          <% end %>
+        <%= button_to reopen_admin_race_incident_path(race, incident),
+                      method: :post,
+                      class: "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white font-semibold transition-colors" do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Reopen Incident
+        <% end %>
       </div>
 
     <%# ────────────────────────────────────────────────────────────────────── %>
@@ -196,19 +177,16 @@
         <% end %>
       </div>
 
-    <%# ────────────────────────────────────────────────────────────────────── %>
-    <%# FALLBACK — Confirmed without incident (legacy / edge case)            %>
-    <%# ────────────────────────────────────────────────────────────────────── %>
+    <%# FALLBACK — edge case %>
     <% else %>
       <p class="text-sm text-ismf-gray">No actions available for this report's current state.</p>
     <% end %>
   </div>
 </div>
 
-<% if report.linked_to_incident? && defined?(@incident) && @incident.present? && @incident.pending? %>
+<% if report.linked_to_incident? && incident.present? && incident.pending? %>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      // Penalty search for actions card
       var searchInput = document.getElementById('penalty-search-actions');
       if (searchInput) {
         searchInput.addEventListener('input', function () {
@@ -222,20 +200,6 @@
             var visible = cat.querySelectorAll('.penalty-item-actions:not([style*="display: none"])');
             cat.style.display = visible.length > 0 ? '' : 'none';
           });
-        });
-      }
-
-      // Client-side validation: penalty OR description required before approving
-      var approveForm = document.getElementById('approve-incident-form');
-      if (approveForm) {
-        approveForm.addEventListener('submit', function (e) {
-          var checked     = document.querySelectorAll('input[name="penalty_ids[]"]:checked');
-          var description = document.getElementById('approve-description');
-          if (checked.length === 0 && (!description || description.value.trim() === '')) {
-            e.preventDefault();
-            alert('Please select at least one penalty OR add a description before approving.');
-            if (description) description.focus();
-          }
         });
       }
     });

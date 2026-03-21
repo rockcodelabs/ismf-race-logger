@@ -50,7 +50,7 @@ class ReportRepo < DB::Repo
 
     scope = base_scope
       .where(race_id: race_id)
-      .includes(incident: :reports)
+      .includes(incident: [:reports, { incident_penalties: :penalty }])
       .order(created_at: :desc)
 
     scope = apply_primary_filter(scope, primary_ids)
@@ -66,7 +66,7 @@ class ReportRepo < DB::Repo
 
     scope = base_scope
       .where(race_id: race_id, status: status)
-      .includes(incident: :reports)
+      .includes(incident: [:reports, { incident_penalties: :penalty }])
       .order(created_at: :desc)
 
     scope = apply_primary_filter(scope, primary_ids)
@@ -95,6 +95,7 @@ class ReportRepo < DB::Repo
     scope = base_scope
       .where(race_id: race_id)
       .where.not(status: "rejected")
+      .includes(incident: [:reports, { incident_penalties: :penalty }])
       .order(created_at: :desc)
 
     scope = apply_primary_filter(scope, primary_ids)
@@ -110,7 +111,8 @@ class ReportRepo < DB::Repo
   def for_race(race_id)
     Report
       .where(race_id: race_id)
-      .includes(:race_location, :user, incident: :reports,
+      .includes(:race_location, :user,
+                incident: [:reports, { incident_penalties: :penalty }],
                 race_participation: :athlete, videos_attachments: :blob)
       .order(created_at: :desc)
       .map { |record| build_summary(record) }
@@ -122,7 +124,8 @@ class ReportRepo < DB::Repo
   def pending_for_race(race_id)
     Report
       .where(race_id: race_id, status: "pending_review")
-      .includes(:race_location, :user, incident: :reports,
+      .includes(:race_location, :user,
+                incident: [:reports, { incident_penalties: :penalty }],
                 race_participation: :athlete, videos_attachments: :blob)
       .order(created_at: :desc)
       .map { |record| build_summary(record) }
@@ -134,7 +137,8 @@ class ReportRepo < DB::Repo
   def confirmed_for_race(race_id)
     Report
       .where(race_id: race_id, status: "confirmed")
-      .includes(:race_location, :user, incident: :reports,
+      .includes(:race_location, :user,
+                incident: [:reports, { incident_penalties: :penalty }],
                 race_participation: :athlete, videos_attachments: :blob)
       .order(created_at: :desc)
       .map { |record| build_summary(record) }
@@ -168,7 +172,8 @@ class ReportRepo < DB::Repo
   def for_incident(incident_id)
     Report
       .where(incident_id: incident_id)
-      .includes(:race_location, :user, incident: :reports,
+      .includes(:race_location, :user,
+                incident: [:reports, { incident_penalties: :penalty }],
                 race_participation: :athlete, videos_attachments: :blob)
       .order(created_at: :asc)
       .map { |record| build_summary(record) }
@@ -205,7 +210,8 @@ class ReportRepo < DB::Repo
   def by_status(race_id, status)
     Report
       .where(race_id: race_id, status: status)
-      .includes(:race_location, :user, incident: :reports,
+      .includes(:race_location, :user,
+                incident: [:reports, { incident_penalties: :penalty }],
                 race_participation: :athlete)
       .order(created_at: :desc)
       .map { |record| build_summary(record) }
@@ -278,6 +284,15 @@ class ReportRepo < DB::Repo
       0
     end
 
+    # Extract penalty details from the incident (for display in the index row)
+    incident_penalties = if incident && incident.association(:incident_penalties).loaded?
+      incident.incident_penalties.map do |ip|
+        { number: ip.penalty.penalty_number, name: ip.penalty.name }
+      end
+    else
+      []
+    end
+
     Structs::ReportSummary.new(
       id: record.id,
       race_id: record.race_id,
@@ -285,6 +300,7 @@ class ReportRepo < DB::Repo
       incident_name: incident_name,
       incident_status: incident_struct&.status,
       incident_has_decision: incident_struct ? !incident_struct.pending? : false,
+      incident_penalties: incident_penalties,
       bib_number: record.bib_number,
       athlete_position: record.athlete_position,
       race_location_id: record.race_location_id,
