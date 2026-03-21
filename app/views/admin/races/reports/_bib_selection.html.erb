@@ -42,4 +42,63 @@
       </div>
     </div>
   </div>
+<% else %>
+  <!-- Change Athlete Card (shown when bib is already set) -->
+  <details class="card border border-gray-200 group">
+    <summary class="p-4 cursor-pointer hover:bg-gray-50 transition-colors list-none">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold text-ismf-navy">Change Athlete</h3>
+            <p class="text-xs text-ismf-gray">Currently assigned to Bib #<%= report.bib_number %></p>
+          </div>
+        </div>
+        <svg class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </summary>
+
+    <div class="px-4 pb-4 pt-2 border-t border-gray-100">
+      <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mb-3">
+        Select a different athlete to reassign this report.
+      </p>
+
+      <div class="bg-white rounded-lg max-h-72 overflow-y-auto border border-gray-100">
+        <div class="grid grid-cols-3 gap-2 p-3">
+          <% participations.each do |participation| %>
+            <% is_current = participation.bib_number == report.bib_number %>
+            <%= form_with url: update_bib_admin_race_report_path(race, report), 
+                          method: :patch,
+                          class: "contents" do |f| %>
+              <%= f.hidden_field :race_participation_id, value: participation.id %>
+              <%= f.hidden_field :bib_number, value: participation.bib_number %>
+              
+              <%= f.button type: :submit,
+                           disabled: is_current,
+                           class: "flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all #{is_current ? 'border-ismf-blue bg-blue-50 cursor-default opacity-75' : 'border-gray-200 bg-white hover:border-ismf-blue hover:shadow-md hover:scale-105 active:scale-95'}" do %>
+                <span class="text-2xl font-black mb-1 <%= is_current ? 'text-ismf-blue' : 'text-ismf-navy' %>"><%= participation.bib_number %></span>
+                <span class="text-xs truncate w-full text-center font-medium <%= is_current ? 'text-ismf-blue' : 'text-gray-600' %>">
+                  <%= participation.athlete&.last_name || 'Unknown' %>
+                </span>
+                <% if participation.athlete&.country.present? %>
+                  <span class="text-xs mt-0.5 <%= is_current ? 'text-blue-400' : 'text-gray-400' %>">
+                    <%= participation.athlete.country %>
+                  </span>
+                <% end %>
+                <% if is_current %>
+                  <span class="text-[10px] font-bold text-ismf-blue mt-1 uppercase tracking-wide">Current</span>
+                <% end %>
+              <% end %>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </details>
 <% end %>

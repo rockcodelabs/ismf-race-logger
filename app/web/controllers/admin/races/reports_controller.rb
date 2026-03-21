@@ -100,7 +100,7 @@ module Web
             authorize @report, :show?
             @report = parts_factory.wrap(@report)
             
-            # Load participations for bib selection (if bib is not set)
+            # Load participations for bib selection and athlete change
             @participations = race_participation_repo.for_race(@race.id)
             
             # Load incident data if report is linked to an incident
