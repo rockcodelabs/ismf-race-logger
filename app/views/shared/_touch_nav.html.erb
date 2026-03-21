@@ -1,17 +1,37 @@
 <%# Touch Navigation - Horizontal Top Bar with hamburger toggle %>
 
 <div data-controller="touch-nav">
-  
-  <%# ISMF Logo Button %>
-  <button 
-    data-action="click->touch-nav#toggle" 
-    data-touch-nav-target="hamburger"
-    class="touch-hamburger-btn"
-    aria-label="Toggle Menu">
-    <%= image_tag "ismf_official_logo.png", alt: "ISMF Menu", class: "w-full h-full object-contain" %>
-  </button>
 
-  <%# Horizontal Navigation Bar %>
+  <%# Top Nav Bar with hamburger + page title %>
+  <div data-touch-nav-target="navbar" class="touch-navbar flex items-center gap-3 px-3 py-2 bg-ismf-navy/90 backdrop-blur-sm">
+    <button 
+      data-action="click->touch-nav#toggle" 
+      data-touch-nav-target="hamburger"
+      class="touch-hamburger-btn shrink-0"
+      aria-label="Toggle Menu">
+      <%= image_tag "ismf_official_logo.png", alt: "ISMF Menu", class: "w-full h-full object-contain" %>
+    </button>
+    <span class="text-white font-bold text-lg truncate flex-1"><%= content_for(:page_title) %></span>
+    <%= link_to root_path, class: "touch-nav-btn shrink-0", aria: { label: "Home" } do %>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:1.5rem;height:1.5rem;">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+    <% end %>
+    <button data-action="click->touch-nav#goBack" class="touch-nav-btn shrink-0" aria-label="Go Back">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:1.5rem;height:1.5rem;">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+    </button>
+    <% if Current.user %>
+      <%= button_to session_path, method: :delete, class: "touch-nav-btn shrink-0", aria: { label: "Sign out" } do %>
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:1.5rem;height:1.5rem;">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+      <% end %>
+    <% end %>
+  </div>
+
+  <%# Slide-out Menu Panel %>
   <div 
     data-touch-nav-target="menu"
     class="touch-menu-panel">
@@ -22,7 +42,7 @@
       <nav class="touch-menu-items">
         
         <%# Home Button %>
-        <%= link_to root_path, class: "touch-menu-item" do %>
+        <%= link_to root_path, class: "touch-menu-item touch-nav-btn", aria: { label: "Home" } do %>
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="touch-menu-icon">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
@@ -30,7 +50,7 @@
         <% end %>
         
         <%# Competitions Button %>
-        <%= link_to admin_competitions_path, class: "touch-menu-item" do %>
+        <%= link_to admin_competitions_path, class: "touch-menu-item touch-nav-btn" do %>
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="touch-menu-icon">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
@@ -38,7 +58,7 @@
         <% end %>
         
         <%# Penalties Button %>
-        <%= link_to admin_penalties_path, class: "touch-menu-item" do %>
+        <%= link_to admin_penalties_path, class: "touch-menu-item touch-nav-btn" do %>
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="touch-menu-icon">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
@@ -46,7 +66,7 @@
         <% end %>
         
         <%# Profile Button %>
-        <%= link_to edit_profile_path, class: "touch-menu-item" do %>
+        <%= link_to edit_profile_path, class: "touch-menu-item touch-nav-btn" do %>
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="touch-menu-icon">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
@@ -54,7 +74,7 @@
         <% end %>
         
         <%# Back Button %>
-        <button data-action="click->touch-nav#goBack" class="touch-menu-item">
+        <button data-action="click->touch-nav#goBack" class="touch-menu-item touch-nav-btn">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="touch-menu-icon">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
@@ -63,7 +83,7 @@
         
         <%# Sign Out Button (if authenticated) %>
         <% if Current.user %>
-          <%= button_to session_path, method: :delete, class: "touch-menu-item" do %>
+          <%= button_to session_path, method: :delete, class: "touch-menu-item touch-nav-btn" do %>
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="touch-menu-icon">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>

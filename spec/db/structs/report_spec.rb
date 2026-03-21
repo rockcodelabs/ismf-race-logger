@@ -21,7 +21,8 @@ RSpec.describe Structs::Report do
       race_location_name: race_location_name,
       athlete_name: athlete_name,
       athlete_country: athlete_country,
-      user_name: "Referee Smith"
+      user_name: "Referee Smith",
+      videos: nil
     )
   end
 
@@ -317,7 +318,7 @@ RSpec.describe Structs::Report do
         let(:athlete_position) { 1 }
 
         it "returns bib with position indicator" do
-          expect(report.bib_display).to eq("42 (Athlete 1)")
+          expect(report.bib_display).to eq("42 (M)")
         end
       end
 
@@ -325,7 +326,7 @@ RSpec.describe Structs::Report do
         let(:athlete_position) { 2 }
 
         it "returns bib with position indicator" do
-          expect(report.bib_display).to eq("42 (Athlete 2)")
+          expect(report.bib_display).to eq("42 (F)")
         end
       end
     end
@@ -449,7 +450,8 @@ RSpec.describe Structs::Report do
         "race_location_name" => nil,
         "athlete_name" => nil,
         "athlete_country" => nil,
-        "user_name" => nil
+        "user_name" => nil,
+        "videos" => nil
       )
 
       expect(report.id).to eq(1)
@@ -476,7 +478,8 @@ RSpec.describe Structs::Report do
         race_location_name: nil,
         athlete_name: nil,
         athlete_country: nil,
-        user_name: nil
+        user_name: nil,
+        videos: nil
       )
 
       expect(report.incident_id).to be_nil

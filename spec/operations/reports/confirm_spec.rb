@@ -167,8 +167,10 @@ RSpec.describe Operations::Reports::Confirm do
           status: "confirmed",
           created_at: report.created_at,
           updated_at: report.updated_at,
+          videos: [],
           race_location_name: race_location.name,
           athlete_name: "#{athlete.first_name} #{athlete.last_name}",
+          athlete_country: nil,
           user_name: user.display_name
         )
 

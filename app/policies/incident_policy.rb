@@ -26,17 +26,17 @@ class IncidentPolicy < ApplicationPolicy
   end
 
   # View incident details
-  # VAR operators, referee managers, jury presidents, and referees can view
+  # Admins, VAR operators, referee managers, jury presidents, and referees can view
   # @return [Boolean]
   def show?
-    var_operator? || referee_manager? || jury_president? || referee?
+    admin? || var_operator? || referee_manager? || jury_president? || referee?
   end
 
   # Create incident (merge reports)
-  # Only VAR operators can merge reports into incidents
+  # Admins and VAR operators can merge reports into incidents
   # @return [Boolean]
   def create?
-    var_operator?
+    admin? || var_operator?
   end
 
   # Same as create
@@ -45,10 +45,10 @@ class IncidentPolicy < ApplicationPolicy
   end
 
   # Update incident (general updates)
-  # VAR operators, referee managers, and jury presidents can update incidents
+  # Admins and VAR operators can update incidents
   # @return [Boolean]
   def update?
-    var_operator? || referee_manager? || jury_president?
+    admin? || var_operator?
   end
 
   # Same as update
@@ -57,24 +57,24 @@ class IncidentPolicy < ApplicationPolicy
   end
 
   # Make a decision on the incident (upheld/dismissed)
-  # VAR operators, referee managers, and jury presidents can decide incidents
+  # Admins and VAR operators can decide incidents
   # @return [Boolean]
   def decide?
-    var_operator? || referee_manager? || jury_president?
+    admin? || var_operator?
   end
 
   # Attach or modify penalties on the incident
-  # Only VAR operators can attach penalties
+  # Admins and VAR operators can attach penalties
   # @return [Boolean]
   def attach_penalties?
-    var_operator?
+    admin? || var_operator?
   end
 
   # Reopen a decided incident for further review
-  # Only VAR operators can reopen incidents
+  # Admins and VAR operators can reopen incidents
   # @return [Boolean]
   def reopen?
-    var_operator?
+    admin? || var_operator?
   end
 
   # Delete incident
@@ -96,7 +96,7 @@ class IncidentPolicy < ApplicationPolicy
   # Scope for listing incidents
   class Scope < ApplicationPolicy::Scope
     def resolve
-      if var_operator? || referee_manager? || jury_president? || referee?
+      if admin? || var_operator? || referee_manager? || jury_president? || referee?
         scope.all
       else
         scope.none

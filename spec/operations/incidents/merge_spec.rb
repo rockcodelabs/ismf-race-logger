@@ -82,7 +82,7 @@ RSpec.describe Operations::Incidents::Merge do
       end
 
       it "returns Success with target incident struct" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         expect(result).to be_success
         expect(result.value!).to be_a(Structs::Incident)
@@ -90,7 +90,7 @@ RSpec.describe Operations::Incidents::Merge do
       end
 
       it "moves all reports from source to target" do
-        operation.call(valid_params)
+        operation.call(**valid_params)
 
         expect(source_report1.reload.incident_id).to eq(target_incident.id)
         expect(source_report2.reload.incident_id).to eq(target_incident.id)
@@ -99,30 +99,30 @@ RSpec.describe Operations::Incidents::Merge do
       end
 
       it "deletes the source incident" do
-        operation.call(valid_params)
+        operation.call(**valid_params)
 
         expect(Incident.find_by(id: source_incident.id)).to be_nil
       end
 
       it "updates the reports_count on target incident" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         # Target had 2 reports, source had 2 reports
         expect(result.value!.reports_count).to eq(4)
       end
 
       it "does not merge descriptions" do
-        operation.call(valid_params)
+        operation.call(**valid_params)
 
         expect(target_incident.reload.description).to eq("Target incident description")
       end
 
       it "decreases total incident count by 1" do
-        expect { operation.call(valid_params) }.to change(Incident, :count).by(-1)
+        expect { operation.call(**valid_params) }.to change(Incident, :count).by(-1)
       end
 
       it "does not change total report count" do
-        expect { operation.call(valid_params) }.not_to change(Report, :count)
+        expect { operation.call(**valid_params) }.not_to change(Report, :count)
       end
     end
 
@@ -136,13 +136,13 @@ RSpec.describe Operations::Incidents::Merge do
       end
 
       it "returns Success" do
-        result = operation.call(merge_descriptions_params)
+        result = operation.call(**merge_descriptions_params)
 
         expect(result).to be_success
       end
 
       it "merges both descriptions with separator" do
-        operation.call(merge_descriptions_params)
+        operation.call(**merge_descriptions_params)
 
         expected = "Target incident description\n\n---\n\nSource incident description"
         expect(target_incident.reload.description).to eq(expected)
@@ -161,7 +161,7 @@ RSpec.describe Operations::Incidents::Merge do
       end
 
       it "uses source description" do
-        operation.call(merge_params)
+        operation.call(**merge_params)
 
         expect(target_incident.reload.description).to eq("Source incident description")
       end
@@ -179,7 +179,7 @@ RSpec.describe Operations::Incidents::Merge do
       end
 
       it "keeps target description unchanged" do
-        operation.call(merge_params)
+        operation.call(**merge_params)
 
         expect(target_incident.reload.description).to eq("Target incident description")
       end
@@ -200,7 +200,7 @@ RSpec.describe Operations::Incidents::Merge do
       end
 
       it "keeps target description as nil" do
-        operation.call(merge_params)
+        operation.call(**merge_params)
 
         expect(target_incident.reload.description).to be_nil
       end
@@ -216,18 +216,18 @@ RSpec.describe Operations::Incidents::Merge do
       end
 
       it "returns Failure" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure).to eq(:source_not_found)
       end
 
       it "does not delete any incidents" do
-        expect { operation.call(invalid_params) }.not_to change(Incident, :count)
+        expect { operation.call(**invalid_params) }.not_to change(Incident, :count)
       end
 
       it "does not move any reports" do
-        operation.call(invalid_params)
+        operation.call(**invalid_params)
 
         expect(source_report1.reload.incident_id).to eq(source_incident.id)
         expect(source_report2.reload.incident_id).to eq(source_incident.id)
@@ -244,14 +244,14 @@ RSpec.describe Operations::Incidents::Merge do
       end
 
       it "returns Failure" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure).to eq(:target_not_found)
       end
 
       it "does not delete any incidents" do
-        expect { operation.call(invalid_params) }.not_to change(Incident, :count)
+        expect { operation.call(**invalid_params) }.not_to change(Incident, :count)
       end
     end
 
@@ -265,14 +265,14 @@ RSpec.describe Operations::Incidents::Merge do
       end
 
       it "returns Failure" do
-        result = operation.call(self_merge_params)
+        result = operation.call(**self_merge_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:cannot_merge_self)
       end
 
       it "does not delete the incident" do
-        expect { operation.call(self_merge_params) }.not_to change(Incident, :count)
+        expect { operation.call(**self_merge_params) }.not_to change(Incident, :count)
       end
     end
 
@@ -295,18 +295,18 @@ RSpec.describe Operations::Incidents::Merge do
       end
 
       it "returns Failure" do
-        result = operation.call(cross_race_params)
+        result = operation.call(**cross_race_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:different_races)
       end
 
       it "does not merge incidents" do
-        expect { operation.call(cross_race_params) }.not_to change(Incident, :count)
+        expect { operation.call(**cross_race_params) }.not_to change(Incident, :count)
       end
 
       it "does not move reports" do
-        operation.call(cross_race_params)
+        operation.call(**cross_race_params)
 
         expect(source_report1.reload.incident_id).to eq(source_incident.id)
       end
@@ -329,14 +329,14 @@ RSpec.describe Operations::Incidents::Merge do
       end
 
       it "returns Success and deletes source with penalties" do
-        result = operation.call(merge_params)
+        result = operation.call(**merge_params)
 
         expect(result).to be_success
         expect(Incident.find_by(id: source_incident.id)).to be_nil
       end
 
       it "deletes the source incident's penalties (dependent: :destroy)" do
-        operation.call(merge_params)
+        operation.call(**merge_params)
 
         expect(IncidentPenalty.find_by(id: incident_penalty.id)).to be_nil
       end
@@ -356,19 +356,19 @@ RSpec.describe Operations::Incidents::Merge do
       end
 
       it "returns Success" do
-        result = operation.call(empty_source_params)
+        result = operation.call(**empty_source_params)
 
         expect(result).to be_success
       end
 
       it "deletes the empty source incident" do
-        operation.call(empty_source_params)
+        operation.call(**empty_source_params)
 
         expect(Incident.find_by(id: source_incident.id)).to be_nil
       end
 
       it "does not change target reports count" do
-        result = operation.call(empty_source_params)
+        result = operation.call(**empty_source_params)
 
         expect(result.value!.reports_count).to eq(2)
       end

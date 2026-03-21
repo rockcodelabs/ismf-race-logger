@@ -8,7 +8,7 @@ module AuthenticationHelper
     }
   end
 
-  def sign_out
+  def sign_out(_user = nil)
     delete session_path
   end
 end

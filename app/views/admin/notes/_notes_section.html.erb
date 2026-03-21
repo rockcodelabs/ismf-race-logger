@@ -1,0 +1,55 @@
+<%# Reusable notes section for Reports and Incidents %>
+<%# Usage: render "admin/notes/notes_section", notable_type: "Report", notable_id: @report.id, notes: @notes %>
+
+<div class="card" id="notes-section">
+  <div class="p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-ismf-navy">
+        Notes
+        <% if notes.any? %>
+          <span class="text-sm font-normal text-ismf-gray">(<%= notes.size %>)</span>
+        <% end %>
+      </h3>
+    </div>
+
+    <!-- Existing Notes -->
+    <% if notes.any? %>
+      <div class="space-y-3 mb-4">
+        <% notes.each do |note| %>
+          <%= render "admin/notes/note", note: note %>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="text-sm text-gray-400 italic mb-4">No notes yet. Be the first to add one.</p>
+    <% end %>
+
+    <!-- Add Note Form -->
+    <div class="border-t border-gray-200 pt-4">
+      <%= form_with url: admin_notes_path, method: :post, class: "space-y-3" do |f| %>
+        <%= f.hidden_field :notable_type, value: notable_type %>
+        <%= f.hidden_field :notable_id, value: notable_id %>
+
+        <div>
+          <label for="note_body" class="sr-only">Add a note</label>
+          <textarea
+            name="body"
+            id="note_body"
+            rows="2"
+            placeholder="Add a note..."
+            required
+            class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-ismf-blue focus:ring-ismf-blue placeholder-gray-400 resize-none"
+          ></textarea>
+        </div>
+
+        <div class="flex justify-end">
+          <%= f.button type: :submit, class: "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-ismf-blue rounded-lg hover:bg-blue-700 transition-colors" do %>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Note
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

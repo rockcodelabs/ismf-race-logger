@@ -59,34 +59,34 @@ RSpec.describe Operations::Incidents::RemoveReports do
       end
 
       it "returns Success with incident struct" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         expect(result).to be_success
         expect(result.value!).to be_a(Structs::Incident)
       end
 
       it "unlinks the reports from the incident" do
-        operation.call(valid_params)
+        operation.call(**valid_params)
 
         expect(report1.reload.incident_id).to be_nil
         expect(report2.reload.incident_id).to be_nil
       end
 
       it "keeps other reports linked" do
-        operation.call(valid_params)
+        operation.call(**valid_params)
 
         expect(report3.reload.incident_id).to eq(incident.id)
       end
 
       it "resets report status to pending_review" do
-        operation.call(valid_params)
+        operation.call(**valid_params)
 
         expect(report1.reload.status).to eq("pending_review")
         expect(report2.reload.status).to eq("pending_review")
       end
 
       it "updates the reports_count on incident" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         # Started with 3 reports, removed 2
         expect(result.value!.reports_count).to eq(1)
@@ -102,7 +102,7 @@ RSpec.describe Operations::Incidents::RemoveReports do
       end
 
       it "returns Success and unlinks the report" do
-        result = operation.call(single_report_params)
+        result = operation.call(**single_report_params)
 
         expect(result).to be_success
         expect(report1.reload.incident_id).to be_nil
@@ -118,7 +118,7 @@ RSpec.describe Operations::Incidents::RemoveReports do
       end
 
       it "returns Failure" do
-        result = operation.call(empty_params)
+        result = operation.call(**empty_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:no_reports_provided)
@@ -134,14 +134,14 @@ RSpec.describe Operations::Incidents::RemoveReports do
       end
 
       it "returns Failure" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure).to eq(:incident_not_found)
       end
 
       it "does not unlink any reports" do
-        operation.call(invalid_params)
+        operation.call(**invalid_params)
 
         expect(report1.reload.incident_id).to eq(incident.id)
       end
@@ -156,7 +156,7 @@ RSpec.describe Operations::Incidents::RemoveReports do
       end
 
       it "returns Failure with missing IDs" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:reports_not_found)
@@ -164,7 +164,7 @@ RSpec.describe Operations::Incidents::RemoveReports do
       end
 
       it "does not unlink any reports (transaction rollback)" do
-        operation.call(invalid_params)
+        operation.call(**invalid_params)
 
         expect(report1.reload.incident_id).to eq(incident.id)
       end
@@ -193,7 +193,7 @@ RSpec.describe Operations::Incidents::RemoveReports do
       end
 
       it "returns Failure with not in incident IDs" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:reports_not_in_incident)
@@ -201,7 +201,7 @@ RSpec.describe Operations::Incidents::RemoveReports do
       end
 
       it "does not change the report's incident" do
-        operation.call(invalid_params)
+        operation.call(**invalid_params)
 
         expect(other_report.reload.incident_id).to eq(other_incident.id)
       end
@@ -226,7 +226,7 @@ RSpec.describe Operations::Incidents::RemoveReports do
       end
 
       it "returns Failure" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:reports_not_in_incident)
@@ -242,20 +242,20 @@ RSpec.describe Operations::Incidents::RemoveReports do
       end
 
       it "returns Success with empty incident" do
-        result = operation.call(remove_all_params)
+        result = operation.call(**remove_all_params)
 
         expect(result).to be_success
         expect(result.value!.reports_count).to eq(0)
       end
 
       it "keeps the incident in database" do
-        operation.call(remove_all_params)
+        operation.call(**remove_all_params)
 
         expect(Incident.find_by(id: incident.id)).to be_present
       end
 
       it "unlinks all reports" do
-        operation.call(remove_all_params)
+        operation.call(**remove_all_params)
 
         expect(report1.reload.incident_id).to be_nil
         expect(report2.reload.incident_id).to be_nil

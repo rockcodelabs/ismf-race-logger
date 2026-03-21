@@ -237,7 +237,7 @@ RSpec.describe Operations::Incidents::Create do
       end
     end
 
-    context "with pending_review reports (not confirmed)" do
+    context "with pending_review reports (auto-confirmed on merge)" do
       let(:participation) { create(:race_participation, race: race) }
       let!(:pending_report) do
         create(:report, :pending_review,
@@ -248,26 +248,26 @@ RSpec.describe Operations::Incidents::Create do
                incident: nil)
       end
 
-      let(:invalid_params) do
+      let(:valid_params) do
         {
           report_ids: [ pending_report.id ]
         }
       end
 
-      it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+      it "returns Success and auto-confirms the report" do
+        result = operation.call(valid_params)
 
-        expect(result).to be_failure
-        expect(result.failure.first).to eq(:validation_failed)
-        expect(result.failure.last[:report_ids]).to include("all reports must be confirmed before merging into an incident")
+        expect(result).to be_success
+        expect(pending_report.reload.status).to eq("confirmed")
+        expect(pending_report.reload.incident_id).to be_present
       end
 
-      it "does not create an incident" do
-        expect { operation.call(invalid_params) }.not_to change(Incident, :count)
+      it "creates an incident" do
+        expect { operation.call(valid_params) }.to change(Incident, :count).by(1)
       end
     end
 
-    context "with reports already linked to an incident" do
+    context "with reports already linked to an incident (moves them)" do
       let(:participation) { create(:race_participation, race: race) }
       let(:existing_incident) { create(:incident, race: race, race_location: race_location) }
       let!(:linked_report) do
@@ -279,26 +279,28 @@ RSpec.describe Operations::Incidents::Create do
                incident: existing_incident)
       end
 
-      let(:invalid_params) do
+      let(:valid_params) do
         {
           report_ids: [ linked_report.id ]
         }
       end
 
-      it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+      it "returns Success and moves the report to new incident" do
+        result = operation.call(valid_params)
 
-        expect(result).to be_failure
-        expect(result.failure.first).to eq(:validation_failed)
-        expect(result.failure.last[:report_ids]).to include("one or more reports are already linked to an incident")
+        expect(result).to be_success
+        expect(linked_report.reload.incident_id).not_to eq(existing_incident.id)
+        expect(linked_report.reload.incident_id).to eq(result.value!.id)
       end
 
-      it "does not create a new incident" do
-        expect { operation.call(invalid_params) }.not_to change(Incident, :count)
+      it "cleans up the old empty incident" do
+        operation.call(valid_params)
+
+        expect(Incident.find_by(id: existing_incident.id)).to be_nil
       end
     end
 
-    context "with mix of valid and invalid reports" do
+    context "with mix of confirmed and pending reports (all auto-confirmed)" do
       let(:participation1) { create(:race_participation, race: race) }
       let(:participation2) { create(:race_participation, race: race) }
       let!(:confirmed_report) do
@@ -318,28 +320,29 @@ RSpec.describe Operations::Incidents::Create do
                incident: nil)
       end
 
-      let(:invalid_params) do
+      let(:valid_params) do
         {
           report_ids: [ confirmed_report.id, pending_report.id ]
         }
       end
 
-      it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+      it "returns Success and auto-confirms all reports" do
+        result = operation.call(valid_params)
 
-        expect(result).to be_failure
-        expect(result.failure.first).to eq(:validation_failed)
+        expect(result).to be_success
+        expect(pending_report.reload.status).to eq("confirmed")
+        expect(confirmed_report.reload.status).to eq("confirmed")
       end
 
-      it "does not create an incident" do
-        expect { operation.call(invalid_params) }.not_to change(Incident, :count)
+      it "creates an incident" do
+        expect { operation.call(valid_params) }.to change(Incident, :count).by(1)
       end
 
-      it "does not link any reports" do
-        operation.call(invalid_params)
+      it "links all reports to the new incident" do
+        result = operation.call(valid_params)
 
-        confirmed_report.reload
-        expect(confirmed_report.incident_id).to be_nil
+        expect(confirmed_report.reload.incident_id).to eq(result.value!.id)
+        expect(pending_report.reload.incident_id).to eq(result.value!.id)
       end
     end
 
@@ -435,6 +438,7 @@ RSpec.describe Operations::Incidents::Create do
           race_id: race.id,
           race_location_id: race_location.id,
           status: "pending",
+          custom_name: nil,
           description: nil,
           decided_by_user_id: nil,
           decided_at: nil,

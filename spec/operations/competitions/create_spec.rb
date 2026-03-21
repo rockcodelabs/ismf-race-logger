@@ -21,7 +21,7 @@ RSpec.describe Operations::Competitions::Create do
       end
 
       it "returns Success with a Structs::Competition" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         expect(result).to be_success
         expect(result.value!).to be_a(Structs::Competition)
@@ -32,7 +32,7 @@ RSpec.describe Operations::Competitions::Create do
 
       it "persists the competition to the database" do
         expect {
-          operation.call(valid_params)
+          operation.call(**valid_params)
         }.to change(Competition, :count).by(1)
       end
     end
@@ -52,7 +52,7 @@ RSpec.describe Operations::Competitions::Create do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure).to be_an(Array)
@@ -62,7 +62,7 @@ RSpec.describe Operations::Competitions::Create do
 
       it "does not persist to database" do
         expect {
-          operation.call(invalid_params)
+          operation.call(**invalid_params)
         }.not_to change(Competition, :count)
       end
     end
@@ -82,7 +82,7 @@ RSpec.describe Operations::Competitions::Create do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure).to be_an(Array)
@@ -106,7 +106,7 @@ RSpec.describe Operations::Competitions::Create do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure).to be_an(Array)
@@ -130,7 +130,7 @@ RSpec.describe Operations::Competitions::Create do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure).to be_an(Array)
@@ -147,7 +147,7 @@ RSpec.describe Operations::Competitions::Create do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure).to be_an(Array)
@@ -170,7 +170,7 @@ RSpec.describe Operations::Competitions::Create do
       end
 
       it "creates competition with all fields" do
-        result = operation.call(complete_params)
+        result = operation.call(**complete_params)
 
         expect(result).to be_success
         expect(result.value!.description).to eq("Annual ISMF World Cup competition in the Swiss Alps")

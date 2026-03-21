@@ -8,7 +8,7 @@ RSpec.describe ReportBroadcaster, type: :broadcaster do
   let(:race_location) { create(:race_location, race: race) }
   let(:race_participation) { create(:race_participation, race: race, bib_number: 42) }
   let(:user) { create(:user, :admin) }
-  
+
   let(:report) do
     create(:report,
       race: race,
@@ -27,73 +27,82 @@ RSpec.describe ReportBroadcaster, type: :broadcaster do
 
   describe "#created" do
     it "broadcasts to the correct stream" do
-      expect(Turbo::StreamsChannel).to receive(:broadcast_action_to)
-        .with("race_#{race.id}_reports", hash_including(action: :prepend, target: "pending-reports-queue"))
-        .at_least(:once)
+      allow(Turbo::StreamsChannel).to receive(:broadcast_prepend_to).and_call_original
 
       broadcaster.created(report_struct, race.id)
+
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_prepend_to)
+        .with("race_#{race.id}_reports", hash_including(target: "pending-reports-queue"))
+        .at_least(:once)
     end
 
     it "broadcasts card format for touch displays" do
-      expect(Turbo::StreamsChannel).to receive(:broadcast_action_to)
-        .with("race_#{race.id}_reports", hash_including(
-          action: :prepend,
-          target: "pending-reports-queue"
-        ))
+      allow(Turbo::StreamsChannel).to receive(:broadcast_prepend_to).and_call_original
 
       broadcaster.created(report_struct, race.id)
+
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_prepend_to)
+        .with("race_#{race.id}_reports", hash_including(
+          target: "pending-reports-queue",
+          partial: "admin/races/reports/report_card"
+        ))
     end
 
     it "broadcasts table row format for desktop" do
-      expect(Turbo::StreamsChannel).to receive(:broadcast_action_to)
-        .with("race_#{race.id}_reports", hash_including(
-          action: :prepend,
-          target: "reports-table-body"
-        ))
+      allow(Turbo::StreamsChannel).to receive(:broadcast_prepend_to).and_call_original
 
       broadcaster.created(report_struct, race.id)
+
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_prepend_to)
+        .with("race_#{race.id}_reports", hash_including(
+          target: "reports-table-body",
+          partial: "admin/races/reports/report_row"
+        ))
     end
 
     it "broadcasts counter updates" do
-      expect(Turbo::StreamsChannel).to receive(:broadcast_action_to)
-        .with("race_#{race.id}_reports", hash_including(
-          action: :update,
-          target: "pending-count-badge"
-        ))
+      allow(Turbo::StreamsChannel).to receive(:broadcast_action_to).and_call_original
 
-      broadcaster.created(report_struct, race.id)
-    end
-
-    it "broadcasts flash notice message" do
-      expect(Turbo::StreamsChannel).to receive(:broadcast_action_to)
-        .with("race_#{race.id}_reports", hash_including(
-          action: :append,
-          target: "flash-messages"
-        ))
-
-      broadcaster.created(report_struct, race.id)
-    end
-
-    it "includes report bib number in flash message" do
-      allow(Turbo::StreamsChannel).to receive(:broadcast_action_to)
-      
       broadcaster.created(report_struct, race.id)
 
       expect(Turbo::StreamsChannel).to have_received(:broadcast_action_to)
         .with("race_#{race.id}_reports", hash_including(
-          html: include("Report #42")
+          action: :update,
+          target: "pending-count-badge"
+        ))
+    end
+
+    it "broadcasts flash notice message" do
+      allow(Turbo::StreamsChannel).to receive(:broadcast_append_to).and_call_original
+
+      broadcaster.created(report_struct, race.id)
+
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_append_to)
+        .with("race_#{race.id}_reports", hash_including(
+          target: "flash-messages"
+        ))
+    end
+
+    it "includes report bib number in flash message" do
+      allow(Turbo::StreamsChannel).to receive(:broadcast_append_to).and_call_original
+
+      broadcaster.created(report_struct, race.id)
+
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_append_to)
+        .with("race_#{race.id}_reports", hash_including(
+          partial: "shared/flash",
+          locals: hash_including(message: include("Report #42"))
         ))
     end
 
     it "renders HTML from partials" do
-      expect(Web::Controllers::ApplicationController).to receive(:render)
-        .with(hash_including(partial: "admin/races/reports/report_card"))
-        .and_return("<div>Report Card</div>")
-      
-      allow(Web::Controllers::ApplicationController).to receive(:render)
-        .and_call_original
+      allow(Web::Controllers::ApplicationController).to receive(:render).and_call_original
 
       broadcaster.created(report_struct, race.id)
+
+      expect(Web::Controllers::ApplicationController).to have_received(:render)
+        .with(hash_including(partial: "admin/races/reports/report_card"))
+        .at_least(:once)
     end
   end
 
@@ -114,43 +123,49 @@ RSpec.describe ReportBroadcaster, type: :broadcaster do
     end
 
     it "broadcasts removal of the report" do
-      expect(Turbo::StreamsChannel).to receive(:broadcast_action_to)
-        .with("race_#{race.id}_reports", hash_including(
-          action: :remove,
-          target: "report_#{confirmed_report.id}"
-        ))
+      allow(Turbo::StreamsChannel).to receive(:broadcast_remove_to).and_call_original
 
       broadcaster.confirmed(confirmed_struct, race.id)
+
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_remove_to)
+        .with("race_#{race.id}_reports", hash_including(
+          target: "report_#{confirmed_report.id}"
+        ))
     end
 
     it "broadcasts pending counter update" do
-      expect(Turbo::StreamsChannel).to receive(:broadcast_action_to)
-        .with("race_#{race.id}_reports", hash_including(
-          action: :update,
-          target: "pending-count-badge"
-        ))
-
-      broadcaster.confirmed(confirmed_struct, race.id)
-    end
-
-    it "broadcasts confirmed counter update" do
-      expect(Turbo::StreamsChannel).to receive(:broadcast_action_to)
-        .with("race_#{race.id}_reports", hash_including(
-          action: :update,
-          target: "confirmed-count"
-        ))
-
-      broadcaster.confirmed(confirmed_struct, race.id)
-    end
-
-    it "broadcasts flash notice" do
-      allow(Turbo::StreamsChannel).to receive(:broadcast_action_to)
+      allow(Turbo::StreamsChannel).to receive(:broadcast_action_to).and_call_original
 
       broadcaster.confirmed(confirmed_struct, race.id)
 
       expect(Turbo::StreamsChannel).to have_received(:broadcast_action_to)
         .with("race_#{race.id}_reports", hash_including(
-          html: include("confirmed")
+          action: :update,
+          target: "pending-count-badge"
+        ))
+    end
+
+    it "broadcasts confirmed counter update" do
+      allow(Turbo::StreamsChannel).to receive(:broadcast_action_to).and_call_original
+
+      broadcaster.confirmed(confirmed_struct, race.id)
+
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_action_to)
+        .with("race_#{race.id}_reports", hash_including(
+          action: :update,
+          target: "confirmed-count"
+        ))
+    end
+
+    it "broadcasts flash notice" do
+      allow(Turbo::StreamsChannel).to receive(:broadcast_append_to).and_call_original
+
+      broadcaster.confirmed(confirmed_struct, race.id)
+
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_append_to)
+        .with("race_#{race.id}_reports", hash_including(
+          partial: "shared/flash",
+          locals: hash_including(message: include("confirmed"))
         ))
     end
   end
@@ -172,43 +187,49 @@ RSpec.describe ReportBroadcaster, type: :broadcaster do
     end
 
     it "broadcasts removal of the report" do
-      expect(Turbo::StreamsChannel).to receive(:broadcast_action_to)
-        .with("race_#{race.id}_reports", hash_including(
-          action: :remove,
-          target: "report_#{rejected_report.id}"
-        ))
+      allow(Turbo::StreamsChannel).to receive(:broadcast_remove_to).and_call_original
 
       broadcaster.rejected(rejected_struct, race.id)
+
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_remove_to)
+        .with("race_#{race.id}_reports", hash_including(
+          target: "report_#{rejected_report.id}"
+        ))
     end
 
     it "broadcasts pending counter update" do
-      expect(Turbo::StreamsChannel).to receive(:broadcast_action_to)
-        .with("race_#{race.id}_reports", hash_including(
-          action: :update,
-          target: "pending-count-badge"
-        ))
-
-      broadcaster.rejected(rejected_struct, race.id)
-    end
-
-    it "broadcasts rejected counter update" do
-      expect(Turbo::StreamsChannel).to receive(:broadcast_action_to)
-        .with("race_#{race.id}_reports", hash_including(
-          action: :update,
-          target: "rejected-count"
-        ))
-
-      broadcaster.rejected(rejected_struct, race.id)
-    end
-
-    it "broadcasts flash notice" do
-      allow(Turbo::StreamsChannel).to receive(:broadcast_action_to)
+      allow(Turbo::StreamsChannel).to receive(:broadcast_action_to).and_call_original
 
       broadcaster.rejected(rejected_struct, race.id)
 
       expect(Turbo::StreamsChannel).to have_received(:broadcast_action_to)
         .with("race_#{race.id}_reports", hash_including(
-          html: include("rejected")
+          action: :update,
+          target: "pending-count-badge"
+        ))
+    end
+
+    it "broadcasts rejected counter update" do
+      allow(Turbo::StreamsChannel).to receive(:broadcast_action_to).and_call_original
+
+      broadcaster.rejected(rejected_struct, race.id)
+
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_action_to)
+        .with("race_#{race.id}_reports", hash_including(
+          action: :update,
+          target: "rejected-count"
+        ))
+    end
+
+    it "broadcasts flash notice" do
+      allow(Turbo::StreamsChannel).to receive(:broadcast_append_to).and_call_original
+
+      broadcaster.rejected(rejected_struct, race.id)
+
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_append_to)
+        .with("race_#{race.id}_reports", hash_including(
+          partial: "shared/flash",
+          locals: hash_including(message: include("rejected"))
         ))
     end
   end
@@ -230,95 +251,120 @@ RSpec.describe ReportBroadcaster, type: :broadcaster do
     end
 
     before do
-      # Simulate reopening (status would be pending_review after reopen operation)
       reopened_report.update!(status: "pending_review")
     end
 
     it "broadcasts card format for touch displays" do
-      expect(Turbo::StreamsChannel).to receive(:broadcast_action_to)
-        .with("race_#{race.id}_reports", hash_including(
-          action: :prepend,
-          target: "pending-reports-queue"
-        ))
+      allow(Turbo::StreamsChannel).to receive(:broadcast_prepend_to).and_call_original
 
       broadcaster.reopened(reopened_struct, race.id)
+
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_prepend_to)
+        .with("race_#{race.id}_reports", hash_including(
+          target: "pending-reports-queue",
+          partial: "admin/races/reports/report_card"
+        ))
     end
 
     it "broadcasts table row format for desktop" do
-      expect(Turbo::StreamsChannel).to receive(:broadcast_action_to)
-        .with("race_#{race.id}_reports", hash_including(
-          action: :prepend,
-          target: "reports-table-body"
-        ))
+      allow(Turbo::StreamsChannel).to receive(:broadcast_prepend_to).and_call_original
 
       broadcaster.reopened(reopened_struct, race.id)
+
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_prepend_to)
+        .with("race_#{race.id}_reports", hash_including(
+          target: "reports-table-body",
+          partial: "admin/races/reports/report_row"
+        ))
     end
 
     it "broadcasts counter updates" do
-      expect(Turbo::StreamsChannel).to receive(:broadcast_action_to)
-        .with("race_#{race.id}_reports", hash_including(
-          action: :update,
-          target: "pending-count-badge"
-        ))
-
-      broadcaster.reopened(reopened_struct, race.id)
-    end
-
-    it "broadcasts flash notice" do
-      allow(Turbo::StreamsChannel).to receive(:broadcast_action_to)
+      allow(Turbo::StreamsChannel).to receive(:broadcast_action_to).and_call_original
 
       broadcaster.reopened(reopened_struct, race.id)
 
       expect(Turbo::StreamsChannel).to have_received(:broadcast_action_to)
         .with("race_#{race.id}_reports", hash_including(
-          html: include("reopened")
+          action: :update,
+          target: "pending-count-badge"
+        ))
+    end
+
+    it "broadcasts flash notice" do
+      allow(Turbo::StreamsChannel).to receive(:broadcast_append_to).and_call_original
+
+      broadcaster.reopened(reopened_struct, race.id)
+
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_append_to)
+        .with("race_#{race.id}_reports", hash_including(
+          partial: "shared/flash",
+          locals: hash_including(message: include("reopened"))
         ))
     end
   end
 
   describe "stream naming" do
     it "uses race-specific stream names" do
-      expect(Turbo::StreamsChannel).to receive(:broadcast_action_to)
-        .with("race_#{race.id}_reports", anything)
-        .at_least(:once)
+      allow(Turbo::StreamsChannel).to receive(:broadcast_prepend_to).and_call_original
 
       broadcaster.created(report_struct, race.id)
+
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_prepend_to)
+        .with("race_#{race.id}_reports", anything)
+        .at_least(:once)
     end
 
     it "isolates broadcasts to specific races" do
       other_race = create(:race, :in_progress)
-      
-      expect(Turbo::StreamsChannel).not_to receive(:broadcast_action_to)
-        .with("race_#{other_race.id}_reports", anything)
+      allow(Turbo::StreamsChannel).to receive(:broadcast_prepend_to).and_call_original
 
       broadcaster.created(report_struct, race.id)
+
+      expect(Turbo::StreamsChannel).not_to have_received(:broadcast_prepend_to)
+        .with("race_#{other_race.id}_reports", anything)
     end
   end
 
   describe "counter accuracy" do
-    let!(:existing_pending) { create_list(:report, :pending_review, race: race) }
-    let!(:existing_confirmed) { create_list(:report, :confirmed, race: race) }
-    let!(:existing_rejected) { create_list(:report, :rejected, race: race) }
+    let!(:existing_pending) do
+      create_list(:report, 2, :pending_review,
+        race: race,
+        race_location: race_location,
+        race_participation: race_participation,
+        user: user,
+        bib_number: 99
+      )
+    end
 
-    before do
-      # Create consistent reports
-      existing_pending.each do |r|
-        r.update!(
-          race_location: create(:race_location, race: race),
-          race_participation: create(:race_participation, race: race)
-        )
-      end
+    let!(:existing_confirmed) do
+      create_list(:report, 1, :confirmed,
+        race: race,
+        race_location: race_location,
+        race_participation: race_participation,
+        user: user,
+        bib_number: 88
+      )
+    end
+
+    let!(:existing_rejected) do
+      create_list(:report, 1, :rejected,
+        race: race,
+        race_location: race_location,
+        race_participation: race_participation,
+        user: user,
+        bib_number: 77
+      )
     end
 
     it "broadcasts correct pending count after create" do
-      allow(Turbo::StreamsChannel).to receive(:broadcast_action_to)
+      allow(Turbo::StreamsChannel).to receive(:broadcast_action_to).and_call_original
 
       broadcaster.created(report_struct, race.id)
 
       expect(Turbo::StreamsChannel).to have_received(:broadcast_action_to)
         .with("race_#{race.id}_reports", hash_including(
           target: "pending-count-badge",
-          html: existing_pending.count + 1 # +1 for the new report
+          html: existing_pending.count + 1
         ))
     end
 
@@ -327,7 +373,7 @@ RSpec.describe ReportBroadcaster, type: :broadcaster do
       confirmed_struct = AppContainer["repos.report"].find!(confirmed_report.id)
       confirmed_report.update!(status: "confirmed")
 
-      allow(Turbo::StreamsChannel).to receive(:broadcast_action_to)
+      allow(Turbo::StreamsChannel).to receive(:broadcast_action_to).and_call_original
 
       broadcaster.confirmed(confirmed_struct, race.id)
 
@@ -349,7 +395,7 @@ RSpec.describe ReportBroadcaster, type: :broadcaster do
       rejected_struct = AppContainer["repos.report"].find!(rejected_report.id)
       rejected_report.update!(status: "rejected")
 
-      allow(Turbo::StreamsChannel).to receive(:broadcast_action_to)
+      allow(Turbo::StreamsChannel).to receive(:broadcast_action_to).and_call_original
 
       broadcaster.rejected(rejected_struct, race.id)
 
@@ -369,32 +415,34 @@ RSpec.describe ReportBroadcaster, type: :broadcaster do
 
   describe "DOM ID generation" do
     it "generates correct DOM IDs for removal" do
-      expect(Turbo::StreamsChannel).to receive(:broadcast_action_to)
+      allow(Turbo::StreamsChannel).to receive(:broadcast_remove_to).and_call_original
+
+      broadcaster.confirmed(report_struct, race.id)
+
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_remove_to)
         .with("race_#{race.id}_reports", hash_including(
           target: "report_#{report.id}"
         ))
-
-      broadcaster.confirmed(report_struct, race.id)
     end
   end
 
   describe "part wrapping" do
     it "wraps structs in parts before rendering" do
-      factory = instance_double(Web::Parts::Factory)
-      allow(broadcaster).to receive(:parts_factory).and_return(factory)
-      
-      expect(factory).to receive(:wrap).with(report_struct).and_call_original
-
-      allow(Turbo::StreamsChannel).to receive(:broadcast_action_to)
+      real_factory = Web::Parts::Factory.new
+      allow(broadcaster).to receive(:parts_factory).and_return(real_factory)
+      allow(real_factory).to receive(:wrap).and_call_original
+      allow(Turbo::StreamsChannel).to receive(:broadcast_prepend_to).and_call_original
 
       broadcaster.created(report_struct, race.id)
+
+      expect(real_factory).to have_received(:wrap).with(report_struct).at_least(:once)
     end
   end
 
   describe "error handling" do
     it "raises error if race not found" do
       expect {
-        broadcaster.created(report_struct, 999999)
+        broadcaster.created(report_struct, 999_999)
       }.to raise_error(ActiveRecord::RecordNotFound)
     end
   end

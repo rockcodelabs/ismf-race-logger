@@ -54,7 +54,9 @@ module Operations
         return Failure([:reports_not_found, missing_ids]) if missing_ids.any?
 
         # Check if all reports belong to this incident
-        not_in_incident = reports.where.not(incident_id: incident_id)
+        # NOTE: SQL WHERE NOT (incident_id = X) does not match NULL rows,
+        # so we must also check for reports with no incident assigned.
+        not_in_incident = reports.where("incident_id IS NULL OR incident_id != ?", incident_id)
         if not_in_incident.any?
           wrong_ids = not_in_incident.pluck(:id)
           return Failure([:reports_not_in_incident, wrong_ids])

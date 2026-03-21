@@ -8,13 +8,19 @@ RSpec.describe Structs::ReportSummary do
       id: 1,
       race_id: 10,
       incident_id: incident_id,
+      incident_name: nil,
+      incident_status: nil,
+      incident_has_decision: false,
       bib_number: 42,
       athlete_position: athlete_position,
       race_location_id: 3,
       race_location_name: race_location_name,
       athlete_name: athlete_name,
+      athlete_country: nil,
+      user_name: "Referee Smith",
       status: status,
-      created_at: created_at
+      created_at: created_at,
+      videos_count: 0
     )
   end
 
@@ -295,16 +301,16 @@ RSpec.describe Structs::ReportSummary do
       context "when athlete_name is nil" do
         let(:athlete_name) { nil }
 
-        it "returns Unknown" do
-          expect(summary.athlete_display).to eq("Unknown")
+        it "returns bib number fallback" do
+          expect(summary.athlete_display).to eq("Bib #42")
         end
       end
 
       context "when athlete_name is empty" do
         let(:athlete_name) { "" }
 
-        it "returns Unknown" do
-          expect(summary.athlete_display).to eq("Unknown")
+        it "returns bib number fallback" do
+          expect(summary.athlete_display).to eq("Bib #42")
         end
       end
     end
@@ -359,13 +365,19 @@ RSpec.describe Structs::ReportSummary do
           id: i,
           race_id: 1,
           incident_id: nil,
+          incident_name: nil,
+          incident_status: nil,
+          incident_has_decision: false,
           bib_number: i,
           athlete_position: nil,
           race_location_id: 1,
           race_location_name: "Location #{i}",
           athlete_name: "Athlete #{i}",
+          athlete_country: nil,
+          user_name: nil,
           status: "pending_review",
-          created_at: Time.current
+          created_at: Time.current,
+          videos_count: 0
         )
       end
 
@@ -379,13 +391,19 @@ RSpec.describe Structs::ReportSummary do
         id: 42,
         race_id: 1,
         incident_id: 5,
+        incident_name: nil,
+        incident_status: nil,
+        incident_has_decision: false,
         bib_number: 99,
         athlete_position: 1,
         race_location_id: 2,
         race_location_name: "Test Location",
         athlete_name: "Test Athlete",
+        athlete_country: nil,
+        user_name: nil,
         status: "confirmed",
-        created_at: Time.current
+        created_at: Time.current,
+        videos_count: 0
       )
 
       expect(summary.id).to eq(42)

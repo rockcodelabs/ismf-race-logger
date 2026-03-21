@@ -154,6 +154,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_20_100000) do
     t.index ["user_id"], name: "index_magic_links_on_user_id"
   end
 
+  create_table "notes", force: :cascade do |t|
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.bigint "notable_id", null: false
+    t.string "notable_type", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["notable_type", "notable_id"], name: "index_notes_on_notable_type_and_notable_id"
+    t.index ["user_id"], name: "index_notes_on_user_id"
+  end
+
   create_table "penalties", force: :cascade do |t|
     t.string "category", limit: 1, null: false
     t.text "category_description"
@@ -339,6 +350,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_20_100000) do
   add_foreign_key "incidents", "races"
   add_foreign_key "incidents", "users", column: "decided_by_user_id"
   add_foreign_key "magic_links", "users"
+  add_foreign_key "notes", "users"
   add_foreign_key "race_locations", "races"
   add_foreign_key "race_participations", "athletes"
   add_foreign_key "race_participations", "races"

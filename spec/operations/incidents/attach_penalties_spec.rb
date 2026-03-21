@@ -24,27 +24,27 @@ RSpec.describe Operations::Incidents::AttachPenalties do
       end
 
       it "returns Success with an incident struct" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         expect(result).to be_success
         expect(result.value!).to be_a(Structs::Incident)
       end
 
       it "attaches the penalties to the incident" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         expect(result.value!.penalties_count).to eq(2)
       end
 
       it "persists the penalty associations to the database" do
-        operation.call(valid_params)
+        operation.call(**valid_params)
 
         incident.reload
         expect(incident.penalties).to contain_exactly(penalty1, penalty2)
       end
 
       it "creates incident_penalty records" do
-        expect { operation.call(valid_params) }.to change(IncidentPenalty, :count).by(2)
+        expect { operation.call(**valid_params) }.to change(IncidentPenalty, :count).by(2)
       end
     end
 
@@ -60,14 +60,14 @@ RSpec.describe Operations::Incidents::AttachPenalties do
       end
 
       it "returns Success with an incident struct" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         expect(result).to be_success
         expect(result.value!.penalties_count).to eq(1)
       end
 
       it "persists the penalty association" do
-        operation.call(valid_params)
+        operation.call(**valid_params)
 
         incident.reload
         expect(incident.penalties).to contain_exactly(penalty)
@@ -94,7 +94,7 @@ RSpec.describe Operations::Incidents::AttachPenalties do
       end
 
       it "removes old penalties and adds new ones" do
-        operation.call(replace_params)
+        operation.call(**replace_params)
 
         incident.reload
         expect(incident.penalties).to contain_exactly(new_penalty1, new_penalty2)
@@ -102,7 +102,7 @@ RSpec.describe Operations::Incidents::AttachPenalties do
       end
 
       it "updates the penalties_count correctly" do
-        result = operation.call(replace_params)
+        result = operation.call(**replace_params)
 
         expect(result.value!.penalties_count).to eq(2)
       end
@@ -124,20 +124,20 @@ RSpec.describe Operations::Incidents::AttachPenalties do
       end
 
       it "removes all penalties from the incident" do
-        operation.call(clear_params)
+        operation.call(**clear_params)
 
         incident.reload
         expect(incident.penalties).to be_empty
       end
 
       it "returns incident with zero penalties_count" do
-        result = operation.call(clear_params)
+        result = operation.call(**clear_params)
 
         expect(result.value!.penalties_count).to eq(0)
       end
 
       it "deletes the incident_penalty records" do
-        expect { operation.call(clear_params) }.to change(IncidentPenalty, :count).by(-1)
+        expect { operation.call(**clear_params) }.to change(IncidentPenalty, :count).by(-1)
       end
     end
 
@@ -153,7 +153,7 @@ RSpec.describe Operations::Incidents::AttachPenalties do
       end
 
       it "allows attaching penalties to decided incidents" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         expect(result).to be_success
         expect(result.value!.penalties_count).to eq(1)
@@ -172,7 +172,7 @@ RSpec.describe Operations::Incidents::AttachPenalties do
       end
 
       it "allows attaching penalties to rejected incidents" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         expect(result).to be_success
         expect(result.value!.penalties_count).to eq(1)
@@ -212,7 +212,7 @@ RSpec.describe Operations::Incidents::AttachPenalties do
       end
 
       it "returns Failure with validation error (contract validates first)" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:validation_failed)
@@ -231,7 +231,7 @@ RSpec.describe Operations::Incidents::AttachPenalties do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:validation_failed)
@@ -242,7 +242,7 @@ RSpec.describe Operations::Incidents::AttachPenalties do
         existing_penalty = create(:penalty, :false_start)
         create(:incident_penalty, incident: incident, penalty: existing_penalty)
 
-        operation.call(invalid_params)
+        operation.call(**invalid_params)
 
         incident.reload
         expect(incident.penalties).to contain_exactly(existing_penalty)
@@ -261,7 +261,7 @@ RSpec.describe Operations::Incidents::AttachPenalties do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:validation_failed)
@@ -269,7 +269,7 @@ RSpec.describe Operations::Incidents::AttachPenalties do
       end
 
       it "does not attach any penalties" do
-        operation.call(invalid_params)
+        operation.call(**invalid_params)
 
         incident.reload
         expect(incident.penalties).to be_empty
@@ -309,14 +309,14 @@ RSpec.describe Operations::Incidents::AttachPenalties do
       end
 
       it "attaches all penalties successfully" do
-        result = operation.call(many_penalties_params)
+        result = operation.call(**many_penalties_params)
 
         expect(result).to be_success
         expect(result.value!.penalties_count).to eq(5)
       end
 
       it "persists all penalty associations" do
-        operation.call(many_penalties_params)
+        operation.call(**many_penalties_params)
 
         incident.reload
         expect(incident.penalties.count).to eq(5)
@@ -354,6 +354,7 @@ RSpec.describe Operations::Incidents::AttachPenalties do
           race_id: race.id,
           race_location_id: race_location.id,
           status: "pending",
+          custom_name: nil,
           description: nil,
           decided_by_user_id: nil,
           decided_at: nil,
@@ -387,8 +388,8 @@ RSpec.describe Operations::Incidents::AttachPenalties do
       end
 
       it "produces the same result when called multiple times with same params" do
-        result1 = operation.call(same_params)
-        result2 = operation.call(same_params)
+        result1 = operation.call(**same_params)
+        result2 = operation.call(**same_params)
 
         expect(result1).to be_success
         expect(result2).to be_success
@@ -396,9 +397,9 @@ RSpec.describe Operations::Incidents::AttachPenalties do
       end
 
       it "does not create duplicate penalty associations" do
-        operation.call(same_params)
+        operation.call(**same_params)
 
-        expect { operation.call(same_params) }.not_to change(IncidentPenalty, :count)
+        expect { operation.call(**same_params) }.not_to change(IncidentPenalty, :count)
       end
     end
   end

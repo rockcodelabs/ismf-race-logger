@@ -98,6 +98,9 @@ Rails.application.routes.draw do
       end
     end
     
+    # Polymorphic notes (flat resource — notable_type/notable_id in params)
+    resources :notes, only: [:create, :edit, :update, :destroy], controller: "notes"
+
     # Athlete import routes (nested under races)
     resources :races, only: [] do
       resource :imports, only: [:new, :create], controller: "races/imports", as: :import

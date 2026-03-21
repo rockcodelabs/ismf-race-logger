@@ -162,6 +162,9 @@
         <p class="text-base text-ismf-navy"><%= @report.description %></p>
       </div>
     <% end %>
+
+    <!-- Notes Section -->
+    <%= render "admin/notes/notes_section_touch", notable_type: "Report", notable_id: @report.id, notes: @notes %>
   </div>
 
   <!-- Action Buttons (fixed at bottom) -->

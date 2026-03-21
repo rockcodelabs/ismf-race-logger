@@ -1,0 +1,83 @@
+<%# Touch-optimized notes section for Reports and Incidents %>
+<%# Usage: render "admin/notes/notes_section_touch", notable_type: "Report", notable_id: @report.id, notes: @notes %>
+
+<div class="bg-white rounded-2xl shadow-sm overflow-hidden" id="notes-section">
+  <div class="px-4 py-3 border-b border-gray-100">
+    <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wide">
+      Notes
+      <% if notes.any? %>
+        <span class="text-gray-400 font-normal">(<%= notes.size %>)</span>
+      <% end %>
+    </h3>
+  </div>
+
+  <!-- Existing Notes -->
+  <% if notes.any? %>
+    <div class="divide-y divide-gray-100">
+      <% notes.each do |note| %>
+        <% is_owner = note.user_id == Current.user&.id %>
+        <div class="px-4 py-3">
+          <p class="text-sm text-ismf-navy whitespace-pre-line break-words"><%= note.body %></p>
+          <div class="mt-2 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs text-gray-400">
+              <span class="font-medium text-gray-500"><%= note.user_name || "Unknown" %></span>
+              <span>&middot;</span>
+              <time datetime="<%= note.created_at.iso8601 %>">
+                <%= time_ago_in_words(note.created_at) %> ago
+              </time>
+              <% if note.edited? %>
+                <span>&middot;</span>
+                <span class="italic">edited</span>
+              <% end %>
+            </div>
+            <% if is_owner %>
+              <div class="flex items-center gap-2">
+                <%= link_to edit_admin_note_path(note.id), class: "p-2 text-gray-400 active:text-ismf-blue rounded-lg transition-colors", title: "Edit" do %>
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                <% end %>
+                <%= button_to admin_note_path(note.id), method: :delete,
+                    class: "p-2 text-gray-400 active:text-red-600 rounded-lg transition-colors",
+                    title: "Delete",
+                    data: { turbo_confirm: "Delete this note?" } do %>
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="px-4 py-4">
+      <p class="text-sm text-gray-400 italic">No notes yet.</p>
+    </div>
+  <% end %>
+
+  <!-- Add Note Form -->
+  <div class="px-4 py-3 bg-gray-50 border-t border-gray-200">
+    <%= form_with url: admin_notes_path, method: :post, class: "flex items-end gap-2" do |f| %>
+      <%= f.hidden_field :notable_type, value: notable_type %>
+      <%= f.hidden_field :notable_id, value: notable_id %>
+
+      <div class="flex-1">
+        <textarea
+          name="body"
+          rows="1"
+          placeholder="Add a note..."
+          required
+          class="w-full rounded-xl border-gray-300 shadow-sm text-sm focus:border-ismf-blue focus:ring-ismf-blue placeholder-gray-400 resize-none py-2.5"
+        ></textarea>
+      </div>
+
+      <%= f.button type: :submit, class: "shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-xl bg-ismf-blue text-white active:bg-blue-700 transition-colors" do %>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+        </svg>
+      <% end %>
+    <% end %>
+  </div>
+</div>

@@ -346,14 +346,15 @@ RSpec.describe CompetitionRepo do
     end
 
     context "when competition has associated races" do
-      let!(:race_type) { create(:race_type, :individual) }
+      let!(:race_type) { create(:race_type_individual) }
       
       before do
         competition.races.create!(
           race_type: race_type,
           name: "Test Race",
-          stage: "qualification",
-          start_time: competition.start_date.to_time,
+          stage_type: "qualification",
+          stage_name: "Qualification",
+          gender_category: "M",
           position: 1,
           status: "scheduled"
         )

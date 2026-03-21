@@ -19,32 +19,33 @@ RSpec.describe Operations::Incidents::Decide do
         {
           id: incident.id,
           status: "approved",
-          user_id: decider.id
+          user_id: decider.id,
+          description: "Approved after review"
         }
       end
 
       it "returns Success with an incident struct" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         expect(result).to be_success
         expect(result.value!).to be_a(Structs::Incident)
       end
 
       it "updates the status to approved" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         expect(result.value!.status).to eq("approved")
       end
 
       it "persists the status change to the database" do
-        operation.call(valid_params)
+        operation.call(**valid_params)
 
         incident.reload
         expect(incident.status).to eq("approved")
       end
 
       it "records who made the decision" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         expect(result.value!.decided_by_user_id).to eq(decider.id)
         expect(result.value!.decided_by_user_name).to eq("Decision Maker")
@@ -52,7 +53,7 @@ RSpec.describe Operations::Incidents::Decide do
 
       it "records when the decision was made" do
         freeze_time do
-          result = operation.call(valid_params)
+          result = operation.call(**valid_params)
 
           expect(result.value!.decided_at).to be_within(1.second).of(Time.current)
         end
@@ -60,7 +61,7 @@ RSpec.describe Operations::Incidents::Decide do
 
       it "persists decision metadata to the database" do
         freeze_time do
-          operation.call(valid_params)
+          operation.call(**valid_params)
 
           incident.reload
           expect(incident.decided_by_user_id).to eq(decider.id)
@@ -81,27 +82,27 @@ RSpec.describe Operations::Incidents::Decide do
       end
 
       it "returns Success with an incident struct" do
-        result = operation.call(reject_params)
+        result = operation.call(**reject_params)
 
         expect(result).to be_success
         expect(result.value!).to be_a(Structs::Incident)
       end
 
       it "updates the status to rejected" do
-        result = operation.call(reject_params)
+        result = operation.call(**reject_params)
 
         expect(result.value!.status).to eq("rejected")
       end
 
       it "persists the status change to the database" do
-        operation.call(reject_params)
+        operation.call(**reject_params)
 
         incident.reload
         expect(incident.status).to eq("rejected")
       end
 
       it "records who made the decision" do
-        result = operation.call(reject_params)
+        result = operation.call(**reject_params)
 
         expect(result.value!.decided_by_user_id).to eq(decider.id)
       end
@@ -239,7 +240,7 @@ RSpec.describe Operations::Incidents::Decide do
       end
 
       it "returns Failure with validation error (contract validates existence)" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:validation_failed)
@@ -259,7 +260,7 @@ RSpec.describe Operations::Incidents::Decide do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:validation_failed)
@@ -267,7 +268,7 @@ RSpec.describe Operations::Incidents::Decide do
       end
 
       it "does not change the incident status" do
-        operation.call(invalid_params)
+        operation.call(**invalid_params)
 
         incident.reload
         expect(incident.status).to eq("pending")
@@ -314,7 +315,7 @@ RSpec.describe Operations::Incidents::Decide do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:validation_failed)
@@ -335,7 +336,7 @@ RSpec.describe Operations::Incidents::Decide do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:validation_failed)
@@ -348,7 +349,7 @@ RSpec.describe Operations::Incidents::Decide do
       let!(:incident2) { create(:incident, :pending, race: race, race_location: race_location) }
 
       it "decides each incident independently" do
-        result1 = operation.call(id: incident1.id, status: "approved", user_id: decider.id)
+        result1 = operation.call(id: incident1.id, status: "approved", user_id: decider.id, description: "Approved after review")
         result2 = operation.call(id: incident2.id, status: "rejected", user_id: decider.id)
 
         expect(result1).to be_success
@@ -378,7 +379,7 @@ RSpec.describe Operations::Incidents::Decide do
       end
 
       it "fails because incident must be pending to decide" do
-        result = operation.call(re_decide_params)
+        result = operation.call(**re_decide_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:validation_failed)
@@ -386,7 +387,7 @@ RSpec.describe Operations::Incidents::Decide do
       end
 
       it "does not change the incident status" do
-        operation.call(re_decide_params)
+        operation.call(**re_decide_params)
 
         incident.reload
         expect(incident.status).to eq("approved")
@@ -399,21 +400,21 @@ RSpec.describe Operations::Incidents::Decide do
         end
 
         it "allows changing the decision" do
-          result = operation.call(re_decide_params)
+          result = operation.call(**re_decide_params)
 
           expect(result).to be_success
           expect(result.value!.status).to eq("rejected")
         end
 
         it "updates the decider to the new user" do
-          result = operation.call(re_decide_params)
+          result = operation.call(**re_decide_params)
 
           expect(result.value!.decided_by_user_id).to eq(decider.id)
         end
 
         it "updates the decided_at timestamp" do
           freeze_time do
-            result = operation.call(re_decide_params)
+            result = operation.call(**re_decide_params)
 
             expect(result.value!.decided_at).to be_within(1.second).of(Time.current)
           end
@@ -455,6 +456,7 @@ RSpec.describe Operations::Incidents::Decide do
           race_location_id: race_location.id,
           status: "approved",
           description: nil,
+          custom_name: nil,
           decided_by_user_id: decider.id,
           decided_at: Time.current,
           created_at: incident.created_at,
@@ -467,7 +469,7 @@ RSpec.describe Operations::Incidents::Decide do
 
         allow(mock_repo).to receive(:find).with(incident.id).and_return(expected_struct)
 
-        result = operation_with_repo.call(id: incident.id, status: "approved", user_id: decider.id)
+        result = operation_with_repo.call(id: incident.id, status: "approved", user_id: decider.id, description: "Approved after review")
 
         expect(result).to be_success
         expect(mock_repo).to have_received(:find).with(incident.id)

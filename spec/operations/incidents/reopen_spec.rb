@@ -265,6 +265,7 @@ RSpec.describe Operations::Incidents::Reopen do
           race_location_id: race_location.id,
           status: "pending",
           description: nil,
+          custom_name: nil,
           decided_by_user_id: nil,
           decided_at: nil,
           created_at: incident.created_at,

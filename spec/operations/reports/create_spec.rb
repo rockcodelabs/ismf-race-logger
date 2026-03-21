@@ -27,28 +27,28 @@ RSpec.describe Operations::Reports::Create do
       end
 
       it "returns Success with a report struct" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         expect(result).to be_success
         expect(result.value!).to be_a(Structs::Report)
       end
 
       it "creates a report in the database" do
-        expect { operation.call(valid_params) }.to change(Report, :count).by(1)
+        expect { operation.call(**valid_params) }.to change(Report, :count).by(1)
       end
 
       it "sets the status to pending_review for non-VAR users" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         expect(result.value!.status).to eq("pending_review")
       end
 
       it "does not create an incident for non-VAR users" do
-        expect { operation.call(valid_params) }.not_to change(Incident, :count)
+        expect { operation.call(**valid_params) }.not_to change(Incident, :count)
       end
 
       it "sets all required fields correctly" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         report = result.value!
         expect(report.race_id).to eq(race.id)
@@ -59,14 +59,14 @@ RSpec.describe Operations::Reports::Create do
       end
 
       it "generates a client_uuid if not provided" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         expect(result.value!.client_uuid).to be_present
         expect(result.value!.client_uuid).to match(/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i)
       end
 
       it "includes associated data in the returned struct" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         report = result.value!
         expect(report.race_location_name).to eq(race_location.name)
@@ -87,29 +87,29 @@ RSpec.describe Operations::Reports::Create do
       end
 
       it "returns Success with a report struct" do
-        result = operation.call(var_params)
+        result = operation.call(**var_params)
 
         expect(result).to be_success
         expect(result.value!).to be_a(Structs::Report)
       end
 
       it "creates a report in the database" do
-        expect { operation.call(var_params) }.to change(Report, :count).by(1)
+        expect { operation.call(**var_params) }.to change(Report, :count).by(1)
       end
 
       it "auto-creates an incident" do
-        expect { operation.call(var_params) }.to change(Incident, :count).by(1)
+        expect { operation.call(**var_params) }.to change(Incident, :count).by(1)
       end
 
       it "links the report to the incident" do
-        result = operation.call(var_params)
+        result = operation.call(**var_params)
         report = result.value!
 
         expect(report.incident_id).to be_present
       end
 
       it "sets incident status to pending" do
-        result = operation.call(var_params)
+        result = operation.call(**var_params)
         report = Report.find(result.value!.id)
         incident = report.incident
 
@@ -117,7 +117,7 @@ RSpec.describe Operations::Reports::Create do
       end
 
       it "sets incident race_location from report" do
-        result = operation.call(var_params)
+        result = operation.call(**var_params)
         report = Report.find(result.value!.id)
         incident = report.incident
 
@@ -134,7 +134,7 @@ RSpec.describe Operations::Reports::Create do
       end
 
       it "keeps report status as pending_review" do
-        result = operation.call(var_params)
+        result = operation.call(**var_params)
 
         expect(result.value!.status).to eq("pending_review")
       end
@@ -220,14 +220,14 @@ RSpec.describe Operations::Reports::Create do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure).to eq([ :validation_failed, { race_id: [ "race must be in progress to create reports" ] } ])
       end
 
       it "does not create a report" do
-        expect { operation.call(invalid_params) }.not_to change(Report, :count)
+        expect { operation.call(**invalid_params) }.not_to change(Report, :count)
       end
     end
 
@@ -247,7 +247,7 @@ RSpec.describe Operations::Reports::Create do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:validation_failed)
@@ -267,7 +267,7 @@ RSpec.describe Operations::Reports::Create do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:validation_failed)
@@ -290,7 +290,7 @@ RSpec.describe Operations::Reports::Create do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:validation_failed)
@@ -313,7 +313,7 @@ RSpec.describe Operations::Reports::Create do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:validation_failed)
@@ -333,7 +333,7 @@ RSpec.describe Operations::Reports::Create do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:validation_failed)
@@ -354,7 +354,7 @@ RSpec.describe Operations::Reports::Create do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:validation_failed)
@@ -375,7 +375,7 @@ RSpec.describe Operations::Reports::Create do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:validation_failed)
@@ -436,7 +436,7 @@ RSpec.describe Operations::Reports::Create do
       end
 
       it "returns Failure with validation errors" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:validation_failed)

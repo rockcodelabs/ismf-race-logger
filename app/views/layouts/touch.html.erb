@@ -38,6 +38,7 @@
     <!-- Touch Navigation (hidden on home page) -->
     <% unless request.path == root_path %>
       <%= render "shared/touch_nav" %>
+      <div class="h-20"></div>
     <% end %>
     
     <!-- Flash Messages Container for Turbo Streams and page loads -->

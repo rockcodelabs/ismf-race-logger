@@ -23,14 +23,14 @@ RSpec.describe Operations::Races::Create do
       end
 
       it "returns Success with Structs::Race" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         expect(result).to be_success
         expect(result.value!).to be_a(Structs::Race)
       end
 
       it "creates a race in the database" do
-        expect { operation.call(valid_params) }.to change(Race, :count).by(1)
+        expect { operation.call(**valid_params) }.to change(Race, :count).by(1)
       end
 
       it "automatically populates race locations from templates" do
@@ -38,7 +38,7 @@ RSpec.describe Operations::Races::Create do
         create(:race_type_location_template, race_type: race_type, name: "Start", display_order: 0, is_standard: true)
         create(:race_type_location_template, race_type: race_type, name: "Finish", display_order: 1, is_standard: true)
 
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
         race = result.value!
 
         # Check that locations were created
@@ -62,7 +62,7 @@ RSpec.describe Operations::Races::Create do
       end
 
       it "sets the race attributes correctly" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
         race = result.value!
 
         expect(race.name).to eq("Women's Sprint - Qualification")
@@ -73,7 +73,7 @@ RSpec.describe Operations::Races::Create do
       end
 
       it "computes stage_name from stage_type (no heat)" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
         race = result.value!
 
         expect(race.stage_name).to eq("Qualification")
@@ -81,14 +81,14 @@ RSpec.describe Operations::Races::Create do
 
       it "computes stage_name from stage_type and heat_number" do
         params = valid_params.merge(stage_type: "Semifinal", heat_number: 2)
-        result = operation.call(params)
+        result = operation.call(**params)
         race = result.value!
 
         expect(race.stage_name).to eq("Semifinal 2")
       end
 
       it "auto-assigns position (first race in race_type)" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
         race = result.value!
 
         expect(race.position).to eq(0)
@@ -98,14 +98,14 @@ RSpec.describe Operations::Races::Create do
         create(:race, competition: competition, race_type: race_type, position: 0)
         create(:race, competition: competition, race_type: race_type, position: 1)
 
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
         race = result.value!
 
         expect(race.position).to eq(2)
       end
 
       it "sets default status to scheduled" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
         race = result.value!
 
         expect(race.status).to eq("scheduled")
@@ -113,7 +113,7 @@ RSpec.describe Operations::Races::Create do
 
       it "allows scheduled_at to be nil" do
         params = valid_params.merge(scheduled_at: nil)
-        result = operation.call(params)
+        result = operation.call(**params)
 
         expect(result).to be_success
         expect(result.value!.scheduled_at).to be_nil
@@ -127,7 +127,7 @@ RSpec.describe Operations::Races::Create do
         allow(AppContainer).to receive(:[]).with("broadcasters.race").and_return(broadcaster)
         allow(broadcaster).to receive(:created)
 
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         expect(broadcaster).to have_received(:created).with(result.value!)
       end
@@ -141,7 +141,7 @@ RSpec.describe Operations::Races::Create do
           stage_type: "Final"
         }
 
-        result = operation.call(params)
+        result = operation.call(**params)
 
         expect(result).to be_failure
         expect(result.failure).to be_a(Hash)
@@ -154,7 +154,7 @@ RSpec.describe Operations::Races::Create do
           stage_type: "Final"
         }
 
-        result = operation.call(params)
+        result = operation.call(**params)
 
         expect(result).to be_failure
       end
@@ -166,7 +166,7 @@ RSpec.describe Operations::Races::Create do
           stage_type: "Final"
         }
 
-        result = operation.call(params)
+        result = operation.call(**params)
 
         expect(result).to be_failure
       end
@@ -178,7 +178,7 @@ RSpec.describe Operations::Races::Create do
           name: "Test Race"
         }
 
-        result = operation.call(params)
+        result = operation.call(**params)
 
         expect(result).to be_failure
       end
@@ -191,7 +191,7 @@ RSpec.describe Operations::Races::Create do
           stage_type: "InvalidStage"
         }
 
-        result = operation.call(params)
+        result = operation.call(**params)
 
         expect(result).to be_failure
         expect(result.failure[:stage_type]).to be_present
@@ -206,7 +206,7 @@ RSpec.describe Operations::Races::Create do
           heat_number: 99
         }
 
-        result = operation.call(params)
+        result = operation.call(**params)
 
         expect(result).to be_failure
         expect(result.failure[:heat_number]).to be_present
@@ -220,7 +220,7 @@ RSpec.describe Operations::Races::Create do
           stage_type: "Final"
         }
 
-        result = operation.call(params)
+        result = operation.call(**params)
 
         expect(result).to be_failure
         expect(result.failure[:competition_id]).to be_present
@@ -234,7 +234,7 @@ RSpec.describe Operations::Races::Create do
           stage_type: "Final"
         }
 
-        result = operation.call(params)
+        result = operation.call(**params)
 
         expect(result).to be_failure
         expect(result.failure[:race_type_id]).to be_present
@@ -248,7 +248,7 @@ RSpec.describe Operations::Races::Create do
           stage_type: "Final"
         }
 
-        result = operation.call(params)
+        result = operation.call(**params)
 
         expect(result).to be_failure
         expect(result.failure[:name]).to be_present
@@ -267,48 +267,47 @@ RSpec.describe Operations::Races::Create do
 
       it "computes 'Qualification' for Qualification stage without heat" do
         params = base_params.merge(stage_type: "Qualification")
-        result = operation.call(params)
+        result = operation.call(**params)
 
         expect(result.value!.stage_name).to eq("Qualification")
       end
 
       it "computes 'Heat 3' for Heat stage with heat number" do
         params = base_params.merge(stage_type: "Heat", heat_number: 3)
-        result = operation.call(params)
+        result = operation.call(**params)
 
         expect(result.value!.stage_name).to eq("Heat 3")
       end
 
       it "computes 'Semifinal 1' for Semifinal stage with heat number" do
         params = base_params.merge(stage_type: "Semifinal", heat_number: 1)
-        result = operation.call(params)
+        result = operation.call(**params)
 
         expect(result.value!.stage_name).to eq("Semifinal 1")
       end
 
       it "computes 'Final' for Final stage without heat" do
         params = base_params.merge(stage_type: "Final")
-        result = operation.call(params)
+        result = operation.call(**params)
 
         expect(result.value!.stage_name).to eq("Final")
       end
     end
 
     context "position computation" do
-      it "positions races within same race_type correctly" do
+      it "positions races globally within the same competition" do
         # Use a fresh competition to avoid conflicts with other tests
         test_competition = create(:competition)
         sprint_type = RaceType.find_by(name: "Sprint") || create(:race_type_sprint)
         individual_type = RaceType.find_by(name: "Individual") || create(:race_type_individual)
 
-        # Create races for sprint (positions 0, 1)
+        # Create races: sprint at 0, 1 and individual at 5
+        # Global max across competition is 5
         create(:race, competition: test_competition, race_type: sprint_type, position: 0)
         create(:race, competition: test_competition, race_type: sprint_type, position: 1)
-
-        # Create races for individual (position 5)
         create(:race, competition: test_competition, race_type: individual_type, position: 5)
 
-        # New sprint race should get position 2 (max sprint position + 1)
+        # New sprint race gets position 6 (global max 5 + 1)
         params = {
           competition_id: test_competition.id,
           race_type_id: sprint_type.id,
@@ -317,10 +316,10 @@ RSpec.describe Operations::Races::Create do
           gender_category: "M"
         }
 
-        result = operation.call(params)
-        expect(result.value!.position).to eq(2)
+        result = operation.call(**params)
+        expect(result.value!.position).to eq(6)
 
-        # New individual race should get position 6 (max individual position + 1)
+        # New individual race gets position 7 (global max now 6 + 1)
         params = {
           competition_id: test_competition.id,
           race_type_id: individual_type.id,
@@ -329,8 +328,8 @@ RSpec.describe Operations::Races::Create do
           gender_category: "W"
         }
 
-        result = operation.call(params)
-        expect(result.value!.position).to eq(6)
+        result = operation.call(**params)
+        expect(result.value!.position).to eq(7)
       end
 
       it "positions races per competition (not globally)" do
@@ -349,7 +348,7 @@ RSpec.describe Operations::Races::Create do
           gender_category: "M"
         }
 
-        result = operation.call(params)
+        result = operation.call(**params)
         expect(result.value!.position).to eq(0)
       end
     end
@@ -367,7 +366,7 @@ RSpec.describe Operations::Races::Create do
           gender_category: "M"
         }
 
-        result = operation.call(params)
+        result = operation.call(**params)
 
         expect(result).to be_failure
         expect(result.failure[:database]).to be_present
@@ -407,7 +406,7 @@ RSpec.describe Operations::Races::Create do
           gender_category: "M"
         }
 
-        result = operation.call(params)
+        result = operation.call(**params)
 
         expect(result).to respond_to(:success?)
         expect(result).to respond_to(:failure?)
@@ -423,7 +422,7 @@ RSpec.describe Operations::Races::Create do
           gender_category: "M"
         }
 
-        result = operation.call(params)
+        result = operation.call(**params)
 
         matched = case result
         in Dry::Monads::Success(race)
@@ -438,7 +437,7 @@ RSpec.describe Operations::Races::Create do
       it "can be pattern matched on Failure" do
         params = { name: "Invalid" }
 
-        result = operation.call(params)
+        result = operation.call(**params)
 
         matched = case result
         in Dry::Monads::Success

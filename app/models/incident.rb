@@ -21,4 +21,5 @@ class Incident < ApplicationRecord
   has_many :reports, dependent: :nullify
   has_many :incident_penalties, dependent: :destroy
   has_many :penalties, through: :incident_penalties
+  has_many :notes, as: :notable, dependent: :destroy
 end

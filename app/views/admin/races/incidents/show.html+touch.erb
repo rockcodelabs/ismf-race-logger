@@ -116,6 +116,9 @@
         </div>
       </div>
     <% end %>
+
+    <!-- Notes Section -->
+    <%= render "admin/notes/notes_section_touch", notable_type: "Incident", notable_id: @incident.id, notes: @notes %>
   </div>
 
   <!-- Action Buttons (fixed at bottom) -->

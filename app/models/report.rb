@@ -25,6 +25,8 @@ class Report < ApplicationRecord
   # Video attachments (multiple videos per report)
   has_many_attached :videos
 
+  has_many :notes, as: :notable, dependent: :destroy
+
   # Generate client_uuid before validation if not present
   before_validation :ensure_client_uuid, on: :create
 

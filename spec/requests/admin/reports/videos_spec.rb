@@ -19,7 +19,7 @@ RSpec.describe "Admin::Reports::Videos" do
     context "with valid video blobs" do
       let(:blob_1) { create_video_blob("video1.mp4", size: 20.megabytes) }
       let(:blob_2) { create_video_blob("video2.mp4", size: 30.megabytes) }
-      let(:params) { { blob_ids: [blob_1.id, blob_2.id] } }
+      let(:params) { { blob_ids: [blob_1.signed_id, blob_2.signed_id] } }
 
       it "attaches videos to the report" do
         expect {
@@ -68,8 +68,8 @@ RSpec.describe "Admin::Reports::Videos" do
     end
 
     context "with invalid file size" do
-      let(:too_small_blob) { create_video_blob("small.mp4", size: 5.megabytes) }
-      let(:params) { { blob_ids: [too_small_blob.id] } }
+      let(:too_large_blob) { create_video_blob("large.mp4", size: 501.megabytes) }
+      let(:params) { { blob_ids: [too_large_blob.signed_id] } }
 
       it "returns 422 with error messages" do
         post path, params: params, as: :json
@@ -78,13 +78,13 @@ RSpec.describe "Admin::Reports::Videos" do
         json = JSON.parse(response.body)
         expect(json).to have_key("errors")
         expect(json["errors"]).to be_an(Array)
-        expect(json["errors"].first).to include("too small")
+        expect(json["errors"].first).to include("too large")
       end
     end
 
     context "with invalid file type" do
       let(:invalid_blob) { create_blob("document.pdf", content_type: "application/pdf", size: 20.megabytes) }
-      let(:params) { { blob_ids: [invalid_blob.id] } }
+      let(:params) { { blob_ids: [invalid_blob.signed_id] } }
 
       it "returns 422 with error messages" do
         post path, params: params, as: :json
@@ -92,13 +92,13 @@ RSpec.describe "Admin::Reports::Videos" do
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
         expect(json).to have_key("errors")
-        expect(json["errors"].first).to include("not MP4 format")
+        expect(json["errors"].first).to include("unsupported format")
       end
     end
 
     context "when report does not exist" do
       let(:blob) { create_video_blob("video.mp4", size: 20.megabytes) }
-      let(:params) { { blob_ids: [blob.id] } }
+      let(:params) { { blob_ids: [blob.signed_id] } }
 
       it "returns 404" do
         invalid_path = admin_race_report_videos_path(race, 999_999)
@@ -113,7 +113,7 @@ RSpec.describe "Admin::Reports::Videos" do
       before { sign_out user }
 
       let(:blob) { create_video_blob("video.mp4", size: 20.megabytes) }
-      let(:params) { { blob_ids: [blob.id] } }
+      let(:params) { { blob_ids: [blob.signed_id] } }
 
       it "redirects to login" do
         post path, params: params, as: :json

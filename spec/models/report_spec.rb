@@ -7,7 +7,7 @@ RSpec.describe Report do
     it { is_expected.to belong_to(:race) }
     it { is_expected.to belong_to(:user) }
     it { is_expected.to belong_to(:race_location) }
-    it { is_expected.to belong_to(:race_participation) }
+    it { is_expected.to belong_to(:race_participation).optional }
     it { is_expected.to belong_to(:incident).optional }
   end
 
@@ -132,9 +132,9 @@ RSpec.describe Report do
       expect(report).not_to be_valid
     end
 
-    it "requires a race_participation" do
+    it "allows optional race_participation (can be nil)" do
       report.race_participation = nil
-      expect(report).not_to be_valid
+      expect(report).to be_valid
     end
 
     it "allows optional incident (can be nil)" do

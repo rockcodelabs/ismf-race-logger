@@ -102,6 +102,9 @@ module Web
             
             # Load participations for bib selection and athlete change
             @participations = race_participation_repo.for_race(@race.id)
+
+            # Load notes for this report
+            @notes = note_repo.for_notable("Report", @report.id)
             
             # Load incident data if report is linked to an incident
             if @report.incident_id.present?
@@ -147,16 +150,13 @@ module Web
                 report_broadcaster.created(report, @race.id)
                 
                 format.turbo_stream do
-                  # Turbo Stream: redirect to reports index
                   # Broadcast already sent to update all connected clients
-                  redirect_to admin_race_reports_path(@race),
-                              notice: "Report created successfully.",
-                              status: :see_other
+                  head :ok
                 end
                 
                 format.html do
-                  # Desktop: redirect to reports index
-                  redirect_to admin_race_reports_path(@race),
+                  # Desktop: redirect to report show page
+                  redirect_to admin_race_report_path(@race, report),
                               notice: "Report created successfully.",
                               status: :see_other
                 end
@@ -199,19 +199,8 @@ module Web
                 report_broadcaster.confirmed(report, @race.id)
                 
                 format.turbo_stream do
-                  render turbo_stream: [
-                    turbo_stream.replace("report-status-badge", html: %{
-                      <span id="report-status-badge" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium #{wrapped_report.status_badge[:class]}">
-                        #{wrapped_report.status_badge[:label]}
-                      </span>
-                    }.html_safe),
-                    turbo_stream.replace("report-actions-card",
-                      partial: "actions_card",
-                      locals: { report: wrapped_report, race: @race }),
-                    turbo_stream.append("flash-messages",
-                      partial: "shared/flash",
-                      locals: { type: "notice", message: "Report confirmed." })
-                  ]
+                  # Broadcast already sent to update all connected clients
+                  head :ok
                 end
                 
                 format.html do
@@ -251,19 +240,8 @@ module Web
                 report_broadcaster.rejected(report, @race.id)
                 
                 format.turbo_stream do
-                  render turbo_stream: [
-                    turbo_stream.replace("report-status-badge", html: %{
-                      <span id="report-status-badge" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium #{wrapped_report.status_badge[:class]}">
-                        #{wrapped_report.status_badge[:label]}
-                      </span>
-                    }.html_safe),
-                    turbo_stream.replace("report-actions-card",
-                      partial: "actions_card",
-                      locals: { report: wrapped_report, race: @race }),
-                    turbo_stream.append("flash-messages",
-                      partial: "shared/flash",
-                      locals: { type: "notice", message: "Report rejected." })
-                  ]
+                  # Broadcast already sent to update all connected clients
+                  head :ok
                 end
                 
                 format.html do
@@ -562,6 +540,10 @@ module Web
 
           def penalty_repo
             @penalty_repo ||= AppContainer["repos.penalty"]
+          end
+
+          def note_repo
+            @note_repo ||= AppContainer["repos.note"]
           end
         end
       end

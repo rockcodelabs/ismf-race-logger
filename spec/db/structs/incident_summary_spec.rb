@@ -9,10 +9,14 @@ RSpec.describe Structs::IncidentSummary do
       race_id: 10,
       race_location_id: race_location_id,
       race_location_name: race_location_name,
+      custom_name: nil,
       status: status,
       reports_count: reports_count,
       penalties_count: penalties_count,
+      penalty_details: nil,
       bib_numbers: bib_numbers,
+      reporter_names: nil,
+      athletes: nil,
       created_at: created_at
     )
   end
@@ -293,10 +297,14 @@ RSpec.describe Structs::IncidentSummary do
           race_id: 1,
           race_location_id: 1,
           race_location_name: "Location #{i}",
+          custom_name: nil,
           status: "pending",
           reports_count: 1,
           penalties_count: 0,
+          penalty_details: nil,
           bib_numbers: [ i ],
+          reporter_names: nil,
+          athletes: nil,
           created_at: Time.current
         )
       end
@@ -312,10 +320,14 @@ RSpec.describe Structs::IncidentSummary do
         race_id: 1,
         race_location_id: 2,
         race_location_name: "Test Location",
+        custom_name: nil,
         status: "approved",
         reports_count: 3,
         penalties_count: 1,
+        penalty_details: nil,
         bib_numbers: [ 10, 20 ],
+        reporter_names: nil,
+        athletes: nil,
         created_at: Time.current
       )
 

@@ -86,6 +86,10 @@ class AppContainer
       IncidentRepo.new
     end
 
+    register :note, memoize: true do
+      NoteRepo.new
+    end
+
     register :expenses_justification, memoize: true do
       ExpensesJustificationRepo.new
     end

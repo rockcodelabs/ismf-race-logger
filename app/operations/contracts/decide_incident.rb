@@ -63,17 +63,7 @@ module Operations
         end
       end
 
-      # When approving, at least one penalty OR description must be provided
-      rule(:penalty_ids, :description, :status) do
-        if values[:status] == "approved"
-          has_penalty = values[:penalty_ids].present? && !values[:penalty_ids].empty?
-          has_description = values[:description].present? && !values[:description].strip.empty?
-          
-          unless has_penalty || has_description
-            key.failure("at least one penalty or a description must be provided when approving an incident")
-          end
-        end
-      end
+
     end
   end
 end

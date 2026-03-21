@@ -59,28 +59,28 @@ RSpec.describe Operations::Incidents::AddReports do
       end
 
       it "returns Success with incident struct" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         expect(result).to be_success
         expect(result.value!).to be_a(Structs::Incident)
       end
 
       it "links all reports to the incident" do
-        operation.call(valid_params)
+        operation.call(**valid_params)
 
         expect(pending_report1.reload.incident_id).to eq(incident.id)
         expect(pending_report2.reload.incident_id).to eq(incident.id)
       end
 
       it "updates the reports_count on incident" do
-        result = operation.call(valid_params)
+        result = operation.call(**valid_params)
 
         # Started with 1 report, added 2 more
         expect(result.value!.reports_count).to eq(3)
       end
 
       it "does not change report status" do
-        operation.call(valid_params)
+        operation.call(**valid_params)
 
         expect(pending_report1.reload.status).to eq("pending_review")
         expect(pending_report2.reload.status).to eq("pending_review")
@@ -96,7 +96,7 @@ RSpec.describe Operations::Incidents::AddReports do
       end
 
       it "returns Success and links the report" do
-        result = operation.call(single_report_params)
+        result = operation.call(**single_report_params)
 
         expect(result).to be_success
         expect(pending_report1.reload.incident_id).to eq(incident.id)
@@ -112,7 +112,7 @@ RSpec.describe Operations::Incidents::AddReports do
       end
 
       it "returns Failure" do
-        result = operation.call(empty_params)
+        result = operation.call(**empty_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:no_reports_provided)
@@ -128,14 +128,14 @@ RSpec.describe Operations::Incidents::AddReports do
       end
 
       it "returns Failure" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure).to eq(:incident_not_found)
       end
 
       it "does not link any reports" do
-        operation.call(invalid_params)
+        operation.call(**invalid_params)
 
         expect(pending_report1.reload.incident_id).to be_nil
       end
@@ -150,7 +150,7 @@ RSpec.describe Operations::Incidents::AddReports do
       end
 
       it "returns Failure with missing IDs" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:reports_not_found)
@@ -158,7 +158,7 @@ RSpec.describe Operations::Incidents::AddReports do
       end
 
       it "does not link any reports (transaction rollback)" do
-        operation.call(invalid_params)
+        operation.call(**invalid_params)
 
         expect(pending_report1.reload.incident_id).to be_nil
       end
@@ -187,7 +187,7 @@ RSpec.describe Operations::Incidents::AddReports do
       end
 
       it "returns Failure with already linked IDs" do
-        result = operation.call(invalid_params)
+        result = operation.call(**invalid_params)
 
         expect(result).to be_failure
         expect(result.failure.first).to eq(:reports_already_linked)
@@ -195,7 +195,7 @@ RSpec.describe Operations::Incidents::AddReports do
       end
 
       it "does not change the report's incident" do
-        operation.call(invalid_params)
+        operation.call(**invalid_params)
 
         expect(linked_report.reload.incident_id).to eq(other_incident.id)
       end
@@ -210,19 +210,19 @@ RSpec.describe Operations::Incidents::AddReports do
       end
 
       it "returns Success (idempotent for reports already in incident)" do
-        result = operation.call(params_with_existing)
+        result = operation.call(**params_with_existing)
 
         expect(result).to be_success
       end
 
       it "links the new reports" do
-        operation.call(params_with_existing)
+        operation.call(**params_with_existing)
 
         expect(pending_report1.reload.incident_id).to eq(incident.id)
       end
 
       it "keeps existing reports linked" do
-        operation.call(params_with_existing)
+        operation.call(**params_with_existing)
 
         expect(existing_report.reload.incident_id).to eq(incident.id)
       end
@@ -250,7 +250,7 @@ RSpec.describe Operations::Incidents::AddReports do
       end
 
       it "allows adding reports from different races (VAR decision)" do
-        result = operation.call(cross_race_params)
+        result = operation.call(**cross_race_params)
 
         # This should succeed - VAR knows what they're doing
         expect(result).to be_success

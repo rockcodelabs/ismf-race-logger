@@ -133,32 +133,32 @@ RSpec.describe Operations::Contracts::AuthenticateUser do
       end
     end
 
-    context "with password shorter than 8 characters" do
+    context "with password shorter than 6 characters" do
+      let(:params) { { email: "valid@example.com", password: "abc" } }
+
+      it "is a failure" do
+        result = contract.call(params)
+
+        expect(result).to be_failure
+        expect(result.errors[:password]).to include("must be at least 6 characters")
+      end
+    end
+
+    context "with password of 5 characters" do
       let(:params) { { email: "valid@example.com", password: "short" } }
 
       it "is a failure" do
         result = contract.call(params)
 
         expect(result).to be_failure
-        expect(result.errors[:password]).to include("must be at least 8 characters")
-      end
-    end
-
-    context "with password of 7 characters" do
-      let(:params) { { email: "valid@example.com", password: "1234567" } }
-
-      it "is a failure" do
-        result = contract.call(params)
-
-        expect(result).to be_failure
-        expect(result.errors[:password]).to include("must be at least 8 characters")
+        expect(result.errors[:password]).to include("must be at least 6 characters")
       end
     end
   end
 
   describe "multiple validation errors" do
     context "with invalid email and short password" do
-      let(:params) { { email: "invalid", password: "short" } }
+      let(:params) { { email: "invalid", password: "abc" } }
 
       it "returns errors for both fields" do
         result = contract.call(params)

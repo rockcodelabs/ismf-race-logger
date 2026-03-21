@@ -54,6 +54,9 @@ module Web
             @reports = report_repo.for_incident(@incident.id)
             @reports = parts_factory.wrap_many(@reports)
             @penalties = penalty_repo.all
+
+            # Load notes for this incident
+            @notes = note_repo.for_notable("Incident", @incident.id)
           end
 
           def new
@@ -594,6 +597,10 @@ module Web
 
           def penalty_repo
             @penalty_repo ||= AppContainer["repos.penalty"]
+          end
+
+          def note_repo
+            @note_repo ||= AppContainer["repos.note"]
           end
 
           def incident_params
