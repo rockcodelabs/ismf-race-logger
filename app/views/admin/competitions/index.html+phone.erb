@@ -6,35 +6,12 @@
 <div class="h-screen overflow-hidden flex flex-col bg-gray-100">
 
   <!-- Header -->
-  <div class="shrink-0 bg-ismf-navy px-4 pt-5 pb-4">
-    <div class="flex items-center justify-between mb-3">
-      <h1 class="text-2xl font-bold text-white tracking-tight">Competitions</h1>
-      <span class="px-2.5 py-1 text-sm font-bold rounded-full bg-white/20 text-white tabular-nums">
+  <div class="shrink-0 bg-ismf-navy px-4 py-4">
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-white">Competitions</h1>
+      <span class="px-3 py-1.5 text-sm font-bold rounded-full bg-white/20 text-white">
         <%= total_count %>
       </span>
-    </div>
-
-    <!-- Filter Pills -->
-    <div class="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
-      <%= link_to admin_competitions_path,
-          class: "shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors active:opacity-70 #{params[:status].blank? ? 'bg-white text-ismf-navy' : 'bg-white/20 text-white'}" do %>
-        All&nbsp;·&nbsp;<%= total_count %>
-      <% end %>
-
-      <%= link_to admin_competitions_path(status: :upcoming),
-          class: "shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors active:opacity-70 #{params[:status] == 'upcoming' ? 'bg-blue-400 text-white' : 'bg-white/20 text-white'}" do %>
-        Upcoming&nbsp;·&nbsp;<%= @status_counts[:upcoming] %>
-      <% end %>
-
-      <%= link_to admin_competitions_path(status: :ongoing),
-          class: "shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors active:opacity-70 #{params[:status] == 'ongoing' ? 'bg-green-400 text-green-900' : 'bg-white/20 text-white'}" do %>
-        Ongoing&nbsp;·&nbsp;<%= @status_counts[:ongoing] %>
-      <% end %>
-
-      <%= link_to admin_competitions_path(status: :past),
-          class: "shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors active:opacity-70 #{params[:status] == 'past' ? 'bg-gray-300 text-gray-800' : 'bg-white/20 text-white'}" do %>
-        Past&nbsp;·&nbsp;<%= @status_counts[:past] %>
-      <% end %>
     </div>
   </div>
 

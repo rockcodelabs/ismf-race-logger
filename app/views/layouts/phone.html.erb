@@ -27,7 +27,7 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="min-h-screen bg-gray-100 antialiased">
+  <body class="min-h-screen bg-gray-100 antialiased pb-20">
     <!-- Flash Messages Container for Turbo Streams and page loads -->
     <div id="flash-messages" data-controller="flash-stack">
       <% if notice %>
@@ -43,5 +43,8 @@
 
     <!-- Phone Video Player Modal (simplified for touch displays) -->
     <%= render "shared/phone_video_player_modal" %>
+
+    <!-- Phone Bottom Navigation -->
+    <%= render "shared/phone_bottom_nav" %>
   </body>
 </html>

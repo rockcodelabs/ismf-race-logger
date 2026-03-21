@@ -1,0 +1,36 @@
+<% content_for :page_title, "Sign In" %>
+
+<div class="min-h-screen flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-ismf-navy via-ismf-blue to-ismf-navy px-4 py-8">
+
+  <!-- ISMF Logo -->
+  <div class="mb-8">
+    <%= image_tag "ismf_official_logo.png", alt: "ISMF", class: "h-24 w-auto drop-shadow-2xl" %>
+  </div>
+
+  <!-- Sign In Options -->
+  <div class="w-full max-w-sm space-y-4">
+    
+    <!-- PIN Sign In Button -->
+    <%= link_to select_user_session_path, 
+        class: "flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl hover:bg-gray-50 transition-all duration-200 active:scale-95" do %>
+      <div class="mb-3 w-16 h-16 bg-ismf-primary/10 rounded-full flex items-center justify-center">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-8 h-8 text-ismf-primary">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      </div>
+      <h2 class="text-2xl font-bold text-gray-800 mb-1">Sign In with PIN</h2>
+      <p class="text-base text-gray-600">Quick PIN entry</p>
+    <% end %>
+
+    <!-- Back Button -->
+    <%= link_to root_path, 
+        class: "flex items-center justify-center gap-2 p-4 bg-white/20 border-2 border-white rounded-xl hover:bg-white/30 transition-all duration-200 active:scale-95" do %>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-6 h-6 text-white">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      <span class="text-lg font-bold text-white">Back to Home</span>
+    <% end %>
+
+  </div>
+
+</div>

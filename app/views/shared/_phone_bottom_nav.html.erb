@@ -1,0 +1,59 @@
+<%# frozen_string_literal: true %>
+<%# Bottom navigation bar for phone displays %>
+<%# Shows: Home, Competition/Race context, User menu %>
+
+<nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-3 py-2 flex items-center justify-between gap-1 z-40 safe-area-inset-bottom">
+  
+  <!-- Home Button -->
+  <%= link_to root_path,
+      class: "flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors flex-1" do %>
+    <svg class="w-5 h-5 text-ismf-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-3m0 0l7-4 7 4M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9m-9 4v4m0 0H8m4 0h4" />
+    </svg>
+    <span class="text-xs font-bold text-gray-700">Home</span>
+  <% end %>
+
+  <!-- Competitions Button -->
+  <%= link_to admin_competitions_path,
+      class: "flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors flex-1" do %>
+    <svg class="w-5 h-5 text-ismf-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+    </svg>
+    <span class="text-xs font-bold text-gray-700">Races</span>
+  <% end %>
+
+  <% if Current.user %>
+  <!-- User Menu Dropdown -->
+  <div class="relative group flex-1">
+    <button type="button"
+            class="w-full flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors"
+            title="Account menu">
+      <svg class="w-5 h-5 text-ismf-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span class="text-xs font-bold text-gray-700">Account</span>
+    </button>
+
+    <!-- Dropdown Menu (hidden by default, shows on hover/focus) -->
+    <div class="hidden group-hover:flex group-focus-within:flex absolute bottom-full right-0 mb-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 flex-col z-50">
+      <!-- User Info -->
+      <div class="px-4 py-2.5 border-b border-gray-100">
+        <p class="text-sm font-semibold text-gray-900"><%= current_user.email_address %></p>
+        <p class="text-xs text-gray-500 mt-0.5"><%= current_user.full_name %></p>
+      </div>
+
+      <!-- Logout -->
+      <%= button_to session_path,
+          method: :delete,
+          class: "w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 font-semibold transition-colors active:bg-red-100 rounded-b-lg flex items-center gap-2" do %>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+        Sign Out
+      <% end %>
+  <% end %>
+    </div>
+  </div>
+
+</nav>
+

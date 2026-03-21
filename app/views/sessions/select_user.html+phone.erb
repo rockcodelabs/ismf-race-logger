@@ -1,0 +1,152 @@
+<% content_for :page_title, "Select User" %>
+
+<div class="flex flex-col h-screen bg-gradient-to-br from-ismf-navy via-ismf-blue to-ismf-navy">
+
+  <!-- Header -->
+  <div class="flex-shrink-0 px-4 py-6 text-center">
+    <%= image_tag "ismf_official_logo.png", alt: "ISMF", class: "h-16 w-auto mx-auto drop-shadow-lg mb-3" %>
+    <h1 class="text-2xl font-bold text-white">Select Your Profile</h1>
+  </div>
+
+  <!-- User List - Scrollable -->
+  <div class="flex-1 overflow-y-auto px-4 pb-4">
+    <div class="space-y-3">
+      <% @users.each do |user| %>
+        <%= link_to select_user_session_path(user_id: user.id, redirect_to: params[:redirect_to]), 
+            data: { turbo: false },
+            class: "flex items-center gap-4 p-4 bg-white rounded-xl shadow-lg hover:shadow-xl hover:bg-gray-50 transition-all duration-200 active:scale-95" do %>
+          <div class="w-14 h-14 bg-ismf-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-7 h-7 text-ismf-primary">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <div class="flex flex-col flex-1 min-w-0">
+            <span class="text-lg font-bold text-gray-800 truncate"><%= user.name %></span>
+            <span class="text-sm text-gray-600">
+              <%= user.role&.name&.humanize || "No role" %>
+            </span>
+          </div>
+          <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Back Button -->
+  <div class="flex-shrink-0 px-4 py-4 border-t border-white/20">
+    <%= link_to root_path, 
+        class: "flex items-center justify-center gap-2 px-6 py-3 bg-white/20 border-2 border-white rounded-lg hover:bg-white/30 transition-all duration-200 active:scale-95" do %>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5 text-white">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      <span class="text-base font-bold text-white">Back</span>
+    <% end %>
+  </div>
+
+  <!-- PIN Entry Modal -->
+  <% if params[:user_id].present? %>
+    <% selected_user = User.find_by(id: params[:user_id]) %>
+    <% if selected_user %>
+      <div id="pin-modal" class="fixed inset-0 bg-black/70 flex items-end z-50" onclick="window.location.href='<%= select_user_session_path(redirect_to: params[:redirect_to]) %>'">
+        <div class="w-full bg-white rounded-t-3xl shadow-2xl p-6 animate-slide-up" onclick="event.stopPropagation()">
+          
+          <!-- User Info -->
+          <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-ismf-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-8 h-8 text-ismf-primary">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800"><%= selected_user.name %></h2>
+            <p class="text-sm text-gray-600 mt-1"><%= selected_user.role&.name&.humanize || "No role" %></p>
+          </div>
+
+          <%= form_with url: authenticate_pin_session_path, method: :post, local: true, data: { controller: "pin-entry" } do |form| %>
+            <%= form.hidden_field :user_id, value: selected_user.id %>
+            <%= form.hidden_field :redirect_to, value: params[:redirect_to] if params[:redirect_to].present? %>
+            <%= form.hidden_field :pin, value: "", data: { pin_entry_target: "input" } %>
+
+            <!-- PIN Display -->
+            <div class="mb-6">
+              <label class="text-sm font-semibold text-gray-700 text-center block mb-3">Enter Your PIN</label>
+              <div class="flex justify-center gap-2">
+                <div class="w-12 h-12 border-3 border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                  <span class="text-2xl font-bold text-gray-400" data-pin-entry-target="dot1">•</span>
+                </div>
+                <div class="w-12 h-12 border-3 border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                  <span class="text-2xl font-bold text-gray-400" data-pin-entry-target="dot2">•</span>
+                </div>
+                <div class="w-12 h-12 border-3 border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                  <span class="text-2xl font-bold text-gray-400" data-pin-entry-target="dot3">•</span>
+                </div>
+                <div class="w-12 h-12 border-3 border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                  <span class="text-2xl font-bold text-gray-400" data-pin-entry-target="dot4">•</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Numeric Keypad -->
+            <div class="grid grid-cols-3 gap-3 mb-6">
+              <% (1..9).each do |num| %>
+                <button type="button" 
+                        data-action="click->pin-entry#addDigit" 
+                        data-digit="<%= num %>"
+                        class="h-14 bg-gradient-to-b from-gray-100 to-gray-200 hover:from-ismf-primary hover:to-ismf-primary/90 hover:text-white border-2 border-gray-300 rounded-lg text-xl font-bold transition-all duration-150 active:scale-95 shadow-md">
+                  <%= num %>
+                </button>
+              <% end %>
+
+              <!-- Empty space -->
+              <div></div>
+
+              <!-- Zero button -->
+              <button type="button" 
+                      data-action="click->pin-entry#addDigit" 
+                      data-digit="0"
+                      class="h-14 bg-gradient-to-b from-gray-100 to-gray-200 hover:from-ismf-primary hover:to-ismf-primary/90 hover:text-white border-2 border-gray-300 rounded-lg text-xl font-bold transition-all duration-150 active:scale-95 shadow-md">
+                0
+              </button>
+
+              <!-- Backspace button -->
+              <button type="button" 
+                      data-action="click->pin-entry#deleteDigit"
+                      class="h-14 bg-gradient-to-b from-red-100 to-red-200 hover:from-red-500 hover:to-red-600 hover:text-white border-2 border-red-300 rounded-lg text-lg font-bold transition-all duration-150 active:scale-95 shadow-md flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Cancel Button -->
+            <div>
+              <%= link_to "Cancel", select_user_session_path(redirect_to: params[:redirect_to]), 
+                  class: "block w-full text-center py-3 text-gray-600 hover:text-gray-800 font-semibold transition-colors" %>
+            </div>
+
+            <%= form.hidden_field :submit, value: "true", data: { pin_entry_target: "submit" } %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+
+</div>
+
+<style>
+  @keyframes slide-up {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+</style>
