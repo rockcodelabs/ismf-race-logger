@@ -8,7 +8,7 @@ module Operations
     # Reports are quick captures of potential incidents (location + bib).
     #
     # Required fields:
-    # - race_id: integer (must be an in_progress race)
+    # - race_id: integer (must be a race that is not completed)
     # - race_location_id: integer (must belong to the race)
     # - race_participation_id: integer (must belong to the race)
     # - bib_number: integer (denormalized for quick display)
@@ -31,13 +31,13 @@ module Operations
         optional(:client_uuid).maybe(:string)
       end
 
-      # Validate race exists and is in progress (bypassed for test races)
+      # Validate race exists and is not completed (bypassed for test races)
       rule(:race_id) do
         race = Race.find_by(id: value)
         if race.nil?
           key.failure("must be a valid race")
-        elsif race.status != "in_progress" && !race.is_test?
-          key.failure("race must be in progress to create reports")
+        elsif %w[completed cancelled].include?(race.status) && !race.is_test?
+          key.failure("cannot create reports for completed or cancelled races")
         end
       end
 
