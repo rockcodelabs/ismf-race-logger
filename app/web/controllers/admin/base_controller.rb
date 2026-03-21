@@ -14,9 +14,18 @@ module Web
         private
 
         # Override parent's select_layout to use admin layout in desktop mode
-        # Touch mode still uses touch layout (inherited from parent)
+        # while preserving touch (Raspberry Pi kiosk) and phone variants
         def select_layout
-          touch_display? ? "touch" : "admin"
+          ua = request.user_agent.to_s.downcase
+          is_physical_touch = ua.include?("raspberry") || ua.include?("rpi")
+          
+          if is_physical_touch
+            "touch"
+          elsif is_mobile_device?(ua)
+            "phone"
+          else
+            "admin"
+          end
         end
 
         # Access to parts factory for wrapping structs with presentation logic
