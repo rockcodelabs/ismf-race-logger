@@ -130,6 +130,59 @@ module IsmfRaceLogger
       ZAF RUS SVN SRB CHE SVK SWE TUR UKR USA
     ].freeze
 
+    # IOC to ISO 3166-1 alpha-3 country code mapping
+    # Used to convert Olympic/ISMF IOC codes to ISO codes
+    IOC_TO_ISO = {
+      "AIN" => "RUS",  # Ain (Russian region)
+      "AND" => "AND",  # Andorra
+      "AUS" => "AUS",  # Australia
+      "AUT" => "AUT",  # Austria
+      "AZE" => "AZE",  # Azerbaijan
+      "BEL" => "BEL",  # Belgium
+      "BGR" => "BGR",  # Bulgaria
+      "BIH" => "BIH",  # Bosnia and Herzegovina
+      "CAN" => "CAN",  # Canada
+      "CHE" => "CHE",  # Switzerland (IOC: SUI -> ISO: CHE)
+      "CHN" => "CHN",  # China
+      "CZE" => "CZE",  # Czech Republic
+      "DEU" => "DEU",  # Germany
+      "ESP" => "ESP",  # Spain
+      "FIN" => "FIN",  # Finland
+      "FRA" => "FRA",  # France
+      "GBR" => "GBR",  # Great Britain
+      "GER" => "DEU",  # Germany (IOC: GER -> ISO: DEU)
+      "GRC" => "GRC",  # Greece
+      "HUN" => "HUN",  # Hungary
+      "IND" => "IND",  # India
+      "IRN" => "IRN",  # Iran
+      "ISR" => "ISR",  # Israel
+      "ITA" => "ITA",  # Italy
+      "JPN" => "JPN",  # Japan
+      "KAZ" => "KAZ",  # Kazakhstan
+      "KOR" => "KOR",  # South Korea
+      "LIE" => "LIE",  # Liechtenstein
+      "LTU" => "LTU",  # Lithuania
+      "MDA" => "MDA",  # Moldova
+      "MKD" => "MKD",  # North Macedonia
+      "NED" => "NLD",  # Netherlands (IOC: NED -> ISO: NLD)
+      "NOR" => "NOR",  # Norway
+      "NZL" => "NZL",  # New Zealand
+      "POL" => "POL",  # Poland
+      "PRT" => "PRT",  # Portugal
+      "ROU" => "ROU",  # Romania
+      "RUS" => "RUS",  # Russia
+      "SLO" => "SVN",  # Slovenia (IOC: SLO -> ISO: SVN)
+      "SRB" => "SRB",  # Serbia
+      "SUI" => "CHE",  # Switzerland (IOC: SUI -> ISO: CHE)
+      "SVK" => "SVK",  # Slovakia
+      "SVN" => "SVN",  # Slovenia
+      "SWE" => "SWE",  # Sweden
+      "TUR" => "TUR",  # Turkey
+      "UKR" => "UKR",  # Ukraine
+      "USA" => "USA",  # United States
+      "ZAF" => "ZAF"   # South Africa
+    }.freeze
+
     # Country code (ISO 3166-1 alpha-3)
     CountryCode = String.constrained(
       format: /\A[A-Z]{3}\z/,
