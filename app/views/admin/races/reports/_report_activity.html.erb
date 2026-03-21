@@ -199,32 +199,6 @@
               Remove Incident
             <% end %>
           </div>
-
-        <%# CASE 3: Incident decided - Reopen %>
-        <% elsif report.linked_to_incident? && incident.present? && !incident.pending? %>
-          <%= button_to reopen_admin_race_incident_path(race, incident),
-                        method: :post,
-                        class: "w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white font-medium text-sm transition-colors" do %>
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Reopen Incident
-          <% end %>
-
-        <%# CASE 4: Rejected report (no incident) - Reopen %>
-        <% elsif report.can_reopen? && !report.linked_to_incident? %>
-          <% if policy(report).reopen? %>
-            <%= button_to reopen_admin_race_report_path(race, report),
-                          method: :post,
-                          class: "w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white font-medium text-sm transition-colors" do %>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Reopen Report
-            <% end %>
-          <% end %>
-
-        <%# FALLBACK %>
         <% else %>
           <p class="text-xs text-ismf-gray italic">No actions available</p>
         <% end %>

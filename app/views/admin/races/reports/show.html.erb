@@ -94,48 +94,6 @@
               <dd class="text-xs text-ismf-gray mt-0.5"><%= @report.created_at_time_display[:date] %></dd>
             </div>
           </div>
-
-          <!-- Athlete Position (team races) -->
-          <% if @report.athlete_position.present? && @report.athlete_position > 0 %>
-            <div class="mb-4">
-              <dt class="text-xs font-medium text-ismf-gray">Team Position</dt>
-              <dd class="text-sm text-ismf-navy font-medium">Athlete <%= @report.athlete_position == 1 ? "A (Male)" : "B (Female)" %></dd>
-            </div>
-          <% end %>
-
-          <!-- Description -->
-          <% if @report.description.present? %>
-            <div class="pt-4 border-t border-gray-200">
-              <dt class="text-xs font-medium text-ismf-gray mb-1">Description</dt>
-              <dd class="text-sm text-ismf-navy"><%= @report.description %></dd>
-            </div>
-          <% end %>
-
-          <!-- Incident link (when confirmed) -->
-          <% if @report.linked_to_incident? && defined?(@incident) && @incident.present? %>
-            <div class="pt-4 border-t border-gray-200">
-              <dt class="text-xs font-medium text-ismf-gray mb-1">Incident</dt>
-              <dd class="flex items-center gap-2">
-                <span class="text-sm font-medium text-ismf-navy">Incident #<%= @incident.id %></span>
-                <%
-                  # Show penalties if applied, otherwise show incident status
-                  if defined?(@attached_penalty_ids) && @attached_penalty_ids.any?
-                    incident_badge = { class: "bg-orange-100 text-orange-800", label: "#{@attached_penalty_ids.size} Penalties Applied" }
-                  else
-                    incident_badge = case @incident.status
-                    when "pending"  then { class: "bg-yellow-100 text-yellow-800", label: "Pending" }
-                    when "approved" then { class: "bg-green-100 text-green-800",   label: "Approved" }
-                    when "rejected" then { class: "bg-red-100 text-red-800",       label: "Rejected" }
-                    else                 { class: "bg-gray-100 text-gray-800",     label: @incident.status.titleize }
-                    end
-                  end
-                %>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium <%= incident_badge[:class] %>">
-                  <%= incident_badge[:label] %>
-                </span>
-              </dd>
-            </div>
-          <% end %>
         </div>
       </div>
 
