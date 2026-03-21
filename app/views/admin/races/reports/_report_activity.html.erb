@@ -1,0 +1,256 @@
+<%# Report Activity Card - Timeline + Actions
+    Shows only report-specific events (created, confirmed/rejected, merged, penalties)
+    and action buttons for the current state
+
+    Locals:
+      report          - Parts::Report
+      race            - Race object
+      incident        - Structs::Incident or nil
+      penalties       - Array of all penalties (for selection)
+      attached_penalty_ids - Array of IDs of attached penalties
+%>
+
+<div class="card">
+  <div class="p-6">
+    <h3 class="text-lg font-semibold text-ismf-navy mb-6">Report Activity</h3>
+
+    <div class="space-y-6">
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!-- Timeline Section - Report Events Only                          -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <div class="space-y-4">
+        <!-- Created -->
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-ismf-navy">Report Created</p>
+            <p class="text-xs text-ismf-gray"><%= report.created_at_full %></p>
+          </div>
+        </div>
+
+        <!-- Confirmed/Rejected -->
+        <% if report.status != "pending_review" %>
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-full <%= report.status == 'confirmed' ? 'bg-blue-100' : 'bg-red-100' %> flex items-center justify-center shrink-0">
+              <% if report.status == "confirmed" %>
+                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              <% else %>
+                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              <% end %>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-ismf-navy">Report <%= report.status_badge[:label] %></p>
+              <p class="text-xs text-ismf-gray"><%= report.time_ago %></p>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Merged into Incident -->
+        <% if report.linked_to_incident? && incident.present? %>
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-ismf-navy">Merged into Incident</p>
+              <p class="text-xs text-ismf-gray">Incident #<%= incident.id %></p>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Penalties Applied -->
+        <% if incident.present? && attached_penalty_ids.any? %>
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-ismf-navy">Penalties Applied</p>
+              <div class="mt-2 space-y-1">
+                <% penalties.select { |p| attached_penalty_ids.include?(p.id) }.each do |penalty| %>
+                  <div class="flex items-center gap-2 p-2 bg-orange-50 rounded text-xs">
+                    <span class="inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 font-bold text-xs">
+                      <%= penalty.penalty_number %>
+                    </span>
+                    <span class="text-ismf-gray"><%= penalty.name %></span>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!-- Actions Section                                               -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <div class="border-t border-gray-200 pt-6">
+        <h4 class="text-sm font-semibold text-ismf-navy mb-3">Actions</h4>
+
+        <%# CASE 1: Pending, no incident - Confirm/Reject %>
+        <% if report.can_confirm? && !report.linked_to_incident? %>
+          <div class="space-y-2">
+            <% if policy(report).confirm? %>
+              <%= button_to confirm_admin_race_report_path(race, report),
+                            method: :post,
+                            class: "w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium text-sm transition-colors" do %>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Confirm Report
+              <% end %>
+            <% end %>
+
+            <% if policy(report).reject? %>
+              <%= button_to reject_admin_race_report_path(race, report),
+                            method: :post,
+                            class: "w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium text-sm transition-colors" do %>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Reject Report
+              <% end %>
+            <% end %>
+          </div>
+
+        <%# CASE 2: Confirmed, incident pending - Penalties/Remove %>
+        <% elsif report.linked_to_incident? && incident.present? && incident.pending? %>
+          <%= form_with url: attach_penalties_admin_race_incident_path(race, incident),
+                        method: :post,
+                        local: true,
+                        class: "space-y-3" do |f| %>
+            <div>
+              <button type="button"
+                      class="w-full flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-sm"
+                      onclick="document.getElementById('penalty-selector-activity').classList.toggle('hidden');
+                               document.getElementById('penalty-icon-activity').classList.toggle('rotate-180')">
+                <span class="font-medium text-ismf-navy">Select Penalties</span>
+                <svg class="w-4 h-4 text-ismf-gray transform transition-transform"
+                     id="penalty-icon-activity"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              <div id="penalty-selector-activity" class="hidden mt-2 space-y-2">
+                <input type="text"
+                       id="penalty-search-activity"
+                       placeholder="Search (e.g., A.2, C1)"
+                       autocomplete="off"
+                       class="block w-full px-2 py-1.5 text-xs rounded-md border-gray-300 shadow-sm focus:border-ismf-blue focus:ring-ismf-blue">
+
+                <div class="space-y-1 max-h-36 overflow-y-auto border border-gray-200 rounded p-2"
+                     id="penalty-list-activity">
+                  <% if penalties.present? %>
+                    <% penalties.group_by(&:category).each do |category, cat_penalties| %>
+                      <div class="penalty-category-activity" data-category="<%= category %>">
+                        <p class="text-[10px] font-semibold text-ismf-gray px-1 mb-0.5">Category <%= category %></p>
+                        <% cat_penalties.each do |penalty| %>
+                          <label class="flex items-center gap-1.5 p-1 rounded hover:bg-gray-50 cursor-pointer penalty-item-activity text-xs"
+                                 data-penalty-number="<%= penalty.penalty_number.downcase %>"
+                                 data-penalty-name="<%= penalty.name.downcase %>">
+                            <input type="checkbox"
+                                   name="penalty_ids[]"
+                                   value="<%= penalty.id %>"
+                                   <%= 'checked' if attached_penalty_ids.include?(penalty.id) %>
+                                   class="h-3 w-3 rounded border-gray-300 text-ismf-blue focus:ring-ismf-blue">
+                            <span class="inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 font-bold text-[10px] shrink-0">
+                              <%= penalty.penalty_number %>
+                            </span>
+                            <span class="text-ismf-gray flex-1 truncate text-[11px]"><%= penalty.name %></span>
+                          </label>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit"
+                    class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-medium text-sm transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Save Penalties
+            </button>
+          <% end %>
+
+          <div class="mt-3 pt-3 border-t border-gray-200">
+            <%= button_to admin_race_incident_path(race, incident),
+                          method: :delete,
+                          data: { turbo_confirm: "Remove this incident and all linked reports?" },
+                          class: "w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 font-medium text-sm border border-red-200 transition-colors" do %>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Remove Incident
+            <% end %>
+          </div>
+
+        <%# CASE 3: Incident decided - Reopen %>
+        <% elsif report.linked_to_incident? && incident.present? && !incident.pending? %>
+          <%= button_to reopen_admin_race_incident_path(race, incident),
+                        method: :post,
+                        class: "w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white font-medium text-sm transition-colors" do %>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Reopen Incident
+          <% end %>
+
+        <%# CASE 4: Rejected report (no incident) - Reopen %>
+        <% elsif report.can_reopen? && !report.linked_to_incident? %>
+          <% if policy(report).reopen? %>
+            <%= button_to reopen_admin_race_report_path(race, report),
+                          method: :post,
+                          class: "w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white font-medium text-sm transition-colors" do %>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Reopen Report
+            <% end %>
+          <% end %>
+
+        <%# FALLBACK %>
+        <% else %>
+          <p class="text-xs text-ismf-gray italic">No actions available</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% if report.linked_to_incident? && incident.present? && incident.pending? %>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var searchInput = document.getElementById('penalty-search-activity');
+      if (searchInput) {
+        searchInput.addEventListener('input', function () {
+          var query = this.value.toLowerCase().trim();
+          document.querySelectorAll('.penalty-item-activity').forEach(function (item) {
+            var num  = item.getAttribute('data-penalty-number');
+            var name = item.getAttribute('data-penalty-name');
+            item.style.display = (query === '' || num.includes(query) || name.includes(query)) ? '' : 'none';
+          });
+          document.querySelectorAll('.penalty-category-activity').forEach(function (cat) {
+            var visible = cat.querySelectorAll('.penalty-item-activity:not([style*="display: none"])');
+            cat.style.display = visible.length > 0 ? '' : 'none';
+          });
+        });
+      }
+    });
+  </script>
+<% end %>

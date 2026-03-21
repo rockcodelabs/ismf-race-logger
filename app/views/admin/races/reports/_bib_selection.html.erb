@@ -101,4 +101,59 @@
       </div>
     </div>
   </details>
+
+  <!-- Change Race Location Card -->
+  <% if defined?(race_locations) && race_locations.present? %>
+    <details class="card border border-gray-200 group">
+      <summary class="p-4 cursor-pointer hover:bg-gray-50 transition-colors list-none">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+              <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-ismf-navy">Change Location</h3>
+              <p class="text-xs text-ismf-gray">Currently: <%= report.location_name %></p>
+            </div>
+          </div>
+          <svg class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </summary>
+
+      <div class="px-4 pb-4 pt-2 border-t border-gray-100">
+        <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mb-3">
+          Select a different location to reassign this report.
+        </p>
+
+        <div class="bg-white rounded-lg max-h-48 overflow-y-auto border border-gray-100">
+          <div class="grid grid-cols-2 gap-2 p-3">
+            <% race_locations.each do |location| %>
+              <% is_current = location.id == report.race_location_id %>
+              <%= form_with url: update_location_admin_race_report_path(race, report),
+                            method: :patch,
+                            class: "contents" do |f| %>
+                <%= f.hidden_field :race_location_id, value: location.id %>
+
+                <%= f.button type: :submit,
+                             disabled: is_current,
+                             class: "flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all #{is_current ? 'border-ismf-blue bg-blue-50 cursor-default opacity-75' : 'border-gray-200 bg-white hover:border-ismf-blue hover:shadow-md hover:scale-105 active:scale-95'}" do %>
+                  <span class="text-sm font-semibold text-center <%= is_current ? 'text-ismf-blue' : 'text-ismf-navy' %>">
+                    <%= location.name %>
+                  </span>
+                  <% if is_current %>
+                    <span class="text-[10px] font-bold text-ismf-blue mt-1 uppercase tracking-wide">Current</span>
+                  <% end %>
+                <% end %>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </details>
+  <% end %>
 <% end %>

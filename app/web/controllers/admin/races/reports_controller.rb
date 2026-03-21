@@ -23,7 +23,7 @@ module Web
           include Dry::Monads[:result]
 
           before_action :set_race
-          before_action :set_report, only: [ :show, :confirm, :reject, :reject_with_incident, :reopen, :video_thumbnails, :update_bib ]
+          before_action :set_report, only: [ :show, :confirm, :reject, :reject_with_incident, :reopen, :video_thumbnails, :update_bib, :update_location ]
 
           # GET /admin/races/:race_id/reports/videos
           # Returns all videos for the race in JSON format for prefetching
@@ -103,6 +103,9 @@ module Web
 
             # Load participations for bib selection and athlete change
             @participations = race_participation_repo.for_race(@race.id)
+
+            # Load race locations for location change
+            @race_locations = race_location_repo.for_race(@race.id)
 
             # Load notes for this report
             @notes = note_repo.for_notable("Report", @report.id)
@@ -460,11 +463,32 @@ module Web
             end
           end
 
+          def update_location
+            authorize @report, :update?
+
+            race_location_id = params[:race_location_id].to_i
+            report_model = Report.find(@report.id)
+
+            if report_model.update(race_location_id: race_location_id)
+              # Broadcast update to all connected clients
+              updated_report = report_repo.find(@report.id)
+              report_broadcaster.updated(updated_report, @race.id)
+
+              redirect_to admin_race_report_path(@race, @report),
+                          notice: "Location updated successfully.",
+                          status: :see_other
+            else
+              redirect_to admin_race_report_path(@race, @report),
+                          alert: "Error updating location.",
+                          status: :unprocessable_entity
+            end
+          end
+
           def video_thumbnails
             authorize @report, :show?
-            
+
             @report = parts_factory.wrap(@report)
-            
+
             render partial: "video_thumbnails", locals: { report: @report, race: @race }
           end
 
