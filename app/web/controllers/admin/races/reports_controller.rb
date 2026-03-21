@@ -63,18 +63,19 @@ module Web
 
           def index
             authorize Report, :index?
-            
+
             # Filter by status (default to pending_review)
+            # Uses visible_* methods which exclude secondary (merged) reports
             status = params[:status].presence || "pending_review"
-            
+
             if status == "all"
-              @reports = report_repo.for_race(@race.id)
+              @reports = report_repo.visible_for_race(@race.id)
             else
-              @reports = report_repo.by_status(@race.id, status)
+              @reports = report_repo.visible_by_status(@race.id, status)
             end
-            
+
             @reports = parts_factory.wrap_many(@reports)
-            @status_counts = report_repo.count_by_status(@race.id)
+            @status_counts = report_repo.visible_count_by_status(@race.id)
 
             # Get all videos for this race for prefetch controller
             @race_videos = []
@@ -99,21 +100,41 @@ module Web
           def show
             authorize @report, :show?
             @report = parts_factory.wrap(@report)
-            
+
             # Load participations for bib selection and athlete change
             @participations = race_participation_repo.for_race(@race.id)
 
             # Load notes for this report
             @notes = note_repo.for_notable("Report", @report.id)
-            
+
             # Load incident data if report is linked to an incident
             if @report.incident_id.present?
               @incident = incident_repo.find(@report.incident_id)
               @penalties = penalty_repo.all
-              
+
               # Get attached penalty IDs for pre-selecting in the form
               incident_model = Incident.includes(incident_penalties: :penalty).find(@report.incident_id)
               @attached_penalty_ids = incident_model.incident_penalties.map(&:penalty_id)
+
+              # Load incident-level notes (post-confirmation)
+              @incident_notes = note_repo.for_notable("Incident", @report.incident_id)
+
+              # Load secondary reports (other reports grouped into the same incident)
+              all_incident_reports = report_repo.for_incident(@report.incident_id)
+              @merged_reports = parts_factory.wrap_many(
+                all_incident_reports.reject { |r| r.id == @report.value.id }
+              )
+
+              # Reports available to merge into this incident (excluding already-linked ones)
+              excluded = [ @report.value.id ] + all_incident_reports.map(&:id)
+              @available_for_merge = parts_factory.wrap_many(
+                report_repo.available_for_merge(@race.id, exclude_ids: excluded)
+              )
+            else
+              # No incident yet — show reports that could be merged with this one
+              @available_for_merge = parts_factory.wrap_many(
+                report_repo.available_for_merge(@race.id, exclude_ids: [ @report.value.id ])
+              )
             end
           end
 
@@ -445,6 +466,39 @@ module Web
             @report = parts_factory.wrap(@report)
             
             render partial: "video_thumbnails", locals: { report: @report, race: @race }
+          end
+
+          # POST /admin/races/:race_id/reports/merge
+          # Merges 2+ reports into a single incident and redirects to the primary report.
+          # Used from both the index (multi-select) and the show page (add another report).
+          def merge
+            authorize Report, :create?
+
+            report_ids = params[:report_ids]&.map(&:to_i) || []
+
+            if report_ids.size < 2
+              redirect_to admin_race_reports_path(@race),
+                          alert: "Please select at least 2 reports to merge."
+              return
+            end
+
+            result = Operations::Incidents::Create.new.call(report_ids: report_ids)
+
+            if result.success?
+              incident = result.value!
+              # Redirect to the primary report (lowest ID in the new incident)
+              primary_report = Report.where(incident_id: incident.id).order(:id).first
+              target = primary_report ? admin_race_report_path(@race, primary_report) : admin_race_reports_path(@race)
+              redirect_to target, notice: "#{report_ids.size} reports merged successfully.", status: :see_other
+            else
+              error = result.failure
+              error_message = if error.is_a?(Array) && error.first == :validation_failed
+                "Validation failed: #{error.last.values.flatten.join(', ')}"
+              else
+                "Error merging reports: #{error.inspect}"
+              end
+              redirect_to admin_race_reports_path(@race), alert: error_message
+            end
           end
 
           def delete_multiple

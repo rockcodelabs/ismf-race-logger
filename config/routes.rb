@@ -69,6 +69,7 @@ Rails.application.routes.draw do
         collection do
           delete :delete_multiple
           get :videos_index
+          post :merge
         end
         member do
           post :confirm

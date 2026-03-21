@@ -3,13 +3,14 @@
 <!-- Video Player Modal -->
 <%= render "shared/video_player_modal" %>
 
-<div class="space-y-6" 
-     data-controller="report-selection upload-queue upload-progress video-prefetch" 
+<div class="space-y-6"
+     data-controller="report-selection upload-queue upload-progress video-prefetch"
      data-report-selection-race-id-value="<%= @race.id %>"
      data-race-id="<%= @race.id %>"
      data-video-prefetch-race-id-value="<%= @race.id %>"
      data-video-prefetch-videos-value="<%= @race_videos.to_json %>"
      data-video-prefetch-auto-start-value="true">
+
   <!-- Page header -->
   <div class="flex items-center justify-between">
     <div>
@@ -25,18 +26,12 @@
         <span class="text-ismf-navy">Reports</span>
       </nav>
       <h1 class="text-2xl font-bold text-ismf-navy">Reports</h1>
-      <p class="mt-1 text-sm text-ismf-gray">Manage reports for <%= @race.name %>.</p>
-      
+      <p class="mt-1 text-sm text-ismf-gray">Manage reports and incidents for <%= @race.name %>.</p>
+
       <!-- Video Cache Status -->
       <div class="mt-2" data-video-prefetch-target="status"></div>
     </div>
     <div class="flex items-center gap-3">
-      <%= link_to admin_race_incidents_path(@race), class: "btn-secondary whitespace-nowrap" do %>
-        <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-        <span>View Incidents</span>
-      <% end %>
       <% if @race.status == "in_progress" %>
         <%= button_to complete_admin_competition_race_path(@race.competition_id, @race), method: :post, class: "btn-secondary whitespace-nowrap", data: { turbo_confirm: "Are you sure you want to mark this race as completed? This action cannot be undone." } do %>
           <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,13 +52,13 @@
   </div>
 
   <!-- Upload Queue Context (hidden) -->
-  <div class="hidden" 
+  <div class="hidden"
        data-upload-queue-direct-upload-url-value="<%= rails_direct_uploads_url %>"
        data-upload-queue-attach-url-value="<%= admin_race_report_videos_path(@race, ':report_id') %>">
   </div>
 
   <!-- Upload Progress Bar -->
-  <div data-upload-progress-target="container" 
+  <div data-upload-progress-target="container"
        class="hidden fixed bottom-6 right-6 z-50 bg-white rounded-lg shadow-2xl border border-gray-200 max-w-md">
     <!-- Expanded View -->
     <div data-upload-progress-target="expanded" class="p-4">
@@ -75,14 +70,14 @@
           <span class="font-semibold text-gray-900">Uploading</span>
         </div>
         <div class="flex items-center gap-2">
-          <button data-action="click->upload-progress#toggleMinimize" 
+          <button data-action="click->upload-progress#toggleMinimize"
                   class="text-gray-400 hover:text-gray-600"
                   title="Minimize">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
             </svg>
           </button>
-          <button data-action="click->upload-progress#close" 
+          <button data-action="click->upload-progress#close"
                   class="text-gray-400 hover:text-gray-600"
                   title="Cancel">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,8 +95,8 @@
           <span data-upload-progress-target="progressText" class="font-medium">0%</span>
         </div>
         <div class="w-full bg-gray-200 rounded-full h-2.5">
-          <div data-upload-progress-target="progressBar" 
-               class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
+          <div data-upload-progress-target="progressBar"
+               class="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
                style="width: 0%"
                role="progressbar"
                aria-valuenow="0"
@@ -110,7 +105,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Minimized View -->
     <div data-upload-progress-target="minimized" class="hidden p-3 cursor-pointer" data-action="click->upload-progress#toggleMinimize">
       <div class="flex items-center gap-2">
@@ -150,17 +145,17 @@
         </svg>
         <span data-report-selection-target="selectedCount" class="font-semibold">0 reports selected</span>
       </div>
-      <button data-action="click->report-selection#createIncident" class="btn-primary bg-white text-ismf-navy hover:bg-gray-100">
+      <button data-action="click->report-selection#mergeReports" class="btn-primary bg-white text-ismf-navy hover:bg-gray-100">
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
         </svg>
-        Create Incident from Selected
+        Merge Selected
       </button>
       <button data-action="click->report-selection#deleteSelected" data-report-selection-target="deleteButton" class="btn-danger bg-red-600 text-white hover:bg-red-700">
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
-        Delete Selected Reports
+        Delete Selected
       </button>
       <button data-action="click->report-selection#clearSelection" class="text-white hover:text-gray-300" title="Clear selection">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -170,8 +165,8 @@
     </div>
   </div>
 
-  <!-- Hidden form for creating incident -->
-  <%= form_with url: admin_race_incidents_path(@race), method: :post, data: { report_selection_target: "form" }, class: "hidden" do |f| %>
+  <!-- Hidden form for merging reports into an incident -->
+  <%= form_with url: merge_admin_race_reports_path(@race), method: :post, data: { report_selection_target: "form" }, class: "hidden" do |f| %>
     <div data-report-selection-target="hiddenInputs"></div>
   <% end %>
 
@@ -188,17 +183,17 @@
           <tr>
             <% if policy(Report).select? %>
               <th class="w-12">
-                <input type="checkbox" 
-                       data-action="change->report-selection#toggleAll" 
-                       data-report-selection-target="selectAll" 
+                <input type="checkbox"
+                       data-action="change->report-selection#toggleAll"
+                       data-report-selection-target="selectAll"
                        class="w-4 h-4 rounded border-gray-300 text-ismf-blue focus:ring-ismf-blue"
                        title="Select all">
               </th>
             <% end %>
             <th>Bib</th>
+            <th>Athlete</th>
             <th>Location / Time</th>
             <th>Reporter</th>
-            <th>Athlete</th>
             <th>Status</th>
             <th>Videos</th>
             <th class="text-right">Actions</th>

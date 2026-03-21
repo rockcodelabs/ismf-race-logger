@@ -83,8 +83,8 @@ module Operations
             # When approving, confirm all associated pending reports
             Report.where(incident_id: incident.id, status: "pending_review").update_all(status: "confirmed")
           elsif validated[:status] == "rejected"
-            # When rejecting, reject all associated pending reports
-            Report.where(incident_id: incident.id, status: "pending_review").update_all(status: "rejected")
+            # When rejecting, reject all associated reports (pending_review AND confirmed)
+            Report.where(incident_id: incident.id, status: %w[pending_review confirmed]).update_all(status: "rejected")
           end
         end
 

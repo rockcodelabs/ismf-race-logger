@@ -3,7 +3,7 @@
 <!-- Video Player Modal -->
 <%= render "shared/video_player_modal" %>
 
-<div class="space-y-6" 
+<div class="space-y-6"
      data-controller="video-trigger upload-queue upload-progress"
      data-upload-queue-direct-upload-url-value="<%= rails_direct_uploads_url %>"
      data-upload-queue-attach-url-value="<%= admin_race_report_videos_path(@race, ':report_id') %>"
@@ -36,11 +36,13 @@
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Column 1: Report Info -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- Column 1: Report Info + Merged Reports                             -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
     <div class="space-y-6">
       <!-- Bib Selection (if not set) -->
       <%= render "bib_selection", report: @report, race: @race, participations: @participations %>
-      
+
       <!-- Report details card -->
       <div class="card">
         <div class="p-6">
@@ -52,6 +54,27 @@
               <div>
                 <h2 class="text-lg font-semibold text-ismf-navy"><%= @report.athlete_name_display %></h2>
                 <p class="text-sm text-ismf-gray">Bib #<%= @report.bib_number %></p>
+                <!-- Gender + Country badges -->
+                <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                  <% if @report.respond_to?(:athlete_gender) && @report.athlete_gender.present? %>
+                    <%
+                      gender_class = case @report.athlete_gender
+                      when "M" then "bg-blue-100 text-blue-800"
+                      when "F" then "bg-pink-100 text-pink-800"
+                      else "bg-gray-100 text-gray-600"
+                      end
+                    %>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold <%= gender_class %>">
+                      <%= @report.athlete_gender %>
+                    </span>
+                  <% end %>
+                  <% if @report.respond_to?(:athlete_country) && @report.athlete_country.present? %>
+                    <span class="text-xs text-gray-600 font-medium">
+                      <%= @report.respond_to?(:country_flag) ? @report.country_flag(@report.athlete_country) : '' %>
+                      <%= @report.athlete_country %>
+                    </span>
+                  <% end %>
+                </div>
               </div>
             </div>
             <span id="report-status-badge" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium <%= @report.status_badge[:class] %>">
@@ -59,7 +82,7 @@
             </span>
           </div>
 
-          <!-- Location and Time - Prominent -->
+          <!-- Location and Time -->
           <div class="grid grid-cols-2 gap-4 mb-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
             <div>
               <dt class="text-xs font-semibold text-ismf-gray uppercase tracking-wide mb-1">Location</dt>
@@ -72,51 +95,116 @@
             </div>
           </div>
 
-          <!-- Additional Details - Compact -->
-          <% if @report.athlete_position.present? && @report.athlete_position > 0 || @report.linked_to_incident? %>
-            <div class="grid grid-cols-2 gap-3 mb-4">
-              <% if @report.athlete_position.present? && @report.athlete_position > 0 %>
-                <div>
-                  <dt class="text-xs font-medium text-ismf-gray">Position</dt>
-                  <dd class="text-sm text-ismf-navy font-medium">Athlete <%= @report.athlete_position == 1 ? "A" : "B" %></dd>
-                </div>
-              <% end %>
-              <% if @report.linked_to_incident? %>
-                <div class="col-span-2">
-                  <dt class="text-xs font-medium text-ismf-gray mb-1">Linked Incident</dt>
-                  <dd class="flex items-center gap-2">
-                    <%= link_to admin_race_incident_path(@race, @report.incident_id), class: "text-ismf-blue hover:underline font-medium text-sm" do %>
-                      Incident #<%= @report.incident_id %>
-                    <% end %>
-                    <% if defined?(@incident) && @incident.present? %>
-                      <% incident_part = AppContainer["parts.factory"].wrap(@incident) %>
-                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium <%= incident_part.status_badge[:class] %>">
-                        <%= incident_part.status_badge[:label] %>
-                      </span>
-                    <% end %>
-                  </dd>
-                </div>
-              <% end %>
+          <!-- Athlete Position (team races) -->
+          <% if @report.athlete_position.present? && @report.athlete_position > 0 %>
+            <div class="mb-4">
+              <dt class="text-xs font-medium text-ismf-gray">Team Position</dt>
+              <dd class="text-sm text-ismf-navy font-medium">Athlete <%= @report.athlete_position == 1 ? "A (Male)" : "B (Female)" %></dd>
             </div>
           <% end %>
 
+          <!-- Description -->
           <% if @report.description.present? %>
             <div class="pt-4 border-t border-gray-200">
               <dt class="text-xs font-medium text-ismf-gray mb-1">Description</dt>
               <dd class="text-sm text-ismf-navy"><%= @report.description %></dd>
             </div>
           <% end %>
+
+          <!-- Incident link (when confirmed) -->
+          <% if @report.linked_to_incident? && defined?(@incident) && @incident.present? %>
+            <div class="pt-4 border-t border-gray-200">
+              <dt class="text-xs font-medium text-ismf-gray mb-1">Incident</dt>
+              <dd class="flex items-center gap-2">
+                <span class="text-sm font-medium text-ismf-navy">Incident #<%= @incident.id %></span>
+                <%
+                  incident_badge = case @incident.status
+                  when "pending"  then { class: "bg-yellow-100 text-yellow-800", label: "Pending Jury" }
+                  when "approved" then { class: "bg-green-100 text-green-800",   label: "Approved" }
+                  when "rejected" then { class: "bg-red-100 text-red-800",       label: "Rejected" }
+                  else                 { class: "bg-gray-100 text-gray-800",     label: @incident.status.titleize }
+                  end
+                %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium <%= incident_badge[:class] %>">
+                  <%= incident_badge[:label] %>
+                </span>
+              </dd>
+            </div>
+          <% end %>
         </div>
       </div>
+
+      <!-- Merged Reports Section (when incident has multiple reports) -->
+      <% if defined?(@merged_reports) && @merged_reports.present? %>
+        <%= render "merged_reports_section",
+                   merged_reports: @merged_reports,
+                   race: @race,
+                   report: @report,
+                   incident: defined?(@incident) ? @incident : nil,
+                   available_for_merge: defined?(@available_for_merge) ? @available_for_merge : [] %>
+      <% end %>
+
+      <!-- Add Another Report (when no merged reports yet but incident is pending) -->
+      <% if (!defined?(@merged_reports) || @merged_reports.blank?) &&
+             defined?(@incident) && @incident.present? && @incident.pending? &&
+             defined?(@available_for_merge) && @available_for_merge.any? %>
+        <%= render "merged_reports_section",
+                   merged_reports: [],
+                   race: @race,
+                   report: @report,
+                   incident: @incident,
+                   available_for_merge: @available_for_merge %>
+      <% end %>
+
+      <!-- Offer merge even for pending (no incident) reports if other reports exist -->
+      <% if !@report.linked_to_incident? && @report.pending_review? &&
+             defined?(@available_for_merge) && @available_for_merge.any? %>
+        <div class="card">
+          <div class="p-6">
+            <h3 class="text-lg font-semibold text-ismf-navy mb-4 flex items-center gap-2">
+              <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Merge With Another Report
+            </h3>
+            <p class="text-sm text-ismf-gray mb-3">Select a report to merge with this one (creates a shared incident).</p>
+
+            <%= form_with url: merge_admin_race_reports_path(@race), method: :post, local: true do |f| %>
+              <%= hidden_field_tag "report_ids[]", @report.id %>
+              <div class="space-y-3">
+                <select name="report_ids[]"
+                        required
+                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-ismf-blue focus:ring-ismf-blue text-sm">
+                  <option value="">— choose a report —</option>
+                  <% @available_for_merge.each do |avail| %>
+                    <option value="<%= avail.id %>">
+                      #<%= avail.id %> · Bib <%= avail.bib_number || "NN" %> · <%= avail.location_name %> · <%= avail.created_at_with_seconds %> · by <%= avail.reporter_name_display %>
+                    </option>
+                  <% end %>
+                </select>
+                <button type="submit"
+                        class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium text-sm transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Merge and Confirm
+                </button>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
     </div>
 
-    <!-- Column 2: Videos -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- Column 2: Videos                                                   -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
     <div class="space-y-6">
       <!-- Videos section -->
       <%= render "videos_section", report: @report, race: @race %>
 
       <!-- Video Upload Section -->
-      <div class="card" 
+      <div class="card"
            data-controller="video-upload"
            data-video-upload-report-id-value="<%= @report.id %>"
            data-video-upload-race-id-value="<%= @race.id %>"
@@ -125,8 +213,6 @@
            data-action="dragenter->video-upload#dragEnter dragover->video-upload#dragOver dragleave->video-upload#dragLeave drop->video-upload#drop">
         <div class="p-6">
           <h3 class="text-lg font-semibold text-ismf-navy mb-4">Add Videos</h3>
-          
-          <!-- Drop Zone -->
           <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
             <svg class="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -138,16 +224,113 @@
       </div>
     </div>
 
-    <!-- Column 3: Actions & Status -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- Column 3: Actions + Penalties + Notes                              -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
     <div class="space-y-6">
-      <!-- Actions card -->
+      <!-- Actions card (Confirm / Reject / Approve Incident / Reopen) -->
       <%= render "actions_card", report: @report, race: @race %>
 
-      <!-- Status History card -->
+      <!-- ── Penalties (only after confirmation) ── -->
+      <% if defined?(@incident) && @incident.present? %>
+        <div class="card">
+          <div class="p-6">
+            <h3 class="text-lg font-semibold text-ismf-navy mb-4 flex items-center gap-2">
+              <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              Penalties
+              <% if defined?(@attached_penalty_ids) && @attached_penalty_ids.any? %>
+                <span class="text-sm font-normal text-ismf-gray">(<%= @attached_penalty_ids.size %>)</span>
+              <% end %>
+            </h3>
+
+            <% if defined?(@attached_penalty_ids) && @attached_penalty_ids.any? %>
+              <!-- Current penalties -->
+              <div class="mb-4 space-y-2">
+                <% @penalties.select { |p| @attached_penalty_ids.include?(p.id) }.each do |penalty| %>
+                  <div class="flex items-center gap-2 p-2 bg-orange-50 rounded-lg">
+                    <span class="inline-flex items-center justify-center px-2 py-1 rounded bg-orange-100 text-orange-800 font-bold text-xs">
+                      <%= penalty.penalty_number %>
+                    </span>
+                    <span class="text-sm text-ismf-navy"><%= penalty.name %></span>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <p class="text-sm text-ismf-gray mb-4">No penalties attached.</p>
+            <% end %>
+
+            <% if @incident.pending? %>
+              <!-- Attach/change penalties form -->
+              <%= form_with url: attach_penalties_admin_race_incident_path(@race, @incident), method: :post, local: true, class: "space-y-3" do |f| %>
+                <!-- Search -->
+                <input type="text"
+                       id="penalty-search-show"
+                       placeholder="Search penalties (e.g., C1, A.1)"
+                       autocomplete="off"
+                       class="block w-full px-3 py-2 text-sm rounded-md border-gray-300 shadow-sm focus:border-ismf-blue focus:ring-ismf-blue">
+
+                <div class="space-y-1 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-2" id="penalty-list-show">
+                  <% @penalties.group_by(&:category).each do |category, penalties| %>
+                    <div class="mb-2 penalty-category-show" data-category="<%= category %>">
+                      <p class="text-xs font-semibold text-ismf-gray px-1 mb-1">Category <%= category %></p>
+                      <% penalties.each do |penalty| %>
+                        <label class="flex items-center gap-2 p-1.5 rounded hover:bg-gray-50 cursor-pointer penalty-item-show text-xs"
+                               data-penalty-number="<%= penalty.penalty_number.downcase %>"
+                               data-penalty-name="<%= penalty.name.downcase %>">
+                          <input type="checkbox"
+                                 name="penalty_ids[]"
+                                 value="<%= penalty.id %>"
+                                 <%= 'checked' if defined?(@attached_penalty_ids) && @attached_penalty_ids.include?(penalty.id) %>
+                                 class="h-4 w-4 rounded border-gray-300 text-ismf-blue focus:ring-ismf-blue">
+                          <span class="inline-flex items-center justify-center w-9 h-5 rounded bg-orange-100 text-orange-800 font-bold text-xs shrink-0">
+                            <%= penalty.penalty_number %>
+                          </span>
+                          <span class="text-ismf-navy flex-1"><%= penalty.name %></span>
+                        </label>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+
+                <button type="submit"
+                        class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-medium text-sm transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Update Penalties
+                </button>
+              <% end %>
+
+              <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                  var searchInput = document.getElementById('penalty-search-show');
+                  if (!searchInput) return;
+                  searchInput.addEventListener('input', function () {
+                    var query = this.value.toLowerCase().trim();
+                    document.querySelectorAll('.penalty-item-show').forEach(function (item) {
+                      var num = item.getAttribute('data-penalty-number');
+                      var name = item.getAttribute('data-penalty-name');
+                      item.style.display = (query === '' || num.includes(query) || name.includes(query)) ? '' : 'none';
+                    });
+                    document.querySelectorAll('.penalty-category-show').forEach(function (cat) {
+                      var visible = cat.querySelectorAll('.penalty-item-show:not([style*="display: none"])');
+                      cat.style.display = visible.length > 0 ? '' : 'none';
+                    });
+                  });
+                });
+              </script>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- ── Status History ── -->
       <div class="card">
         <div class="p-6">
           <h3 class="text-lg font-semibold text-ismf-navy mb-4">Status History</h3>
-          
+
           <div class="space-y-4">
             <div class="flex items-center gap-3">
               <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
@@ -180,12 +363,90 @@
                 </div>
               </div>
             <% end %>
+
+            <% if defined?(@incident) && @incident.present? && !@incident.pending? %>
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full <%= @incident.approved? ? 'bg-green-100' : 'bg-red-100' %> flex items-center justify-center">
+                  <% if @incident.approved? %>
+                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  <% else %>
+                    <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  <% end %>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-ismf-navy">Incident <%= @incident.status.titleize %></p>
+                  <% if @incident.respond_to?(:decided_at_formatted) && @incident.decided_at_formatted.present? %>
+                    <p class="text-xs text-ismf-gray"><%= @incident.decided_at_formatted %></p>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
           </div>
         </div>
       </div>
 
-      <!-- Notes Section -->
-      <%= render "admin/notes/notes_section", notable_type: "Report", notable_id: @report.id, notes: @notes %>
+      <!-- ── Report Notes (always visible) ── -->
+      <%= render "admin/notes/notes_section",
+                 notable_type: "Report",
+                 notable_id: @report.id,
+                 notes: @notes %>
+
+      <!-- ── Incident Notes (only after confirmation) ── -->
+      <% if defined?(@incident) && @incident.present? %>
+        <div class="card" id="incident-notes-section">
+          <div class="p-6">
+            <div class="flex items-center gap-2 mb-4">
+              <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 class="text-lg font-semibold text-ismf-navy">
+                Incident Notes
+                <% if defined?(@incident_notes) && @incident_notes.any? %>
+                  <span class="text-sm font-normal text-ismf-gray">(<%= @incident_notes.size %>)</span>
+                <% end %>
+              </h3>
+            </div>
+            <p class="text-xs text-ismf-gray mb-3 italic">Notes shared across all reports in this incident.</p>
+
+            <% if defined?(@incident_notes) && @incident_notes.any? %>
+              <div class="space-y-3 mb-4">
+                <% @incident_notes.each do |note| %>
+                  <%= render "admin/notes/note", note: note %>
+                <% end %>
+              </div>
+            <% else %>
+              <p class="text-sm text-gray-400 italic mb-4">No incident notes yet.</p>
+            <% end %>
+
+            <div class="border-t border-gray-200 pt-4">
+              <%= form_with url: admin_notes_path, method: :post, class: "space-y-3" do |f| %>
+                <%= f.hidden_field :notable_type, value: "Incident" %>
+                <%= f.hidden_field :notable_id, value: @incident.id %>
+                <div>
+                  <label class="sr-only">Add an incident note</label>
+                  <textarea name="body"
+                            rows="2"
+                            placeholder="Add an incident-level note..."
+                            required
+                            class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-ismf-blue focus:ring-ismf-blue placeholder-gray-400 resize-none"></textarea>
+                </div>
+                <div class="flex justify-end">
+                  <%= f.button type: :submit, class: "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors" do %>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Incident Note
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
     </div>
   </div>
 </div>

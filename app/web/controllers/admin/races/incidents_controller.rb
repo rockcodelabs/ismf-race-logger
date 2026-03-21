@@ -32,31 +32,18 @@ module Web
           before_action :set_source_incident, only: [ :merge ]
 
           def index
-            authorize Incident, :index?
-            
-            # Default to pending status if no filter specified
-            @status = params[:status] || "pending"
-            
-            # Fetch incidents based on status filter
-            @incidents = if @status == "all"
-              incident_repo.for_race(@race.id)
-            else
-              incident_repo.by_status(@race.id, @status)
-            end
-            
-            @incidents = parts_factory.wrap_many(@incidents)
-            @status_counts = incident_repo.count_by_status(@race.id)
+            # Unified UX: incidents list is now the reports list
+            redirect_to admin_race_reports_path(@race), status: :moved_permanently
           end
 
           def show
-            authorize @incident, :show?
-            @incident = parts_factory.wrap(@incident)
-            @reports = report_repo.for_incident(@incident.id)
-            @reports = parts_factory.wrap_many(@reports)
-            @penalties = penalty_repo.all
-
-            # Load notes for this incident
-            @notes = note_repo.for_notable("Incident", @incident.id)
+            # Unified UX: incident show redirects to the primary report for this incident
+            primary_report = Report.where(incident_id: @incident.id).order(:id).first
+            if primary_report
+              redirect_to admin_race_report_path(@race, primary_report), status: :moved_permanently
+            else
+              redirect_to admin_race_reports_path(@race), status: :moved_permanently
+            end
           end
 
           def new

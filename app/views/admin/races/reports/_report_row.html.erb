@@ -1,21 +1,22 @@
-<tr class="<%= report.row_class %> hover:bg-gray-50 transition-all duration-200 relative cursor-pointer" 
-    id="report_<%= report.id %>" 
+<tr class="<%= report.row_class %> hover:bg-gray-50 transition-all duration-200 relative cursor-pointer"
+    id="report_<%= report.id %>"
     data-report-selection-target="row"
     data-controller="video-upload"
     data-video-upload-report-id-value="<%= report.id %>"
     data-video-upload-race-id-value="<%= race.id %>"
     data-video-upload-direct-upload-url-value="<%= rails_direct_uploads_url %>"
     data-video-upload-attach-url-value="<%= admin_race_report_videos_path(race, report) %>"
-    data-action="dragenter->video-upload#dragEnter 
-                 dragover->video-upload#dragOver 
-                 dragleave->video-upload#dragLeave 
+    data-action="dragenter->video-upload#dragEnter
+                 dragover->video-upload#dragOver
+                 dragleave->video-upload#dragLeave
                  drop->video-upload#drop"
     onclick="if (!event.target.closest('a, button, input, select, textarea')) { Turbo.visit('<%= admin_race_report_path(race, report) %>'); }"
     title="Click to view report details">
+
   <% if policy(report).select? %>
     <td>
-      <input type="checkbox" 
-             data-report-selection-target="checkbox" 
+      <input type="checkbox"
+             data-report-selection-target="checkbox"
              data-report-id="<%= report.id %>"
              data-incident-id="<%= report.incident_id %>"
              data-incident-status="<%= report.respond_to?(:incident_status) ? report.incident_status : '' %>"
@@ -24,34 +25,80 @@
              class="w-4 h-4 rounded border-gray-300 text-ismf-blue focus:ring-ismf-blue">
     </td>
   <% end %>
+
+  <%# Bib %>
   <td>
     <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ismf-navy text-white font-bold text-sm">
       <%= report.bib_badge %>
     </span>
+    <% if report.respond_to?(:merged_reports_count) && report.merged_reports_count.to_i > 0 %>
+      <div class="mt-1">
+        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700"
+              title="<%= report.merged_reports_count %> additional report(s) merged into this incident">
+          +<%= report.merged_reports_count %>
+        </span>
+      </div>
+    <% end %>
   </td>
+
+  <%# Athlete: name, gender badge, country flag %>
+  <td>
+    <div class="font-medium text-ismf-navy text-sm">
+      <%= report.athlete_name_display %>
+    </div>
+    <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+      <% if report.respond_to?(:athlete_gender) && report.athlete_gender.present? %>
+        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold <%= report.respond_to?(:gender_badge_class) ? report.gender_badge_class : 'bg-gray-100 text-gray-600' %>">
+          <%= report.athlete_gender %>
+        </span>
+      <% end %>
+      <% if report.respond_to?(:athlete_country) && report.athlete_country.present? %>
+        <span class="text-xs text-gray-600 font-medium">
+          <%= report.respond_to?(:country_flag) ? report.country_flag(report.athlete_country) : '' %>
+          <%= report.athlete_country %>
+        </span>
+      <% end %>
+    </div>
+  </td>
+
+  <%# Location / Time %>
   <td class="text-ismf-gray text-sm">
     <div><%= report.location_name %></div>
     <div class="text-xs text-gray-500">
-      <%= report.created_at_with_seconds %> 
+      <%= report.created_at_with_seconds %>
       <span class="text-gray-400">(<%= report.time_ago %>)</span>
     </div>
   </td>
+
+  <%# Reporter %>
   <td class="text-ismf-gray text-sm">
     <%= report.reporter_name_display %>
   </td>
-  <td>
-    <div class="font-medium text-ismf-navy"><%= report.athlete_name_display %></div>
-  </td>
+
+  <%# Status %>
   <td>
     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= report.status_badge[:class] %>">
       <%= report.status_badge[:label] %>
     </span>
-    <% if report.linked_to_incident? %>
-      <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-        <%= report.incident_name_display %>
-      </span>
+    <%# Show incident status badge when confirmed %>
+    <% if report.linked_to_incident? && report.respond_to?(:incident_status) && report.incident_status.present? %>
+      <div class="mt-1">
+        <%
+          incident_badge = case report.incident_status
+          when "pending"   then { class: "bg-yellow-100 text-yellow-800", label: "Pending Jury" }
+          when "approved"  then { class: "bg-green-100 text-green-800",   label: "Approved" }
+          when "rejected"  then { class: "bg-red-100 text-red-800",       label: "Rejected" }
+          else                  { class: "bg-gray-100 text-gray-800",     label: report.incident_status.titleize }
+          end
+        %>
+        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium <%= incident_badge[:class] %>">
+          <%= incident_badge[:label] %>
+        </span>
+      </div>
     <% end %>
   </td>
+
+  <%# Videos %>
   <td>
     <% if report.has_videos? %>
       <div class="flex items-center gap-2">
@@ -63,7 +110,7 @@
         </div>
         <%= turbo_frame_tag "report_#{report.id}_video_thumbnails", src: video_thumbnails_admin_race_report_path(race, report), loading: :lazy do %>
           <div class="flex gap-1">
-            <% 2.times do |i| %>
+            <% 2.times do %>
               <div class="inline-block w-10 h-10 rounded border border-gray-200 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse">
                 <div class="w-full h-full flex items-center justify-center">
                   <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,6 +131,8 @@
       </div>
     <% end %>
   </td>
+
+  <%# Actions %>
   <td class="text-right">
     <div class="flex items-center justify-end gap-0.5">
       <%= link_to admin_race_report_path(race, report), class: "inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-ismf-blue hover:bg-blue-50 transition-all", title: "View" do %>

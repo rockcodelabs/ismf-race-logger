@@ -24,10 +24,12 @@ module Structs
     :race_location_name,
     :athlete_name,
     :athlete_country,
+    :athlete_gender,
     :user_name,
     :status,
     :created_at,
-    :videos_count
+    :videos_count,
+    :merged_reports_count
   ) do
     # Check if report is pending review
     def pending_review?
@@ -52,6 +54,29 @@ module Structs
     # Can this report be merged into an incident?
     def can_merge?
       confirmed? && !linked_to_incident?
+    end
+
+    # Check if report has other reports merged into same incident
+    def has_merged_reports?
+      merged_reports_count.to_i > 0
+    end
+
+    # Display gender label
+    def gender_label
+      case athlete_gender
+      when "M" then "M"
+      when "F" then "F"
+      else nil
+      end
+    end
+
+    # Gender badge CSS class
+    def gender_badge_class
+      case athlete_gender
+      when "M" then "bg-blue-100 text-blue-800"
+      when "F" then "bg-pink-100 text-pink-800"
+      else "bg-gray-100 text-gray-600"
+      end
     end
 
     # Can this report be moved from its current incident?

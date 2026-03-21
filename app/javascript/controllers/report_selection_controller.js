@@ -107,44 +107,32 @@ export default class extends Controller {
     this.updateActionBar()
   }
 
-  // Create incident from selected reports
-  createIncident() {
+  // Merge selected reports into a single incident
+  mergeReports() {
     const count = this.selectedReportIds.size
-    
-    if (count === 0) {
-      alert("Please select at least one report.")
+
+    if (count < 2) {
+      alert("Please select at least 2 reports to merge.")
       return
     }
 
     // Check for linked reports and incidents with decisions
     const selectedCheckboxes = Array.from(this.checkboxTargets).filter(cb => cb.checked)
-    const linkedReports = selectedCheckboxes.filter(cb => cb.dataset.incidentId)
     const reportsWithDecisions = selectedCheckboxes.filter(cb => cb.dataset.hasDecision === "true")
-    
-    // Build confirmation message
-    let confirmMessage = ""
-    
-    if (count === 1) {
-      confirmMessage = "You have selected only 1 report. Do you want to create an incident from this single report?"
-    } else if (reportsWithDecisions.length > 0) {
-      confirmMessage = `WARNING: ${reportsWithDecisions.length} of the selected reports are in incidents that already have jury decisions or penalties.\n\n`
-      confirmMessage += "Moving these reports will affect existing decisions.\n\n"
-      confirmMessage += "Are you sure you want to proceed?"
-    } else if (linkedReports.length > 0 && reportsWithDecisions.length === 0) {
-      confirmMessage = `${linkedReports.length} of the selected reports are already linked to incidents (with no decisions yet).\n\n`
-      confirmMessage += "They will be moved to the new incident.\n\n"
-      confirmMessage += "Continue?"
-    }
-    
-    // Ask for confirmation if needed
-    if (confirmMessage) {
-      const confirmed = confirm(confirmMessage)
+
+    // Warn if any report is in an incident that already has a jury decision
+    if (reportsWithDecisions.length > 0) {
+      const confirmed = confirm(
+        `WARNING: ${reportsWithDecisions.length} of the selected reports are in incidents that already have jury decisions or penalties.\n\n` +
+        "Merging will move them into a new incident and may affect existing decisions.\n\n" +
+        "Are you sure you want to proceed?"
+      )
       if (!confirmed) return
     }
-    
+
     // Build hidden inputs for report_ids
     this.hiddenInputsTarget.innerHTML = ""
-    
+
     this.selectedReportIds.forEach(reportId => {
       const input = document.createElement("input")
       input.type = "hidden"
@@ -152,7 +140,7 @@ export default class extends Controller {
       input.value = reportId
       this.hiddenInputsTarget.appendChild(input)
     })
-    
+
     // Submit the form
     this.formTarget.requestSubmit()
   }

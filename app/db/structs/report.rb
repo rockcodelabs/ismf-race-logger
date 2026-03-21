@@ -39,6 +39,7 @@ module Structs
     attribute :race_location_name, Types::String.optional
     attribute :athlete_name, Types::String.optional
     attribute :athlete_country, Types::String.optional
+    attribute :athlete_gender, Types::String.optional
     attribute :user_name, Types::String.optional
 
     # Status helpers

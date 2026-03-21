@@ -123,6 +123,30 @@ module Web
         "report_#{value.id}"
       end
 
+      # Explicit delegation for pending_review? (also delegated via method_missing)
+      def pending_review?
+        value.respond_to?(:pending_review?) ? value.pending_review? : value.status == "pending_review"
+      end
+
+      # Athlete gender (M/F) with fallback
+      def athlete_gender
+        value.respond_to?(:athlete_gender) ? value.athlete_gender : nil
+      end
+
+      # Gender badge CSS class
+      def gender_badge_class
+        case athlete_gender
+        when "M" then "bg-blue-100 text-blue-800"
+        when "F" then "bg-pink-100 text-pink-800"
+        else "bg-gray-100 text-gray-600"
+        end
+      end
+
+      # Merged reports count (number of other reports grouped into the same incident)
+      def merged_reports_count
+        value.respond_to?(:merged_reports_count) ? value.merged_reports_count.to_i : 0
+      end
+
       # Check if report can be confirmed
       def can_confirm?
         value.respond_to?(:can_confirm?) ? value.can_confirm? : value.status == "pending_review"
