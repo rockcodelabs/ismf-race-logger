@@ -175,7 +175,9 @@ module Web
                 
                 format.turbo_stream do
                   # Broadcast already sent to update all connected clients
-                  head :ok
+                  redirect_to admin_race_report_path(@race, report),
+                              notice: "Report created successfully.",
+                              status: :see_other
                 end
                 
                 format.html do
