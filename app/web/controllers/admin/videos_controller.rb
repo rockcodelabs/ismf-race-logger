@@ -64,7 +64,7 @@ module Web
 
         # GET /admin/videos/markers/:id
         def show_markers
-          blob = ActiveStorage::Blob.find_by(id: params[:id])
+          blob = ActiveStorage::Blob.find_signed(params[:id])
 
           unless blob
             render json: { error: "Video not found" }, status: :not_found

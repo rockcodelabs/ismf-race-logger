@@ -35,7 +35,7 @@ export default class extends Controller {
     this.videoTarget.src = videoUrl
     this.updateLoopModeButton()
 
-    await this.loadMarkers(videoBlobId)
+    await this.loadMarkers(videoUrl)
     this.autoPlayFromMarker()
   }
 
@@ -47,10 +47,20 @@ export default class extends Controller {
     this.updatePlayPauseButton()
   }
 
-  async loadMarkers(videoBlobId) {
-    if (!videoBlobId) return
+  // Extract the ActiveStorage signed_id from a rails_blob_path URL.
+  // URL shape: /rails/active_storage/blobs/redirect/:signed_id/filename
+  //            /rails/active_storage/blobs/:signed_id/filename  (older)
+  extractSignedId(videoUrl) {
+    if (!videoUrl) return null
+    const match = videoUrl.match(/\/blobs\/(?:redirect\/)?([^/]+)\//)
+    return match ? match[1] : null
+  }
+
+  async loadMarkers(videoUrl) {
+    const signedId = this.extractSignedId(videoUrl)
+    if (!signedId) return
     try {
-      const response = await fetch(`/admin/videos/markers/${videoBlobId}`)
+      const response = await fetch(`/admin/videos/markers/${signedId}`)
       if (!response.ok) return
       const data = await response.json()
       // API returns 0 when no marker is saved — treat 0 as "not set"
