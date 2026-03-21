@@ -2,10 +2,10 @@
 
 <%= turbo_stream_from "race_#{@race.id}_reports" %>
 
-<!-- Video Player Modal -->
-<%= render "shared/video_player_modal" %>
+<!-- Phone Video Player Modal -->
+<%= render "shared/phone_video_player_modal" %>
 
-<div class="h-screen overflow-hidden flex flex-col bg-gray-100" data-controller="video-trigger">
+<div class="h-screen overflow-hidden flex flex-col bg-gray-100">
   <!-- Header -->
   <div class="shrink-0 px-4 py-3 bg-white border-b border-gray-200">
     <div class="flex items-center justify-between gap-3 mb-3">
@@ -100,9 +100,7 @@
                 <% report_model.videos.first(3).each do |video| %>
                   <button type="button"
                           class="shrink-0 relative w-14 h-14 rounded-lg border-2 border-gray-200 overflow-hidden hover:border-blue-400 transition-all active:scale-95"
-                          data-action="click->video-trigger#open"
-                          data-video-url="<%= rails_blob_path(video, disposition: 'inline') %>"
-                          data-video-blob-id="<%= video.id %>"
+                          onclick="openPhoneVideoPlayer('<%= rails_blob_path(video, disposition: 'inline') %>', '<%= video.id %>')"
                           title="<%= video.filename.to_s %>">
                     <% if video.previewable? %>
                       <% begin %>
