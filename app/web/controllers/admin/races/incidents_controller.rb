@@ -491,6 +491,7 @@ module Web
             
             # Broadcast deletions to all connected clients
             if all_report_structs.any?
+              report_broadcaster = AppContainer["broadcasters.report"]
               report_broadcaster.bulk_deleted(all_report_structs, @race.id)
             end
             
@@ -536,10 +537,12 @@ module Web
             
             # Broadcast deletions to all connected clients
             if report_structs.any?
+              report_broadcaster = AppContainer["broadcasters.report"]
               report_broadcaster.bulk_deleted(report_structs, @race.id)
             end
             
             if incident_struct
+              incident_broadcaster = AppContainer["broadcasters.incident"]
               incident_broadcaster.deleted(incident_struct)
             end
             
@@ -550,6 +553,7 @@ module Web
             message += " successfully."
             
             # Broadcast flash message to all connected clients
+            incident_broadcaster = AppContainer["broadcasters.incident"]
             incident_broadcaster.broadcast_flash_notice(@race.id, message)
             
             redirect_to admin_race_incidents_path(@race), notice: message
