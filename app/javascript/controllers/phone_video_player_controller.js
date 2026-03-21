@@ -23,7 +23,7 @@ export default class extends Controller {
   }
 
   // Called by openPhoneVideoPlayer() — load markers then autoplay
-  async open(videoUrl, videoBlobId) {
+  async open(videoUrl) {
     this.startMarker = null
     this.endMarker = null
     this.isAutoPlaying = false

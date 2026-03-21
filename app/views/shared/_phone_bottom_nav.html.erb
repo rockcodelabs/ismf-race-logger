@@ -24,8 +24,9 @@
 
   <% if Current.user %>
   <!-- User Menu Dropdown -->
-  <div class="relative group flex-1">
+  <div class="relative flex-1" data-controller="dropdown">
     <button type="button"
+            data-action="click->dropdown#toggle"
             class="w-full flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors"
             title="Account menu">
       <svg class="w-5 h-5 text-ismf-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -34,12 +35,13 @@
       <span class="text-xs font-bold text-gray-700">Account</span>
     </button>
 
-    <!-- Dropdown Menu (hidden by default, shows on hover/focus) -->
-    <div class="hidden group-hover:flex group-focus-within:flex absolute bottom-full right-0 mb-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 flex-col z-50">
+    <!-- Dropdown Menu (hidden by default, toggled on tap/click via dropdown controller) -->
+    <div data-dropdown-target="panel"
+         class="hidden absolute bottom-full right-0 mb-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 flex flex-col z-50">
       <!-- User Info -->
       <div class="px-4 py-2.5 border-b border-gray-100">
-        <p class="text-sm font-semibold text-gray-900"><%= current_user.email_address %></p>
-        <p class="text-xs text-gray-500 mt-0.5"><%= current_user.full_name %></p>
+        <p class="text-sm font-semibold text-gray-900 truncate"><%= current_user.email_address %></p>
+        <p class="text-xs text-gray-500 mt-0.5 truncate"><%= current_user.full_name %></p>
       </div>
 
       <!-- Logout -->
@@ -51,9 +53,9 @@
         </svg>
         Sign Out
       <% end %>
-  <% end %>
     </div>
   </div>
+  <% end %>
 
 </nav>
 
