@@ -1,13 +1,24 @@
 <div id="phone-video-player-modal"
      data-controller="phone-video-player"
-     data-phone-video-player-video-blob-id-value=""
-     data-phone-video-player-video-url-value=""
-     class="hidden fixed inset-0 z-50 bg-black flex flex-col">
-  
-  <!-- Close button (top right) -->
-  <div class="absolute top-4 right-4 z-10">
+     data-phone-video-player-loop-mode-value="true"
+     style="display: none; position: fixed; inset: 0; z-index: 50; background: black;">
+
+  <!-- Video uses position:fixed + viewport units — no containing block chain needed -->
+  <video data-phone-video-player-target="video"
+         data-action="ended->phone-video-player#handleEnded
+                      timeupdate->phone-video-player#handleTimeUpdate
+                      play->phone-video-player#updatePlayPauseButton
+                      pause->phone-video-player#updatePlayPauseButton"
+         preload="metadata"
+         muted
+         playsinline
+         style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: contain; z-index: 1; background: black;">
+  </video>
+
+  <!-- Close button (top right, above video) -->
+  <div style="position: absolute; top: 1rem; right: 1rem; z-index: 10;">
     <button type="button"
-            onclick="document.getElementById('phone-video-player-modal').classList.add('hidden')"
+            data-action="click->phone-video-player#close"
             class="p-3 bg-black/60 hover:bg-black/80 active:bg-black rounded-full text-white touch-manipulation">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -15,52 +26,36 @@
     </button>
   </div>
 
-  <!-- Video container (centered, maintains aspect ratio) -->
-  <div class="flex-1 flex items-center justify-center min-h-0 bg-black">
-    <video data-phone-video-player-target="video"
-           data-action="ended->phone-video-player#handleEnded
-                       timeupdate->phone-video-player#handleTimeUpdate
-                       play->phone-video-player#updatePlayPauseButton
-                       pause->phone-video-player#updatePlayPauseButton
-                       loadedmetadata->phone-video-player#setupAutoPlay"
-           class="w-full h-full object-contain"
-           preload="metadata"
-           style="max-width: 100%; max-height: 100%;">
-      Your browser does not support the video tag.
-    </video>
-  </div>
+  <!-- Controls overlay (bottom, above video) -->
+  <div style="position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;"
+       class="bg-gradient-to-t from-black via-black/80 to-transparent px-4 py-6 space-y-4">
 
-  <!-- Controls (bottom gradient) -->
-  <div class="shrink-0 bg-gradient-to-t from-black via-black/80 to-transparent px-4 py-6 space-y-4">
-    
     <!-- Progress bar -->
     <div class="relative h-1.5 bg-gray-700 rounded-full overflow-hidden cursor-pointer"
-         onclick="const rect = this.getBoundingClientRect(); const percent = (event.clientX - rect.left) / rect.width; document.querySelector('[data-phone-video-player-target=video]').currentTime = percent * document.querySelector('[data-phone-video-player-target=video]').duration;">
-      <div class="absolute top-0 left-0 h-full bg-blue-500 rounded-full pointer-events-none"
-           id="phone-progress-bar"
+         data-action="click->phone-video-player#seek">
+      <div data-phone-video-player-target="progressBar"
+           class="absolute top-0 left-0 h-full bg-blue-500 rounded-full pointer-events-none"
            style="width: 0%"></div>
     </div>
 
-    <!-- Main controls row: Play button + Speed selector -->
+    <!-- Main controls row -->
     <div class="flex items-center gap-3">
-      <!-- Play/Pause button (primary action, large touch target) -->
+      <!-- Play/Pause -->
       <button data-action="click->phone-video-player#togglePlay"
               data-phone-video-player-target="playPauseBtn"
               class="flex items-center justify-center w-16 h-16 bg-blue-600 hover:bg-blue-700 active:scale-95 rounded-full text-white font-bold touch-manipulation transition-all shrink-0"
-              title="Play/Pause (tap video or button)"
               type="button">
         <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
           <path d="M8 5v14l11-7z"/>
         </svg>
       </button>
 
-      <!-- Speed selector for slow motion -->
+      <!-- Speed selector -->
       <div class="flex-1">
         <label class="block text-xs text-gray-400 mb-1 font-semibold">Speed</label>
         <select data-phone-video-player-target="speedSelect"
                 data-action="change->phone-video-player#changeSpeed"
-                class="w-full px-4 py-3 bg-gray-800 border-2 border-gray-700 rounded-lg text-white text-center font-bold text-sm touch-manipulation active:border-blue-500"
-                title="Playback speed - use 0.5x for slow motion">
+                class="w-full px-4 py-3 bg-gray-800 border-2 border-gray-700 rounded-lg text-white text-center font-bold text-sm touch-manipulation active:border-blue-500">
           <option value="0.25">0.25x</option>
           <option value="0.5">0.5x (Slow)</option>
           <option value="0.75">0.75x</option>
@@ -70,40 +65,33 @@
           <option value="2">2x</option>
         </select>
       </div>
+
+      <!-- Loop / Full video toggle -->
+      <button data-action="click->phone-video-player#toggleLoopMode"
+              data-phone-video-player-target="loopModeBtn"
+              class="px-4 py-3 bg-green-600 hover:bg-green-700 active:scale-95 rounded-lg text-white font-bold touch-manipulation transition-all text-sm shrink-0 whitespace-nowrap"
+              type="button">
+        Loop: ON
+      </button>
     </div>
 
-    <!-- Help text -->
     <div class="text-center text-xs text-gray-500">
-      Tap video or button to play • Adjust speed for slow motion
+      Tap button to play • Adjust speed for slow motion • Toggle loop mode
     </div>
   </div>
 </div>
 
 <!-- Initialize phone video player when opening from thumbnail -->
 <script type="module">
-// Helper to open phone video player from thumbnail
 window.openPhoneVideoPlayer = function(videoUrl, videoBlobId) {
   const modal = document.getElementById('phone-video-player-modal');
-  if (!modal) return;
-  
-  const video = modal.querySelector('[data-phone-video-player-target="video"]');
-  if (!video) return;
-  
-  // Set video source and blob ID
-  video.src = videoUrl;
-  modal.setAttribute('data-phone-video-player-video-url-value', videoUrl);
-  modal.setAttribute('data-phone-video-player-video-blob-id-value', videoBlobId || '');
-  
-  // Show modal
-  modal.classList.remove('hidden');
-  
-  // Trigger Stimulus controller if it exists
-  const controller = Stimulus.application?.getControllerForElementAndIdentifier?.(
-    modal,
-    'phone-video-player'
-  );
-  if (controller && controller.connect) {
-    controller.connect();
-  }
+  if (!modal) { console.error("openPhoneVideoPlayer: modal not found"); return; }
+
+  modal.style.display = 'block';
+
+  const controller = window.phoneVideoPlayerController;
+  if (!controller) { console.error("openPhoneVideoPlayer: controller not found"); return; }
+
+  controller.open(videoUrl, videoBlobId);
 };
 </script>
