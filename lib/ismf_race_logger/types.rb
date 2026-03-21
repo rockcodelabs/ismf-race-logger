@@ -117,7 +117,9 @@ module IsmfRaceLogger
     ColorCode = Strict::String.enum(
       "green",
       "red",
-      "yellow"
+      "yellow",
+      "blue",
+      "gray"
     )
 
     # ISMF Member Countries (ISO 3166-1 alpha-3)
