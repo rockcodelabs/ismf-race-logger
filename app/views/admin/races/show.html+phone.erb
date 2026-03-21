@@ -105,17 +105,6 @@
         <% end %>
       <% end %>
 
-      <!-- Import Athletes -->
-      <% if policy(@race).update? %>
-        <%= link_to new_admin_race_import_path(@race),
-            class: "flex flex-col items-center justify-center gap-2 px-3 py-4 bg-white rounded-xl text-ismf-navy font-semibold text-sm active:bg-gray-100 transition border border-gray-200" do %>
-          <svg class="w-6 h-6 text-ismf-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-          </svg>
-          Import Athletes
-        <% end %>
-      <% end %>
-
       <!-- Participants count (info tile) -->
       <div class="flex flex-col items-center justify-center gap-1 px-3 py-4 bg-white rounded-xl border border-gray-200">
         <span class="text-2xl font-black text-ismf-navy"><%= @participations.size %></span>
@@ -134,20 +123,6 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           Mark Race as Completed
-        <% end %>
-      </div>
-    <% end %>
-
-    <% if @race.status == 'scheduled' && policy(@race).update? %>
-      <div class="pt-1">
-        <%= button_to cancel_admin_competition_race_path(@competition, @race),
-            method: :post,
-            class: "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white text-red-600 font-semibold text-sm active:bg-red-50 transition border border-red-200",
-            data: { turbo_confirm: "Cancel this race? This cannot be undone." } do %>
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-          Cancel Race
         <% end %>
       </div>
     <% end %>
