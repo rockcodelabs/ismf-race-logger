@@ -1,0 +1,113 @@
+<%# frozen_string_literal: true %>
+<% content_for :page_title, "Competitions" %>
+
+<% total_count = @status_counts[:upcoming] + @status_counts[:ongoing] + @status_counts[:past] %>
+
+<div class="h-screen overflow-hidden flex flex-col bg-gray-100">
+
+  <!-- Header -->
+  <div class="shrink-0 bg-ismf-navy px-4 pt-5 pb-4">
+    <div class="flex items-center justify-between mb-3">
+      <h1 class="text-2xl font-bold text-white tracking-tight">Competitions</h1>
+      <span class="px-2.5 py-1 text-sm font-bold rounded-full bg-white/20 text-white tabular-nums">
+        <%= total_count %>
+      </span>
+    </div>
+
+    <!-- Filter Pills -->
+    <div class="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
+      <%= link_to admin_competitions_path,
+          class: "shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors active:opacity-70 #{params[:status].blank? ? 'bg-white text-ismf-navy' : 'bg-white/20 text-white'}" do %>
+        All&nbsp;·&nbsp;<%= total_count %>
+      <% end %>
+
+      <%= link_to admin_competitions_path(status: :upcoming),
+          class: "shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors active:opacity-70 #{params[:status] == 'upcoming' ? 'bg-blue-400 text-white' : 'bg-white/20 text-white'}" do %>
+        Upcoming&nbsp;·&nbsp;<%= @status_counts[:upcoming] %>
+      <% end %>
+
+      <%= link_to admin_competitions_path(status: :ongoing),
+          class: "shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors active:opacity-70 #{params[:status] == 'ongoing' ? 'bg-green-400 text-green-900' : 'bg-white/20 text-white'}" do %>
+        Ongoing&nbsp;·&nbsp;<%= @status_counts[:ongoing] %>
+      <% end %>
+
+      <%= link_to admin_competitions_path(status: :past),
+          class: "shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors active:opacity-70 #{params[:status] == 'past' ? 'bg-gray-300 text-gray-800' : 'bg-white/20 text-white'}" do %>
+        Past&nbsp;·&nbsp;<%= @status_counts[:past] %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Competition Cards List -->
+  <div class="flex-1 overflow-y-auto px-4 py-3 space-y-2.5">
+    <% if @competitions.any? %>
+      <% @competitions.each do |competition| %>
+        <%= link_to admin_competition_path(competition),
+            class: "flex items-center gap-3 w-full bg-white rounded-xl px-4 py-3.5 shadow-sm border border-gray-200 active:scale-95 transition-transform" do %>
+
+          <!-- Left accent dot based on status -->
+          <div class="shrink-0 w-2.5 h-2.5 rounded-full mt-0.5
+            <%= competition.ongoing? ? 'bg-green-500' : competition.upcoming? ? 'bg-blue-400' : 'bg-gray-300' %>">
+          </div>
+
+          <!-- Content -->
+          <div class="flex-1 min-w-0 space-y-1">
+
+            <!-- Name + Status Badge -->
+            <div class="flex items-start justify-between gap-2">
+              <h3 class="text-base font-bold text-ismf-navy leading-snug flex-1 min-w-0 truncate">
+                <%= competition.display_name %>
+              </h3>
+              <span class="shrink-0 px-2 py-0.5 text-xs font-bold rounded-full leading-5 <%= competition.status_badge_class %>">
+                <%= competition.status.titleize %>
+              </span>
+            </div>
+
+            <!-- Flag + City -->
+            <p class="text-sm text-gray-500 truncate">
+              <%= competition.country_flag_emoji %> <%= competition.city %>
+            </p>
+
+            <!-- Date Range + Live/Countdown -->
+            <div class="flex items-center gap-1.5 text-sm text-gray-500">
+              <svg class="w-3.5 h-3.5 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span class="truncate"><%= competition.short_date_range %></span>
+              <% if competition.ongoing? %>
+                <span class="ml-auto shrink-0 text-xs font-bold text-green-600">● Live</span>
+              <% elsif competition.upcoming? %>
+                <span class="ml-auto shrink-0 text-xs font-medium text-blue-500">
+                  <%= competition.days_until_start %>d away
+                </span>
+              <% end %>
+            </div>
+
+          </div>
+
+          <!-- Chevron -->
+          <svg class="w-4 h-4 shrink-0 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+          </svg>
+
+        <% end %>
+      <% end %>
+    <% else %>
+      <!-- Empty State -->
+      <div class="flex flex-col items-center justify-center pt-16 px-6 text-center">
+        <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+        </svg>
+        <h3 class="text-lg font-bold text-gray-700">No competitions</h3>
+        <p class="text-sm text-gray-500 mt-1">
+          <% if params[:status].present? %>
+            No <%= params[:status] %> competitions at this time
+          <% else %>
+            Competitions will appear here when added
+          <% end %>
+        </p>
+      </div>
+    <% end %>
+  </div>
+
+</div>

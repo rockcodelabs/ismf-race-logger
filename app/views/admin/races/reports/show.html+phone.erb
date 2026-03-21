@@ -1,0 +1,223 @@
+<%# frozen_string_literal: true %>
+<% content_for :page_title, "Report ##{@report.id} — #{@race.name}" %>
+
+<% report_model = Report.includes(videos_attachments: :blob).find(@report.id) %>
+
+<%= render "shared/video_player_modal" %>
+
+<div class="h-screen overflow-hidden flex flex-col bg-gray-100" data-controller="video-trigger">
+
+  <%# ─── Header ─────────────────────────────────────────────────────────── %>
+  <div class="shrink-0 px-4 py-3 bg-white border-b border-gray-200">
+    <div class="flex items-center gap-3">
+      <%= link_to admin_race_reports_path(@race),
+                  class: "flex items-center gap-1.5 text-ismf-gray hover:text-ismf-navy shrink-0" do %>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span class="text-sm font-medium">Reports</span>
+      <% end %>
+
+      <div class="flex-1 min-w-0 text-center">
+        <h1 class="text-base font-bold text-ismf-navy leading-tight">
+          Report #<%= @report.id %>
+        </h1>
+        <p class="text-xs text-gray-500 truncate"><%= @race.name %></p>
+      </div>
+
+      <span class="shrink-0 px-2.5 py-1 text-xs font-bold rounded-full <%= @report.status_badge[:class] %>">
+        <%= @report.status_badge[:label] %>
+      </span>
+    </div>
+  </div>
+
+  <%# ─── Scrollable body ────────────────────────────────────────────────── %>
+  <div class="flex-1 overflow-y-auto">
+
+    <%# ═══════════════════════════════════════════════════════════════════ %>
+    <%# VIDEOS — most prominent section                                    %>
+    <%# ═══════════════════════════════════════════════════════════════════ %>
+    <% if report_model.videos.any? %>
+      <div class="bg-white border-b border-gray-200 px-4 pt-4 pb-5">
+        <%# Section header %>
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h2 class="text-base font-bold text-ismf-navy">
+            Videos
+          </h2>
+          <span class="ml-auto text-sm text-gray-500 font-medium">
+            <%= report_model.videos.count %> clip<%= report_model.videos.count == 1 ? "" : "s" %>
+          </span>
+        </div>
+
+        <%# Video cards — full-width, one per row, large and tappable %>
+        <div class="grid grid-cols-1 gap-4">
+          <% report_model.videos.each do |video| %>
+            <div class="rounded-xl overflow-hidden shadow-md bg-gray-900 active:scale-95 transition-transform">
+              <%# Tappable aspect-video area %>
+              <button type="button"
+                      class="block w-full relative aspect-video cursor-pointer"
+                      data-action="click->video-trigger#open"
+                      data-video-url="<%= rails_blob_path(video, disposition: 'inline') %>"
+                      data-video-blob-id="<%= video.id %>">
+                <% if video.previewable? %>
+                  <% begin %>
+                    <%= image_tag video.preview(resize_to_limit: [800, 450]),
+                                  class: "absolute inset-0 w-full h-full object-cover",
+                                  alt: video.filename.to_s %>
+                    <%# Semi-transparent overlay + large play button %>
+                    <div class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
+                      <div class="w-16 h-16 bg-white bg-opacity-90 rounded-full flex items-center justify-center shadow-2xl">
+                        <svg class="w-8 h-8 text-gray-900 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                        </svg>
+                      </div>
+                    </div>
+                  <% rescue => _ %>
+                    <%# Preview generation failed – icon placeholder %>
+                    <div class="absolute inset-0 bg-gradient-to-br from-blue-900 to-blue-700 flex flex-col items-center justify-center gap-3">
+                      <svg class="w-16 h-16 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <span class="text-blue-200 text-sm font-semibold">Tap to play</span>
+                    </div>
+                  <% end %>
+                <% else %>
+                  <%# Non-previewable file – icon placeholder %>
+                  <div class="absolute inset-0 bg-gradient-to-br from-blue-900 to-blue-700 flex flex-col items-center justify-center gap-3">
+                    <svg class="w-16 h-16 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span class="text-blue-200 text-sm font-semibold">Tap to play</span>
+                  </div>
+                <% end %>
+              </button>
+
+              <%# Filename footer bar %>
+              <div class="px-3 py-2 bg-gray-800 flex items-center gap-2">
+                <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <span class="text-xs text-gray-400 font-mono truncate">
+                  <%= video.filename.to_s %>
+                </span>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+    <% else %>
+      <%# No videos empty state %>
+      <div class="bg-white border-b border-gray-200 px-4 py-5 flex items-center gap-3">
+        <div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
+          <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-gray-700">No videos uploaded</p>
+          <p class="text-xs text-gray-500 mt-0.5">No footage attached to this report</p>
+        </div>
+      </div>
+    <% end %>
+
+    <%# ═══════════════════════════════════════════════════════════════════ %>
+    <%# INFO SECTION                                                       %>
+    <%# ═══════════════════════════════════════════════════════════════════ %>
+    <div class="px-4 pt-4 pb-6 space-y-3">
+
+      <%# Athlete identity card %>
+      <div class="bg-white rounded-xl shadow-sm p-4 flex items-center gap-3">
+        <span class="w-14 h-14 flex items-center justify-center rounded-xl bg-ismf-navy text-white font-black text-2xl shrink-0">
+          <%= @report.bib_badge %>
+        </span>
+        <div class="flex-1 min-w-0">
+          <p class="text-base font-bold text-ismf-navy truncate">
+            <%= @report.athlete_name_display %>
+          </p>
+          <p class="text-sm text-gray-500 mt-0.5">
+            Bib #<%= @report.bib_number %>
+          </p>
+        </div>
+      </div>
+
+      <%# Detail cards — 2-col grid %>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-white rounded-xl shadow-sm p-3">
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Location</p>
+          <p class="text-sm font-semibold text-ismf-navy leading-snug">
+            <%= @report.location_name %>
+          </p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-3">
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Time</p>
+          <p class="text-sm font-semibold text-ismf-navy leading-snug">
+            <%= @report.time_ago %>
+          </p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-3">
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Status</p>
+          <span class="inline-block px-2 py-0.5 text-xs font-bold rounded-full <%= @report.status_badge[:class] %>">
+            <%= @report.status_badge[:label] %>
+          </span>
+        </div>
+
+        <% if @report.athlete_position.present? && @report.athlete_position.to_i > 0 %>
+          <div class="bg-white rounded-xl shadow-sm p-3">
+            <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Team Position</p>
+            <p class="text-sm font-semibold text-ismf-navy">
+              Athlete <%= @report.athlete_position.to_i == 1 ? "A" : "B" %>
+            </p>
+          </div>
+        <% end %>
+      </div>
+
+      <%# Linked incident %>
+      <% if @report.linked_to_incident? %>
+        <div class="bg-orange-50 border border-orange-200 rounded-xl p-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <svg class="w-5 h-5 text-orange-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div class="min-w-0">
+              <p class="text-xs font-medium text-orange-600 uppercase tracking-wide">Linked Incident</p>
+              <p class="text-sm font-bold text-orange-900">
+                Incident #<%= @report.incident_id %>
+              </p>
+            </div>
+          </div>
+          <%= link_to admin_race_incident_path(@race, @report.incident_id),
+                      class: "shrink-0 flex items-center gap-1 px-3 py-1.5 bg-orange-500 text-white text-xs font-bold rounded-lg active:bg-orange-600 transition-colors" do %>
+            View
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+            </svg>
+          <% end %>
+        </div>
+      <% end %>
+
+      <%# Description %>
+      <% if @report.description.present? %>
+        <div class="bg-white rounded-xl shadow-sm p-4">
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Description</p>
+          <p class="text-sm text-gray-800 leading-relaxed"><%= @report.description %></p>
+        </div>
+      <% end %>
+
+    </div>
+  </div>
+</div>

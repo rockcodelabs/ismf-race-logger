@@ -49,28 +49,44 @@ module Web
       def set_variant
         request.variant = :turbo_native if turbo_native_app?
         
-        is_touch = touch_display?
-        Rails.logger.info "=== TOUCH DEBUG ==="
-        Rails.logger.info "touch_display? result: #{is_touch}"
+        ua = request.user_agent.to_s.downcase
+        is_physical_touch_display = ua.include?("raspberry") || ua.include?("rpi")
+        
+        Rails.logger.info "=== VARIANT DEBUG ==="
+        Rails.logger.info "User-Agent: #{request.user_agent}"
+        Rails.logger.info "Physical touch display (Raspberry Pi): #{is_physical_touch_display}"
         Rails.logger.info "params[:touch]: #{params[:touch]}"
         Rails.logger.info "cookies[:touch_display]: #{cookies[:touch_display]}"
-        Rails.logger.info "User-Agent: #{request.user_agent}"
         
-        if is_touch
+        # Physical touch displays (Raspberry Pi) get the :touch variant
+        if is_physical_touch_display
           request.variant = :touch
-          Rails.logger.info "VARIANT SET TO: #{request.variant.inspect}"
+          cookies[:touch_display] = { value: "1", expires: 1.year.from_now }
+          Rails.logger.info "VARIANT SET TO: :touch (Raspberry Pi)"
+        # Mobile phones get the :phone variant for browsing UI
+        elsif is_mobile_device?(ua)
+          request.variant = :phone
+          Rails.logger.info "VARIANT SET TO: :phone (mobile device)"
         else
-          Rails.logger.info "VARIANT NOT SET (touch=false)"
+          Rails.logger.info "VARIANT NOT SET (desktop)"
         end
         
         Rails.logger.info "Final request.variant: #{request.variant.inspect}"
-        Rails.logger.info "==================="
+        Rails.logger.info "======================="
       end
 
       # Detect Turbo Native app requests
       # Turbo Native sends a specific User-Agent header
       def turbo_native_app?
         request.user_agent.to_s.include?("Turbo Native")
+      end
+
+      # Detect if request is from a mobile device
+      # Used to select appropriate view variant (:phone for mobile, :touch for Raspberry Pi)
+      def is_mobile_device?(ua = nil)
+        ua ||= request.user_agent.to_s.downcase
+        ua.include?("mobile") || ua.include?("android") ||
+           ua.include?("iphone") || ua.include?("ipad")
       end
 
       # Detect touch displays
@@ -129,10 +145,20 @@ module Web
       # and returns the appropriate layout name without modifying class-level state.
       #
       # Logic:
-      # - Touch device → "touch" layout
+      # - Raspberry Pi (physical touch display) → "touch" layout (kiosk mode)
+      # - Mobile phone → "phone" layout (simplified mobile UI)
       # - Desktop device → "application" layout (child controllers can override)
       def select_layout
-        touch_display? ? "touch" : "application"
+        ua = request.user_agent.to_s.downcase
+        is_physical_touch = ua.include?("raspberry") || ua.include?("rpi")
+        
+        if is_physical_touch
+          "touch"
+        elsif is_mobile_device?(ua)
+          "phone"
+        else
+          "application"
+        end
       end
 
       # Access the parts factory for wrapping structs with presentation logic

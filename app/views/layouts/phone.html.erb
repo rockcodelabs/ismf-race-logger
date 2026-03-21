@@ -1,0 +1,44 @@
+<%# frozen_string_literal: true %>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title><%= content_for(:title) || "ISMF Race Logger" %></title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="application-name" content="ISMF Race Logger">
+    <meta name="theme-color" content="#f3f4f6">
+
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <%# Poppins font from Google Fonts %>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="min-h-screen bg-gray-100 antialiased">
+    <!-- Flash Messages Container for Turbo Streams and page loads -->
+    <div id="flash-messages" data-controller="flash-stack">
+      <% if notice %>
+        <%= render "shared/flash", type: "notice", message: notice %>
+      <% end %>
+
+      <% if alert %>
+        <%= render "shared/flash", type: "alert", message: alert %>
+      <% end %>
+    </div>
+
+    <%= yield %>
+  </body>
+</html>
