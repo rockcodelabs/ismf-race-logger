@@ -82,6 +82,75 @@ module Web
             end
           end
 
+          # POST /admin/competitions/:competition_id/races/:race_id/participations/bulk_destroy
+          #
+          # Bulk delete participations - either selected or remove rest (inverse)
+          def bulk_destroy
+            authorize RaceParticipation
+
+            participation_ids = params[:participation_ids]&.map(&:to_i)&.compact || []
+            participation_ids_to_keep = params[:participation_ids_to_keep]&.map(&:to_i)&.compact || []
+
+            if participation_ids.empty? && participation_ids_to_keep.empty?
+              return respond_to do |format|
+                format.turbo_stream do
+                  render turbo_stream: turbo_stream.update("bulk-action-bar",
+                    partial: "admin/races/bulk_action_bar",
+                    locals: { race: @race, competition: @competition, message: "No participants selected" }
+                  )
+                end
+                format.html do
+                  redirect_to admin_competition_race_path(@competition, @race),
+                             alert: "No participants selected."
+                end
+              end
+            end
+
+            result = Operations::RaceParticipations::BulkDelete.new.call(
+              race_id: @race.id,
+              participation_ids: participation_ids,
+              participation_ids_to_keep: participation_ids_to_keep
+            )
+
+            case result
+            in Dry::Monads::Success(deleted_count:)
+              respond_to do |format|
+                format.turbo_stream do
+                  # Build stream with individual remove commands
+                  ids_to_remove = participation_ids.presence || (
+                    all_participations = race_participation_repo.for_race(@race.id)
+                    all_ids = all_participations.map(&:id)
+                    all_ids - participation_ids_to_keep
+                  )
+
+                  stream = ids_to_remove.map do |id|
+                    turbo_stream.remove("participation_#{id}")
+                  end
+
+                  render turbo_stream: stream
+                end
+                format.html do
+                  redirect_to admin_competition_race_path(@competition, @race),
+                             notice: "Removed #{deleted_count} participant#{'s' unless deleted_count == 1}."
+                end
+              end
+            in Dry::Monads::Failure(error)
+              error_message = error.values.first
+              respond_to do |format|
+                format.turbo_stream do
+                  render turbo_stream: turbo_stream.update("bulk-action-bar",
+                    partial: "admin/races/bulk_action_bar",
+                    locals: { race: @race, competition: @competition, message: "Error: #{error_message}" }
+                  )
+                end
+                format.html do
+                  redirect_to admin_competition_race_path(@competition, @race),
+                             alert: "Failed to remove participants: #{error_message}"
+                end
+              end
+            end
+          end
+
           private
 
           def set_competition
@@ -115,6 +184,10 @@ module Web
 
           def race_repo
             @race_repo ||= AppContainer["repos.race"]
+          end
+
+          def race_participation_repo
+            @race_participation_repo ||= AppContainer["repos.race_participation"]
           end
         end
       end

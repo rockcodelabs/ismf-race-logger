@@ -49,6 +49,7 @@ Rails.application.routes.draw do
         resources :participations, only: [:destroy], controller: "races/participations" do
           collection do
             post :copy
+            post :bulk_destroy
           end
         end
       end

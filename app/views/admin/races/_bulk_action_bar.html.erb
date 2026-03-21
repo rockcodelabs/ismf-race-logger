@@ -1,0 +1,45 @@
+<div id="bulk-action-bar" class="hidden sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm" data-target="participant-selection.bulkActionBar">
+  <div class="px-6 py-4 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <svg class="w-5 h-5 text-ismf-blue shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span class="text-sm font-medium text-gray-700">
+        <span data-selected-count>0</span>
+        <span> participant<span data-plural-suffix>s</span> selected</span>
+      </span>
+    </div>
+
+    <% if message.present? %>
+      <span class="text-sm text-gray-600"><%= message %></span>
+    <% end %>
+
+    <div class="flex items-center gap-2 ml-auto">
+      <button 
+        type="button"
+        data-action="participant-selection#removeSelected"
+        class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 active:bg-red-800 rounded-lg transition-colors"
+        title="Remove all selected participants"
+      >
+        <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Remove Selected
+      </button>
+
+      <button 
+        type="button"
+        data-action="participant-selection#removeRest"
+        data-remove-rest-btn
+        class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 active:bg-orange-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        title="Remove all participants except the selected ones"
+      >
+        <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Remove Rest
+        <span class="ml-1 text-xs opacity-75">(<span data-remove-rest-count>0</span>)</span>
+      </button>
+    </div>
+  </div>
+</div>

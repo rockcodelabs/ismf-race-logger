@@ -30,4 +30,9 @@ class RaceParticipationPolicy < ApplicationPolicy
   def copy?
     var_operator?
   end
+
+  # Only VAR operators can bulk delete participations
+  def bulk_destroy?
+    var_operator?
+  end
 end
