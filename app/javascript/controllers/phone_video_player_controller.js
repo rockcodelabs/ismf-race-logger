@@ -3,7 +3,7 @@ import { Controller } from "@hotwired/stimulus"
 // Connects to data-controller="phone-video-player"
 // Phone video player — simplified: plays saved marker loop from desktop player.
 export default class extends Controller {
-  static targets = ["video", "playPauseBtn", "speedSelect", "loopModeBtn", "progressBar"]
+  static targets = ["video", "playPauseBtn", "muteBtn", "speedSelect", "loopModeBtn", "progressBar"]
   static values = {
     loopMode: { type: Boolean, default: true }
   }
@@ -15,16 +15,11 @@ export default class extends Controller {
     window.phoneVideoPlayerController = this
     this.updateLoopModeButton()
 
-    // Debug: watch for video errors
-    this.videoTarget.addEventListener("error", (e) => {
+    this.updateMuteButton()
+    this.videoTarget.addEventListener("error", () => {
       const err = this.videoTarget.error
-      console.error("[PhonePlayer] ❌ Video error:", err?.code, err?.message, e)
+      console.error("[PhonePlayer] Video error:", err?.code, err?.message)
     })
-    this.videoTarget.addEventListener("stalled", () => console.warn("[PhonePlayer] ⚠️ Video stalled"))
-    this.videoTarget.addEventListener("suspend", () => console.log("[PhonePlayer] Video suspended (network idle)"))
-    this.videoTarget.addEventListener("waiting", () => console.log("[PhonePlayer] Video waiting for data..."))
-    this.videoTarget.addEventListener("canplay", () => console.log("[PhonePlayer] canplay — readyState:", this.videoTarget.readyState))
-    this.videoTarget.addEventListener("canplaythrough", () => console.log("[PhonePlayer] canplaythrough"))
   }
 
   // Called by openPhoneVideoPlayer() — load markers then autoplay
@@ -36,14 +31,11 @@ export default class extends Controller {
 
     // Muted is required for reliable autoplay across browsers / iOS
     this.videoTarget.muted = true
+    this.updateMuteButton()
     this.videoTarget.src = videoUrl
     this.updateLoopModeButton()
 
-    console.log("[PhonePlayer] open() — url:", videoUrl, "blobId:", videoBlobId)
-    this._debugDom()
-
     await this.loadMarkers(videoBlobId)
-    console.log("[PhonePlayer] Markers ready — start:", this.startMarker, "end:", this.endMarker)
     this.autoPlayFromMarker()
   }
 
@@ -75,17 +67,8 @@ export default class extends Controller {
     this.isAutoPlaying = true
 
     const doPlay = () => {
-      console.log("[PhonePlayer] Calling play()...")
-      this._debugVideoState("before play()")
       this.videoTarget.play()
-        .then(() => {
-          console.log("[PhonePlayer] ✓ Playing")
-          this.updatePlayPauseButton()
-          // Give the browser one frame to paint, then check if video is actually visible
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => this._debugVideoState("after first paint"))
-          })
-        })
+        .then(() => this.updatePlayPauseButton())
         .catch((err) => {
           if (err.name !== "AbortError") {
             console.warn("[PhonePlayer] play() blocked:", err.name, err.message)
@@ -98,7 +81,6 @@ export default class extends Controller {
     const seekAndPlay = () => {
       const start = this.startMarker ?? 0
       if (start > 0) {
-        console.log("[PhonePlayer] Seeking to", start)
         this.videoTarget.currentTime = start
         // Wait for seek to settle before play() — prevents AbortError on mobile
         this.videoTarget.addEventListener("seeked", () => doPlay(), { once: true })
@@ -108,74 +90,10 @@ export default class extends Controller {
     }
 
     if (this.videoTarget.readyState >= 2) {
-      console.log("[PhonePlayer] Metadata already loaded, seeking + playing")
       seekAndPlay()
     } else {
-      console.log("[PhonePlayer] Waiting for metadata...")
-      this.videoTarget.addEventListener("loadedmetadata", () => {
-        console.log("[PhonePlayer] Metadata loaded")
-        seekAndPlay()
-      }, { once: true })
+      this.videoTarget.addEventListener("loadedmetadata", () => seekAndPlay(), { once: true })
     }
-  }
-
-  // ── Debug helpers ──────────────────────────────────────────────────────────
-
-  _debugDom() {
-    const modal = this.element
-    const video = this.videoTarget
-
-    const modalRect   = modal.getBoundingClientRect()
-    const videoRect   = video.getBoundingClientRect()
-    const modalStyle  = getComputedStyle(modal)
-    const videoStyle  = getComputedStyle(video)
-
-    console.group("[PhonePlayer] DOM snapshot")
-
-    console.log("Modal display:", modalStyle.display,
-      "| visibility:", modalStyle.visibility,
-      "| opacity:", modalStyle.opacity,
-      "| z-index:", modalStyle.zIndex,
-      "| position:", modalStyle.position)
-    console.log("Modal rect:", JSON.stringify(modalRect.toJSON()))
-
-    console.log("Video display:", videoStyle.display,
-      "| visibility:", videoStyle.visibility,
-      "| opacity:", videoStyle.opacity,
-      "| z-index:", videoStyle.zIndex,
-      "| position:", videoStyle.position)
-    console.log("Video rect:", JSON.stringify(videoRect.toJSON()))
-
-    // Check for ancestor transforms that break position:fixed
-    let el = video.parentElement
-    while (el && el !== document.body) {
-      const s = getComputedStyle(el)
-      if (s.transform !== "none" || s.filter !== "none" || s.willChange !== "auto") {
-        console.warn("[PhonePlayer] ⚠️ Ancestor breaks position:fixed — transform/filter/will-change found on:", el,
-          "| transform:", s.transform, "| filter:", s.filter, "| willChange:", s.willChange)
-      }
-      el = el.parentElement
-    }
-
-    console.groupEnd()
-  }
-
-  _debugVideoState(label = "") {
-    const v = this.videoTarget
-    console.group(`[PhonePlayer] Video state ${label ? "(" + label + ")" : ""}`)
-    console.log("src:", v.src)
-    console.log("readyState:", v.readyState, "| networkState:", v.networkState)
-    console.log("paused:", v.paused, "| ended:", v.ended, "| muted:", v.muted)
-    console.log("currentTime:", v.currentTime, "| duration:", v.duration)
-    console.log("videoWidth:", v.videoWidth, "| videoHeight:", v.videoHeight,
-      "← (0×0 means no decoded frames yet)")
-    const rect = v.getBoundingClientRect()
-    console.log("rendered size:", rect.width, "×", rect.height,
-      "| top:", rect.top, "left:", rect.left)
-    const s = getComputedStyle(v)
-    console.log("z-index:", s.zIndex, "| position:", s.position,
-      "| opacity:", s.opacity, "| visibility:", s.visibility)
-    console.groupEnd()
   }
 
   // ── Playback controls ──────────────────────────────────────────────────────
@@ -197,6 +115,16 @@ export default class extends Controller {
   updatePlayPauseButton() {
     if (!this.hasPlayPauseBtnTarget) return
     this.playPauseBtnTarget.innerHTML = this.videoTarget.paused ? this.playIcon() : this.pauseIcon()
+  }
+
+  toggleMute() {
+    this.videoTarget.muted = !this.videoTarget.muted
+    this.updateMuteButton()
+  }
+
+  updateMuteButton() {
+    if (!this.hasMuteBtnTarget) return
+    this.muteBtnTarget.innerHTML = this.videoTarget.muted ? this.mutedIcon() : this.soundIcon()
   }
 
   changeSpeed(event) {
@@ -277,6 +205,21 @@ export default class extends Controller {
   }
 
   // ── Icons ──────────────────────────────────────────────────────────────────
+
+  soundIcon() {
+    return `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M15.536 8.464a5 5 0 010 7.072M12 6v12m0 0l-4-4H4V10h4l4-4z"/>
+    </svg>`
+  }
+
+  mutedIcon() {
+    return `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/>
+    </svg>`
+  }
 
   playIcon() {
     return `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`
