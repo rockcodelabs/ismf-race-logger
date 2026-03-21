@@ -1,0 +1,94 @@
+<%# Unified Notes Section for Report Show Page
+    Combines report notes and incident notes into a single section.
+
+    Locals:
+      report_notes    — Array of note structs for the report (always present)
+      incident_notes  — Array of note structs for the incident (nil before confirmation)
+      report_id       — Integer, the report's ID
+      incident        — Structs::Incident or nil
+
+    Behaviour:
+      • Before confirmation (incident nil): notes list shows report notes only,
+        add form writes to Report.
+      • After confirmation (incident present): notes list shows report + incident
+        notes merged by created_at, add form writes to Incident only.
+%>
+
+<%
+  all_notes    = ((report_notes || []) + (incident_notes || [])).sort_by(&:created_at)
+  total_count  = all_notes.size
+  has_incident = incident.present?
+  write_type   = has_incident ? "Incident" : "Report"
+  write_id     = has_incident ? incident.id : report_id
+%>
+
+<div class="card" id="notes-section">
+  <div class="p-6">
+
+    <%# ── Header ── %>
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-ismf-navy flex items-center gap-2">
+        <svg class="w-5 h-5 text-ismf-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        Notes
+        <% if total_count > 0 %>
+          <span class="text-sm font-normal text-ismf-gray">(<%= total_count %>)</span>
+        <% end %>
+      </h3>
+      <% if has_incident %>
+        <span class="text-xs text-purple-600 font-medium bg-purple-50 px-2 py-0.5 rounded-full">
+          Incident notes
+        </span>
+      <% end %>
+    </div>
+
+    <%# ── Notes list ── %>
+    <% if all_notes.any? %>
+      <div class="space-y-3 mb-4">
+        <% all_notes.each do |note| %>
+          <%= render "admin/notes/note", note: note %>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="text-sm text-gray-400 italic mb-4">No notes yet. Be the first to add one.</p>
+    <% end %>
+
+    <%# ── Add note form ── %>
+    <div class="border-t border-gray-200 pt-4">
+      <% if has_incident %>
+        <p class="text-xs text-ismf-gray mb-2 italic">
+          Notes are attached to the incident and visible across all linked reports.
+        </p>
+      <% end %>
+
+      <%= form_with url: admin_notes_path, method: :post, class: "space-y-3" do |f| %>
+        <%= f.hidden_field :notable_type, value: write_type %>
+        <%= f.hidden_field :notable_id,   value: write_id %>
+
+        <div>
+          <label class="sr-only">Add a note</label>
+          <textarea
+            name="body"
+            rows="2"
+            placeholder="Add a note..."
+            required
+            class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-ismf-blue focus:ring-ismf-blue placeholder-gray-400 resize-none"
+          ></textarea>
+        </div>
+
+        <div class="flex justify-end">
+          <%= f.button type: :submit,
+                       class: "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors #{ has_incident ? 'bg-purple-600 hover:bg-purple-700' : 'bg-ismf-blue hover:bg-blue-700' }" do %>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Note
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+  </div>
+</div>

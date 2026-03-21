@@ -389,64 +389,12 @@
         </div>
       </div>
 
-      <!-- ── Report Notes (always visible) ── -->
-      <%= render "admin/notes/notes_section",
-                 notable_type: "Report",
-                 notable_id: @report.id,
-                 notes: @notes %>
-
-      <!-- ── Incident Notes (only after confirmation) ── -->
-      <% if defined?(@incident) && @incident.present? %>
-        <div class="card" id="incident-notes-section">
-          <div class="p-6">
-            <div class="flex items-center gap-2 mb-4">
-              <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <h3 class="text-lg font-semibold text-ismf-navy">
-                Incident Notes
-                <% if defined?(@incident_notes) && @incident_notes.any? %>
-                  <span class="text-sm font-normal text-ismf-gray">(<%= @incident_notes.size %>)</span>
-                <% end %>
-              </h3>
-            </div>
-            <p class="text-xs text-ismf-gray mb-3 italic">Notes shared across all reports in this incident.</p>
-
-            <% if defined?(@incident_notes) && @incident_notes.any? %>
-              <div class="space-y-3 mb-4">
-                <% @incident_notes.each do |note| %>
-                  <%= render "admin/notes/note", note: note %>
-                <% end %>
-              </div>
-            <% else %>
-              <p class="text-sm text-gray-400 italic mb-4">No incident notes yet.</p>
-            <% end %>
-
-            <div class="border-t border-gray-200 pt-4">
-              <%= form_with url: admin_notes_path, method: :post, class: "space-y-3" do |f| %>
-                <%= f.hidden_field :notable_type, value: "Incident" %>
-                <%= f.hidden_field :notable_id, value: @incident.id %>
-                <div>
-                  <label class="sr-only">Add an incident note</label>
-                  <textarea name="body"
-                            rows="2"
-                            placeholder="Add an incident-level note..."
-                            required
-                            class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-ismf-blue focus:ring-ismf-blue placeholder-gray-400 resize-none"></textarea>
-                </div>
-                <div class="flex justify-end">
-                  <%= f.button type: :submit, class: "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors" do %>
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add Incident Note
-                  <% end %>
-                </div>
-              <% end %>
-            </div>
-          </div>
-        </div>
-      <% end %>
+      <!-- ── Unified Notes (report + incident combined) ── -->
+      <%= render "notes_unified",
+                 report_notes:   @notes,
+                 incident_notes: defined?(@incident_notes) ? @incident_notes : [],
+                 report_id:      @report.id,
+                 incident:       defined?(@incident) ? @incident : nil %>
     </div>
   </div>
 </div>
