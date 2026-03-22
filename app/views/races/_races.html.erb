@@ -34,7 +34,7 @@
     <%# === SECTION 1: ONGOING RACE (Featured) === %>
     <% if ongoing_races.any? %>
       <% ongoing_races.each do |race| %>
-        <div class="card border-2 border-green-400 bg-gradient-to-r from-green-50 to-emerald-50">
+        <div class="card relative border-2 border-green-400 bg-gradient-to-r from-green-50 to-emerald-50">
           <div class="px-6 py-4">
             <div class="flex items-center gap-4">
               <div class="w-12 h-12 bg-green-400 rounded-full flex items-center justify-center animate-pulse flex-shrink-0">
@@ -72,7 +72,7 @@
 
       <%# Show remaining races in expandable section %>
       <% remaining_races = all_races.reject { |r| ongoing_races.include?(r) } %>
-      <% remaining_by_type = remaining_races.group_by(&:race_type) %>
+      <% remaining_by_type = remaining_races.group_by(&:race_type_name) %>
       
       <details open class="card">
         <summary class="px-6 py-4 border-b border-gray-200 bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors font-medium text-ismf-navy flex items-center gap-2">
@@ -91,7 +91,7 @@
 
     <%# === SECTION 2: NEXT/CLOSEST RACE (if no ongoing) === %>
     <% elsif next_race.present? %>
-      <div class="card border-2 border-orange-400 bg-gradient-to-r from-orange-50 to-yellow-50">
+      <div class="card relative border-2 border-orange-400 bg-gradient-to-r from-orange-50 to-yellow-50">
         <div class="px-6 py-4">
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 bg-orange-400 rounded-full flex items-center justify-center flex-shrink-0">
