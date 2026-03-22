@@ -15,11 +15,15 @@
   <div class="flex items-center justify-between">
     <div>
       <nav class="flex items-center text-sm text-gray-500 mb-2">
-        <%= link_to "Races", admin_competitions_path, class: "hover:text-ismf-blue" %>
+        <%= link_to "Competitions", admin_competitions_path, class: "hover:text-ismf-blue" %>
         <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
-        <%= link_to @race.name, admin_competition_race_path(@race.competition_id, @race), class: "hover:text-ismf-blue" %>
+        <%= link_to @race.competition.name, admin_competition_path(@race.competition), class: "hover:text-ismf-blue" %>
+        <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+        <%= link_to @race.name, admin_competition_race_path(@race.competition, @race), class: "hover:text-ismf-blue" %>
         <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
