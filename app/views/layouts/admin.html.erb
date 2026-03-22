@@ -53,25 +53,7 @@
           
           <!-- Navigation -->
           <nav class="mt-8 flex-1 px-3 space-y-1">
-            <!-- Active Race Buttons (Visible to ALL roles) -->
             <% active_race = Race.find_by(status: "in_progress") %>
-            <% if active_race.present? %>
-              <div class="mb-4">
-                <%= link_to admin_race_reports_path(active_race), class: "flex items-center gap-3 px-3 py-3 text-sm font-semibold rounded-lg transition-colors bg-green-600 text-white hover:bg-green-700 shadow-lg" do %>
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span>Active Race Reports</span>
-                <% end %>
-                
-                <%= link_to new_admin_race_report_path(active_race), class: "flex items-center gap-3 px-3 py-3 text-sm font-semibold rounded-lg transition-colors bg-green-600 text-white hover:bg-green-700 shadow-lg mt-2" do %>
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>New Report!</span>
-                <% end %>
-              </div>
-            <% end %>
             
             <!-- Report Button - always visible, closest race (in_progress or next upcoming) -->
             <% closest_race = active_race || Race.where(status: "scheduled").order(:scheduled_at).first %>
@@ -207,12 +189,7 @@
           </div>
           <!-- Mobile navigation -->
           <nav class="flex gap-1 px-3 pb-3 overflow-x-auto">
-            <!-- Active Race Buttons (Visible to ALL roles) -->
             <% active_race = Race.find_by(status: "in_progress") %>
-            <% if active_race.present? %>
-              <%= link_to "Reports", admin_race_reports_path(active_race), class: "shrink-0 px-3 py-1.5 text-sm font-semibold rounded-full transition-colors bg-green-600 text-white hover:bg-green-700" %>
-              <%= link_to "New Report!", new_admin_race_report_path(active_race), class: "shrink-0 px-3 py-1.5 text-sm font-semibold rounded-full transition-colors bg-green-600 text-white hover:bg-green-700" %>
-            <% end %>
             
             <%= link_to "Penalties", admin_penalties_path, class: "shrink-0 px-3 py-1.5 text-sm font-medium rounded-full transition-colors #{controller_name == 'penalties' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue'}" %>
             
