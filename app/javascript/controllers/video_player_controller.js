@@ -41,6 +41,7 @@ export default class extends Controller {
     this.loopEnabled = false
     this.isMuted = true // Default to muted
     this.currentBlobUrl = null // Track blob URLs for cleanup
+    this.selectedSpeed = 1 // Store selected speed to persist across src changes
     
     // Initialize video cache service (store promise for later awaiting)
     this.videoCacheReady = this.initVideoCache()
@@ -599,12 +600,16 @@ export default class extends Controller {
 
   // Speed control
   changeSpeed(event) {
-    this.videoTarget.playbackRate = parseFloat(event.target.value)
+    this.selectedSpeed = parseFloat(event.target.value)
+    this.videoTarget.playbackRate = this.selectedSpeed
   }
 
   // Video event handlers
   handleLoadedMetadata() {
     this.durationTarget.textContent = this.formatTime(this.videoTarget.duration)
+    
+    // Reapply stored speed (browser resets playbackRate when src changes)
+    this.videoTarget.playbackRate = this.selectedSpeed
     
     // Only set endTime to duration if not already loaded from metadata
     if (this.endTime === 0) {

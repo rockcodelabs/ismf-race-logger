@@ -12,6 +12,7 @@ export default class extends Controller {
     this.startMarker = null
     this.endMarker = null
     this.isAutoPlaying = false
+    this.selectedSpeed = 1 // Store selected speed to persist across src changes
     window.phoneVideoPlayerController = this
     this.updateLoopModeButton()
 
@@ -34,6 +35,11 @@ export default class extends Controller {
     this.updateMuteButton()
     this.videoTarget.src = videoUrl
     this.updateLoopModeButton()
+
+    // Reapply stored speed after src change (browser resets playbackRate)
+    this.videoTarget.addEventListener("loadedmetadata", () => {
+      this.videoTarget.playbackRate = this.selectedSpeed
+    }, { once: true })
 
     await this.loadMarkers(videoUrl)
     this.autoPlayFromMarker()
@@ -138,7 +144,8 @@ export default class extends Controller {
   }
 
   changeSpeed(event) {
-    this.videoTarget.playbackRate = parseFloat(event.target.value)
+    this.selectedSpeed = parseFloat(event.target.value)
+    this.videoTarget.playbackRate = this.selectedSpeed
   }
 
   seek(event) {
