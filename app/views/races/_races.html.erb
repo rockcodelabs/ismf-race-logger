@@ -127,7 +127,7 @@
 
       <%# Show remaining races in expandable section %>
       <% remaining_races = all_races.reject { |r| r == next_race } %>
-      <% remaining_by_type = remaining_races.group_by(&:race_type) %>
+      <% remaining_by_type = remaining_races.group_by(&:race_type_name) %>
       
       <details open class="card">
         <summary class="px-6 py-4 border-b border-gray-200 bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors font-medium text-ismf-navy flex items-center gap-2">
