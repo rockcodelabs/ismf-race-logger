@@ -33,6 +33,18 @@
         <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wide">Location</h2>
       </div>
       <div class="flex-1 overflow-y-auto touch-scrollable p-2 space-y-1">
+        <!-- NN Unknown Location Button -->
+        <button type="button"
+                class="touch-location-btn w-full px-3 py-3 rounded-lg font-semibold text-sm transition-all"
+                style="background-color: #f3f4f620; border: 2px dashed #9ca3af;"
+                data-action="click->touch-report#selectLocation"
+                data-touch-report-location-id-param="nn"
+                data-touch-report-location-name-param="Unknown Location"
+                data-location-id="nn">
+          <span class="block font-black text-orange-600">NN</span>
+          <span class="block text-xs text-gray-500 truncate">Unknown</span>
+        </button>
+
         <% @race_locations.each do |location| %>
           <button type="button"
                   class="touch-location-btn w-full px-3 py-3 rounded-lg text-left font-semibold text-sm transition-all"

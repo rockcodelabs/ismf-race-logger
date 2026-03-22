@@ -23,7 +23,7 @@ module Structs
     attribute :race_id, Types::Integer
     attribute :incident_id, Types::Integer.optional
     attribute :user_id, Types::Integer
-    attribute :race_location_id, Types::Integer
+    attribute :race_location_id, Types::Integer.optional
     attribute :race_participation_id, Types::Integer.optional
     attribute :bib_number, Types::BibNumber.optional
     attribute :athlete_position, Types::Integer.optional

@@ -59,9 +59,10 @@ module Operations
           return Success(existing) if existing
         end
 
-        # Ensure bib_number and race_participation_id are nil if not provided
+        # Ensure optional fields are nil if not provided
         validated[:bib_number] = nil unless validated[:bib_number].present?
         validated[:race_participation_id] = nil unless validated[:race_participation_id].present?
+        validated[:race_location_id] = nil unless validated[:race_location_id].present?
 
         # Load user to check role
         user = @user_repo.find(validated[:user_id])
@@ -106,8 +107,12 @@ module Operations
         # Return struct from repo
         Success(@report_repo.find(report.id))
       rescue ActiveRecord::RecordInvalid => e
+        Rails.logger.error "[Reports::Create] RecordInvalid: #{e.message}"
+        Rails.logger.error e.backtrace.first(5).join("\n")
         Failure([ :validation_error, e.message ])
       rescue StandardError => e
+        Rails.logger.error "[Reports::Create] StandardError: #{e.class} — #{e.message}"
+        Rails.logger.error e.backtrace.first(5).join("\n")
         Failure([ :error, e.message ])
       end
     end

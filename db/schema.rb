@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_20_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_22_073130) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -273,7 +273,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_20_100000) do
     t.text "description"
     t.bigint "incident_id"
     t.bigint "race_id", null: false
-    t.bigint "race_location_id", null: false
+    t.bigint "race_location_id"
     t.bigint "race_participation_id"
     t.string "status", default: "pending_review", null: false
     t.datetime "updated_at", null: false

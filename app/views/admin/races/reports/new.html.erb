@@ -40,6 +40,17 @@
         <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Select Location</h2>
       </div>
       <div class="flex-1 overflow-y-auto p-3 space-y-2">
+        <!-- NN Unknown Location Button -->
+        <button type="button"
+                class="location-btn w-full px-4 py-3 rounded-lg font-bold transition-all border-2 border-dashed border-gray-400 bg-gray-100 hover:border-orange-500 hover:bg-orange-50 hover:scale-105 text-center"
+                data-action="click->report-form#selectLocation"
+                data-report-form-location-id-param="nn"
+                data-report-form-location-name-param="Unknown Location"
+                data-location-id="nn">
+          <span class="text-xl font-black text-orange-600">NN</span>
+          <span class="block text-xs text-gray-500 font-medium mt-0.5">Unknown Location</span>
+        </button>
+
         <% @race_locations.each_with_index do |location, index| %>
           <button type="button"
                   class="location-btn w-full px-4 py-3 rounded-lg font-bold transition-all border-2 hover:scale-105 text-center"

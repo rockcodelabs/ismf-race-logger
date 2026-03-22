@@ -150,13 +150,14 @@ module Web
           def create
             authorize Report, :create?
             
-            # Handle optional bib_number and race_participation_id
+            # Handle optional fields (NN support — empty string → nil)
+            race_location_id = report_params[:race_location_id].present? ? report_params[:race_location_id].to_i : nil
             bib_number = report_params[:bib_number].present? ? report_params[:bib_number].to_i : nil
             race_participation_id = report_params[:race_participation_id].present? ? report_params[:race_participation_id].to_i : nil
-            
+
             result = Operations::Reports::Create.new.call(
               race_id: @race.id,
-              race_location_id: report_params[:race_location_id].to_i,
+              race_location_id: race_location_id,
               race_participation_id: race_participation_id,
               bib_number: bib_number,
               user_id: Current.user.id,

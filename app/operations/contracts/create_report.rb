@@ -9,10 +9,12 @@ module Operations
     #
     # Required fields:
     # - race_id: integer (must be a race that is not completed)
-    # - race_location_id: integer (must belong to the race)
     # - race_participation_id: integer (must belong to the race)
     # - bib_number: integer (denormalized for quick display)
     # - user_id: integer (who created the report)
+    #
+    # Optional fields (NN support):
+    # - race_location_id: integer (can be nil = unknown location)
     #
     # Optional fields:
     # - athlete_position: integer (1 or 2 for team races)
@@ -22,7 +24,7 @@ module Operations
     class CreateReport < Dry::Validation::Contract
       params do
         required(:race_id).filled(:integer)
-        required(:race_location_id).filled(:integer)
+        optional(:race_location_id).maybe(:integer)
         optional(:race_participation_id).maybe(:integer)
         optional(:bib_number).maybe(:integer)
         required(:user_id).filled(:integer)
@@ -41,9 +43,9 @@ module Operations
         end
       end
 
-      # Validate race_location belongs to the race
+      # Validate race_location belongs to the race (skip if nil — unknown location / NN)
       rule(:race_location_id, :race_id) do
-        next unless values[:race_id] && values[:race_location_id]
+        next unless values[:race_id] && values[:race_location_id].present?
 
         location = RaceLocation.find_by(id: values[:race_location_id])
         if location.nil?

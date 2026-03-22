@@ -61,7 +61,7 @@ export default class extends Controller {
 
   // Called when a bib button is clicked
   selectBib(event) {
-    if (!this.selectedLocationId) {
+    if (this.selectedLocationId === null) {
       this.showMessage("Please select a location first")
       return
     }
@@ -156,7 +156,8 @@ export default class extends Controller {
   // Fill form and submit with optional athlete_position
   submitReport(participationId, bibNumber, athletePosition) {
     if (this.hasLocationInputTarget) {
-      this.locationInputTarget.value = this.selectedLocationId
+      // "nn" sentinel = unknown location → submit empty string so dry-params coerces to nil
+      this.locationInputTarget.value = this.selectedLocationId === "nn" ? "" : (this.selectedLocationId || "")
     }
     if (this.hasParticipationInputTarget) {
       this.participationInputTarget.value = participationId || ""
@@ -193,7 +194,7 @@ export default class extends Controller {
 
   // Called when "Number NN" (unknown bib) button is clicked
   selectUnknownBib(event) {
-    if (!this.selectedLocationId) {
+    if (this.selectedLocationId === null) {
       this.showMessage("Please select a location first")
       return
     }
