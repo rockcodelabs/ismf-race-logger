@@ -51,8 +51,15 @@ module Web
           # Load races as structs from repo
           races = race_repo.for_competition(@competition.id)
 
-          # Group races by race_type_name for display
-          @races_by_type = races.group_by(&:race_type_name)
+          # Group by race type, sorted chronologically by the earliest scheduled_at
+          # across all races in that type (regardless of status).
+          grouped = races.group_by(&:race_type_name)
+          @races_by_type = grouped.sort_by do |_type_name, type_races|
+            type_races.map(&:scheduled_at).compact.min || Time.new(9999)
+          end.to_h
+
+          # Report counts per race — single query, no N+1
+          @reports_count_by_race = report_repo.counts_for_races(races.map(&:id))
         end
 
         # GET /admin/competitions/new
@@ -170,6 +177,10 @@ module Web
 
         def race_repo
           @race_repo ||= AppContainer["repos.race"]
+        end
+
+        def report_repo
+          @report_repo ||= AppContainer["repos.report"]
         end
       end
     end

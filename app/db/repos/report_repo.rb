@@ -20,6 +20,7 @@
 #   repo.find_by_client_uuid(uuid)            # => Structs::Report or nil
 #   repo.available_for_merge(race_id, ...)    # => [Structs::ReportSummary, ...] (for merge UI)
 #   repo.confirmed_without_incident(race_id)  # => [Structs::ReportSummary, ...] (legacy)
+#   repo.counts_for_races(race_ids)           # => Hash { race_id => count } (single query)
 #
 class ReportRepo < DB::Repo
   self.record_class = Report
@@ -29,6 +30,18 @@ class ReportRepo < DB::Repo
   returns_one :find, :find!, :find_by_client_uuid
   returns_many :for_race, :pending_for_race, :confirmed_for_race, :for_incident,
                :confirmed_without_incident, :pending_without_incident, :by_bib, :recent
+
+  # Get total report counts for multiple races in a single DB query.
+  # Returns a Hash of { race_id (Integer) => count (Integer) }.
+  # Races with no reports are not included (use .to_i on the result to default to 0).
+  #
+  # @param race_ids [Array<Integer>]
+  # @return [Hash{Integer => Integer}] e.g., { 1 => 3, 5 => 12 }
+  def counts_for_races(race_ids)
+    return {} if race_ids.blank?
+
+    Report.where(race_id: race_ids).group(:race_id).count
+  end
 
   # Find report by client_uuid (for idempotency/offline sync)
   # @param uuid [String]
