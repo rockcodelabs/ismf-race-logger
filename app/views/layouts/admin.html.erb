@@ -95,7 +95,7 @@
             
             <!-- Reports - link to current competition's reports (always visible) -->
             <% current_competition = closest_race&.competition || 
-                                     Competition.where(status: :active).order(start_date: :desc).first ||
+                                     Competition.where("start_date <= ? AND end_date >= ?", Date.current, Date.current).order(start_date: :desc).first ||
                                      Competition.order(start_date: :desc).first %>
             <% reports_path = current_competition ? admin_competition_path(current_competition, view: "reports") : admin_competitions_path %>
             <%= link_to reports_path, class: "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors #{params[:view] == 'reports' && controller_name == 'competitions' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue hover:text-white'}" do %>
