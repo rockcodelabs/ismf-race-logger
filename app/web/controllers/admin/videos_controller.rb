@@ -63,8 +63,9 @@ module Web
         end
 
         # GET /admin/videos/markers/:id
+        # Accepts either numeric blob ID or signed blob ID
         def show_markers
-          blob = ActiveStorage::Blob.find_signed(params[:id])
+          blob = find_blob_by_id_or_signed(params[:id])
 
           unless blob
             render json: { error: "Video not found" }, status: :not_found
@@ -80,6 +81,22 @@ module Web
         rescue StandardError => e
           Rails.logger.error("Failed to load video markers: #{e.message}")
           render json: { error: "Failed to load markers" }, status: :unprocessable_entity
+        end
+
+        private
+
+        # Try to find blob by numeric ID first, then by signed ID
+        def find_blob_by_id_or_signed(id_param)
+          # Try numeric ID first (from desktop player)
+          if id_param.to_s.match?(/\A\d+\z/)
+            blob = ActiveStorage::Blob.find_by(id: id_param)
+            return blob if blob
+          end
+
+          # Try signed ID (from phone player URL extraction)
+          ActiveStorage::Blob.find_signed(id_param)
+        rescue ActiveSupport::MessageVerifier::InvalidSignature
+          nil
         end
       end
     end

@@ -42,8 +42,8 @@ export default class extends Controller {
     this.isMuted = true // Default to muted
     this.currentBlobUrl = null // Track blob URLs for cleanup
     
-    // Initialize video cache service
-    this.initVideoCache()
+    // Initialize video cache service (store promise for later awaiting)
+    this.videoCacheReady = this.initVideoCache()
   }
   
   async initVideoCache() {
@@ -55,10 +55,13 @@ export default class extends Controller {
         const raceId = parseInt(raceElement.dataset.raceId, 10)
         await this.videoCache.init(raceId)
         console.log('✅ Video cache initialized for player')
+        return true
       }
+      return false
     } catch (error) {
       console.warn('⚠️ Video cache not available for player:', error)
       this.videoCache = null
+      return false
     }
   }
 
@@ -106,6 +109,11 @@ export default class extends Controller {
   
   // Load video from cache if available
   async loadFromCache(videoBlobId) {
+    // Wait for cache initialization to complete before checking
+    if (this.videoCacheReady) {
+      await this.videoCacheReady
+    }
+    
     if (!this.videoCache || !videoBlobId) {
       console.log('📡 Loading video from server (no cache)')
       return null
