@@ -51,11 +51,23 @@ module Web
           # Load races as structs from repo
           races = race_repo.for_competition(@competition.id)
 
-          # Group by race type, sorted chronologically by the earliest scheduled_at
-          # across all races in that type (regardless of status).
+          # Group by race type, sorted so the most relevant type is always first:
+          #   [0] type has an in-progress race   → top
+          #   [1] type has an upcoming race       → sorted by soonest scheduled_at
+          #   [2] all races done/cancelled        → sorted by earliest scheduled_at
           grouped = races.group_by(&:race_type_name)
           @races_by_type = grouped.sort_by do |_type_name, type_races|
-            type_races.map(&:scheduled_at).compact.min || Time.new(9999)
+            if type_races.any?(&:in_progress?)
+              [ 0, Time.new(0) ]
+            else
+              next_up = type_races.select(&:upcoming?).min_by(&:scheduled_at)
+              if next_up
+                [ 1, next_up.scheduled_at ]
+              else
+                earliest = type_races.map(&:scheduled_at).compact.min || Time.new(9999)
+                [ 2, earliest ]
+              end
+            end
           end.to_h
 
           # Report counts per race — single query, no N+1
