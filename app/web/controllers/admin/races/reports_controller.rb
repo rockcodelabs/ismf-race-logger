@@ -77,6 +77,12 @@ module Web
             @reports = parts_factory.wrap_many(@reports)
             @status_counts = report_repo.visible_count_by_status(@race.id)
 
+            # Load previous and next races for navigation
+            all_races = race_repo.for_competition(@race.competition_id)
+            current_index = all_races.find_index { |r| r.id == @race.id }
+            @prev_race = current_index && current_index > 0 ? all_races[current_index - 1] : nil
+            @next_race = current_index && current_index < all_races.length - 1 ? all_races[current_index + 1] : nil
+
             # Get all videos for this race for prefetch controller
             @race_videos = []
             report_repo.for_race(@race.id).each do |report|
@@ -601,6 +607,10 @@ module Web
 
           def report_repo
             @report_repo ||= AppContainer["repos.report"]
+          end
+
+          def race_repo
+            @race_repo ||= AppContainer["repos.race"]
           end
 
           def race_location_repo

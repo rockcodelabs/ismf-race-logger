@@ -44,6 +44,26 @@
           <span>Complete Race</span>
         <% end %>
       <% end %>
+      
+      <!-- Previous and Next Race Navigation -->
+      <% if @prev_race %>
+        <%= link_to admin_race_reports_path(@prev_race), class: "btn-secondary whitespace-nowrap" do %>
+          <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          <span>Prev Race</span>
+        <% end %>
+      <% end %>
+      
+      <% if @next_race %>
+        <%= link_to admin_race_reports_path(@next_race), class: "btn-secondary whitespace-nowrap" do %>
+          <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+          <span>Next Race</span>
+        <% end %>
+      <% end %>
+      
       <% if policy(Report).create? %>
         <%= link_to new_admin_race_report_path(@race), class: "btn-success whitespace-nowrap" do %>
           <svg class="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
