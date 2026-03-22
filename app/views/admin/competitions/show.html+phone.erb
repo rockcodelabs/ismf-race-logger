@@ -150,14 +150,22 @@
               <% stages_sorted.each do |stage, stage_races| %>
                 <div class="px-3 pt-2.5 pb-2">
 
-                  <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1 px-2">
-                    <%= stage_races.first.stage_name.presence || stage.titleize %>
-                    <% if stage_races.count > 1 %>
-                      <span class="font-normal opacity-60">(<%= stage_races.count %>)</span>
-                    <% end %>
-                  </p>
+                  <% stage_has_active = stage_races.any? { |r| r.id == active_race&.id } %>
 
-                  <div class="space-y-0.5">
+                  <details <%= "open" if stage_has_active %> class="group/stage">
+                    <summary class="flex items-center justify-between px-4 py-2 cursor-pointer select-none active:bg-gray-50 list-none">
+                      <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                        <%= stage_races.first.stage_name.presence || stage.titleize %>
+                        <% if stage_races.count > 1 %>
+                          <span class="font-normal opacity-60">(<%= stage_races.count %>)</span>
+                        <% end %>
+                      </span>
+                      <svg class="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </summary>
+
+                  <div class="space-y-0.5 px-3 pb-2">
                     <% stage_races.each do |race| %>
                       <% is_active_row = race.id == active_race&.id %>
                       <% row_bg = is_active_row ? "bg-blue-50 active:bg-blue-100" : "active:bg-gray-100" %>
@@ -208,6 +216,7 @@
                     <% end %>
                   </div>
 
+                  </details>
                 </div>
               <% end %>
             </div>
