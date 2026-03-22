@@ -93,6 +93,17 @@
               Penalties
             <% end %>
             
+            <!-- Reports - link to current competition's reports -->
+            <% current_competition = closest_race&.competition %>
+            <% if current_competition %>
+              <%= link_to admin_competition_path(current_competition, view: "reports"), class: "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors #{params[:view] == 'reports' && controller_name == 'competitions' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue hover:text-white'}" do %>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Reports
+              <% end %>
+            <% end %>
+            
             <!-- Role-Specific Section -->
             <% user_struct = AppContainer["repos.user"].find(Current.user.id) %>
             <% if user_struct.admin? || user_struct.var_operator? || user_struct.referee_manager? %>
@@ -191,8 +202,14 @@
           <!-- Mobile navigation -->
           <nav class="flex gap-1 px-3 pb-3 overflow-x-auto">
             <% active_race = Race.find_by(status: "in_progress") %>
+            <% mobile_closest_race = active_race || Race.where(status: "scheduled").order(:scheduled_at).first %>
+            <% mobile_current_competition = mobile_closest_race&.competition %>
             
             <%= link_to "Penalties", admin_penalties_path, class: "shrink-0 px-3 py-1.5 text-sm font-medium rounded-full transition-colors #{controller_name == 'penalties' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue'}" %>
+            
+            <% if mobile_current_competition %>
+              <%= link_to "Reports", admin_competition_path(mobile_current_competition, view: "reports"), class: "shrink-0 px-3 py-1.5 text-sm font-medium rounded-full transition-colors #{params[:view] == 'reports' && controller_name == 'competitions' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue'}" %>
+            <% end %>
             
             <!-- Role-Specific Links -->
             <% user_struct = AppContainer["repos.user"].find(Current.user.id) %>
