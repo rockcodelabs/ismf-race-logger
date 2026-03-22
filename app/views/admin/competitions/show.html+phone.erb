@@ -61,7 +61,17 @@
       <%# ══════════════════════════════════════════════════════════════════════ %>
       <div class="px-3 py-3 space-y-1">
         <% if @competition_reports&.any? %>
+          <% current_race_id = nil %>
           <% @competition_reports.each do |report| %>
+            <% if report.race_id != current_race_id %>
+              <% current_race_id = report.race_id %>
+              <% race = @races_by_id[report.race_id] %>
+              <div class="flex items-center gap-2 py-1 <%= report != @competition_reports.first ? 'mt-2' : '' %>">
+                <div class="h-px flex-1 bg-gray-300"></div>
+                <span class="text-[10px] text-gray-400 font-medium uppercase tracking-wide shrink-0"><%= race&.name || 'Unknown Race' %></span>
+                <div class="h-px flex-1 bg-gray-300"></div>
+              </div>
+            <% end %>
             <% video_url = @report_first_video_url&.dig(report.id) %>
 
             <div class="flex items-center gap-3 px-3 py-2.5 bg-white rounded-lg border border-gray-200">
