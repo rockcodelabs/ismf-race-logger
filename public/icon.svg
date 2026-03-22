@@ -1,3 +1,25 @@
-<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="256" cy="256" r="256" fill="red"/>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" rx="96" ry="96" fill="#1a1a2e"/>
+  
+  <!-- Mountain peaks - representing ski mountaineering -->
+  <g fill="white">
+    <!-- Left mountain -->
+    <polygon points="80,380 180,200 280,380" fill="#ffffff" opacity="0.7"/>
+    <!-- Center main mountain (tallest) -->
+    <polygon points="160,380 280,140 400,380"/>
+    <!-- Right mountain -->
+    <polygon points="280,380 360,220 440,380" fill="#ffffff" opacity="0.7"/>
+    <!-- Snow cap on main peak -->
+    <polygon points="240,180 280,140 320,180 300,180 280,160 260,180" fill="#1a1a2e"/>
+  </g>
+  
+  <!-- ISMF text -->
+  <text x="256" y="450" 
+        font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
+        font-size="64" 
+        font-weight="700" 
+        fill="white" 
+        text-anchor="middle"
+        letter-spacing="8">ISMF</text>
 </svg>
