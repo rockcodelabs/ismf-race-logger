@@ -29,7 +29,8 @@ class ReportRepo < DB::Repo
 
   returns_one :find, :find!, :find_by_client_uuid
   returns_many :for_race, :pending_for_race, :confirmed_for_race, :for_incident,
-               :confirmed_without_incident, :pending_without_incident, :by_bib, :recent
+               :confirmed_without_incident, :pending_without_incident, :by_bib, :recent,
+               :for_competition_races
 
   # Get total report counts for multiple races in a single DB query.
   # Returns a Hash of { race_id (Integer) => count (Integer) }.
@@ -41,6 +42,23 @@ class ReportRepo < DB::Repo
     return {} if race_ids.blank?
 
     Report.where(race_id: race_ids).group(:race_id).count
+  end
+
+  # Get all reports for multiple races, ordered by most recent first.
+  # Used for competition-level reports feed on phone view.
+  #
+  # @param race_ids [Array<Integer>]
+  # @return [Array<Structs::ReportSummary>]
+  def for_competition_races(race_ids)
+    return [] if race_ids.blank?
+
+    Report
+      .where(race_id: race_ids)
+      .includes(:race_location, :user,
+                { race_participation: { athlete: [], team: [:athlete_1, :athlete_2] } },
+                { videos_attachments: :blob })
+      .order(created_at: :desc)
+      .map { |record| build_summary(record) }
   end
 
   # Find report by client_uuid (for idempotency/offline sync)

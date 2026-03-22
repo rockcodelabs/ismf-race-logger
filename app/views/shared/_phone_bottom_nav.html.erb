@@ -13,13 +13,34 @@
     <span class="text-xs font-bold text-gray-700">Home</span>
   <% end %>
 
-  <!-- Competitions Button -->
-  <%= link_to admin_competitions_path,
-      class: "flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors flex-1" do %>
+  <!-- Competitions/Races Button -->
+  <% races_path = @competition_record ? admin_competition_path(@competition_record) : admin_competitions_path %>
+  <%= link_to races_path,
+      class: "flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors flex-1" do %>
     <svg class="w-5 h-5 text-ismf-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
     </svg>
     <span class="text-xs font-bold text-gray-700">Races</span>
+  <% end %>
+
+  <!-- Reports Button (always visible, context-aware destination) -->
+  <%
+    if @competition_record
+      reports_path = admin_competition_path(@competition_record, view: "reports")
+    else
+      # Find active or most recent competition
+      active_comp = Competition.joins(:races).where(races: { status: "in_progress" }).first
+      active_comp ||= Competition.where("start_date <= ? AND end_date >= ?", Date.current, Date.current).first
+      active_comp ||= Competition.order(start_date: :desc).first
+      reports_path = active_comp ? admin_competition_path(active_comp, view: "reports") : admin_competitions_path
+    end
+  %>
+  <%= link_to reports_path,
+      class: "flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors flex-1" do %>
+    <svg class="w-5 h-5 text-ismf-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+    <span class="text-xs font-bold text-gray-700">Reports</span>
   <% end %>
 
   <% if Current.user %>

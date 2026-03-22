@@ -71,7 +71,30 @@ module Web
           end.to_h
 
           # Report counts per race — single query, no N+1
-          @reports_count_by_race = report_repo.counts_for_races(races.map(&:id))
+          race_ids = races.map(&:id)
+          @reports_count_by_race = report_repo.counts_for_races(race_ids)
+
+          # For phone reports tab: build race lookup and load reports on demand
+          @races_by_id = @races_by_type.values.flatten.index_by(&:id)
+          if params[:view] == "reports"
+            @competition_reports = report_repo.for_competition_races(race_ids)
+
+            # Preload first video URL for each report (for phone quick-play)
+            report_ids_with_videos = @competition_reports.select { |r| r.videos_count.to_i > 0 }.map(&:id)
+            if report_ids_with_videos.any?
+              reports_with_videos = Report.where(id: report_ids_with_videos)
+                                          .includes(videos_attachments: :blob)
+              @report_first_video_url = reports_with_videos.each_with_object({}) do |report, hash|
+                if report.videos.attached? && report.videos.first
+                  hash[report.id] = Rails.application.routes.url_helpers.rails_blob_path(
+                    report.videos.first, only_path: true
+                  )
+                end
+              end
+            else
+              @report_first_video_url = {}
+            end
+          end
         end
 
         # GET /admin/competitions/new
