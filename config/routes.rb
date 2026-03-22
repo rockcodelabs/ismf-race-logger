@@ -40,6 +40,9 @@ Rails.application.routes.draw do
     end
     
     resources :competitions do
+      member do
+        post :complete_all_races
+      end
       resources :races do
         member do
           post :cancel

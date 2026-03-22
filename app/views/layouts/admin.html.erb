@@ -93,15 +93,16 @@
               Penalties
             <% end %>
             
-            <!-- Reports - link to current competition's reports -->
-            <% current_competition = closest_race&.competition %>
-            <% if current_competition %>
-              <%= link_to admin_competition_path(current_competition, view: "reports"), class: "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors #{params[:view] == 'reports' && controller_name == 'competitions' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue hover:text-white'}" do %>
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Reports
-              <% end %>
+            <!-- Reports - link to current competition's reports (always visible) -->
+            <% current_competition = closest_race&.competition || 
+                                     Competition.where(status: :active).order(start_date: :desc).first ||
+                                     Competition.order(start_date: :desc).first %>
+            <% reports_path = current_competition ? admin_competition_path(current_competition, view: "reports") : admin_competitions_path %>
+            <%= link_to reports_path, class: "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors #{params[:view] == 'reports' && controller_name == 'competitions' ? 'bg-ismf-red text-white' : 'text-gray-300 hover:bg-ismf-blue hover:text-white'}" do %>
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Reports
             <% end %>
             
             <!-- Role-Specific Section -->

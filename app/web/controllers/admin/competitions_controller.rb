@@ -21,7 +21,7 @@ module Web
       class CompetitionsController < BaseController
         include Dry::Monads[:result]
 
-        before_action :set_competition, only: [ :show, :edit, :update, :destroy ]
+        before_action :set_competition, only: [ :show, :edit, :update, :destroy, :complete_all_races ]
 
         # GET /admin/competitions
         # Displays list with filtering (upcoming/ongoing/past), search, and sorting
@@ -159,6 +159,33 @@ module Web
             competition_record.destroy
             redirect_to admin_competitions_path,
                        notice: "Competition was successfully deleted."
+          end
+        end
+
+        # POST /admin/competitions/:id/complete_all_races
+        def complete_all_races
+          authorize @competition, :update?
+
+          competition_record = Competition.find(params[:id])
+          races_to_complete = competition_record.races.where.not(status: :completed)
+          completed_count = 0
+          failed_races = []
+
+          races_to_complete.each do |race|
+            result = Operations::Races::Complete.new.call(id: race.id)
+            if result.success?
+              completed_count += 1
+            else
+              failed_races << race.name
+            end
+          end
+
+          if failed_races.empty?
+            redirect_to admin_competition_path(@competition),
+                       notice: "#{completed_count} race(s) marked as completed."
+          else
+            redirect_to admin_competition_path(@competition),
+                       alert: "Completed #{completed_count} race(s). Failed: #{failed_races.join(', ')}"
           end
         end
 
