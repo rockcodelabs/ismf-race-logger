@@ -1,3 +1,5 @@
+<% current_view = params[:view].presence || "races" %>
+
 <div class="space-y-6">
   <!-- Page header with back button -->
   <div class="flex items-center justify-between">
@@ -154,6 +156,209 @@
     </div>
   <% end %>
 
-  <!-- Races section -->
-  <%= render "races/races" %>
+  <!-- Tab Navigation -->
+  <div class="border-b border-gray-200">
+    <nav class="flex gap-6" aria-label="Tabs">
+      <%= link_to admin_competition_path(@competition_record),
+            class: "py-3 px-1 border-b-2 font-medium text-sm transition-colors #{current_view == 'races' ? 'border-ismf-navy text-ismf-navy' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}" do %>
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          Races
+          <span class="px-2 py-0.5 text-xs rounded-full <%= current_view == 'races' ? 'bg-ismf-navy text-white' : 'bg-gray-100 text-gray-600' %>">
+            <%= @competition_record.races.count %>
+          </span>
+        </div>
+      <% end %>
+      
+      <% total_reports = @reports_count_by_race.values.sum %>
+      <%= link_to admin_competition_path(@competition_record, view: "reports"),
+            class: "py-3 px-1 border-b-2 font-medium text-sm transition-colors #{current_view == 'reports' ? 'border-ismf-navy text-ismf-navy' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}" do %>
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Reports
+          <span class="px-2 py-0.5 text-xs rounded-full <%= current_view == 'reports' ? 'bg-ismf-navy text-white' : 'bg-gray-100 text-gray-600' %>">
+            <%= total_reports %>
+          </span>
+        </div>
+      <% end %>
+    </nav>
+  </div>
+
+  <% if current_view == "reports" %>
+    <!-- Reports View -->
+    <div class="space-y-4">
+      <% if @competition_reports&.any? %>
+        <div class="card">
+          <div class="table-container border-0 rounded-none">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Race</th>
+                  <th>Bib</th>
+                  <th>Athlete</th>
+                  <th>Location / Time</th>
+                  <th>Reporter</th>
+                  <th>Status</th>
+                  <th>Videos</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 bg-white">
+                <% @competition_reports.each do |report| %>
+                  <% race = @races_by_id[report.race_id] %>
+                  <% 
+                    row_class = case report.status
+                      when "pending_review" then "bg-yellow-50"
+                      when "confirmed" then "bg-blue-50"
+                      when "rejected" then "bg-red-50"
+                      else ""
+                    end
+                    
+                    status_badge = case report.status
+                      when "pending_review" then { class: "bg-yellow-100 text-yellow-800", label: "Pending" }
+                      when "confirmed" then { class: "bg-blue-100 text-blue-800", label: "Confirmed" }
+                      when "rejected" then { class: "bg-red-100 text-red-800", label: "Rejected" }
+                      else { class: "bg-gray-100 text-gray-800", label: report.status.titleize }
+                    end
+
+                    gender_badge_class = case report.athlete_gender
+                      when "M" then "bg-blue-100 text-blue-800"
+                      when "F" then "bg-pink-100 text-pink-800"
+                      else "bg-gray-100 text-gray-600"
+                    end
+                  %>
+                  <tr class="<%= row_class %> hover:bg-gray-50 transition-all duration-200 cursor-pointer"
+                      onclick="if (!event.target.closest('a, button')) { Turbo.visit('<%= admin_race_report_path(race, report) %>'); }">
+                    
+                    <%# Race Name %>
+                    <td>
+                      <div class="text-sm font-medium text-ismf-navy">
+                        <%= race&.name || "Unknown Race" %>
+                      </div>
+                      <div class="text-xs text-gray-500">
+                        <%= race&.stage_display %> • <%= race&.gender_category_display %>
+                      </div>
+                    </td>
+                    
+                    <%# Bib %>
+                    <td>
+                      <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ismf-navy text-white font-bold text-sm">
+                        <% if report.bib_number.present? %>
+                          <%= report.bib_number %><%= report.athlete_position.to_i > 0 ? (report.athlete_position == 1 ? 'A' : 'B') : '' %>
+                        <% else %>
+                          NN
+                        <% end %>
+                      </span>
+                      <% if report.merged_reports_count.to_i > 0 %>
+                        <div class="mt-1">
+                          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700"
+                                title="<%= report.merged_reports_count %> additional report(s) merged into this incident">
+                            +<%= report.merged_reports_count %>
+                          </span>
+                        </div>
+                      <% end %>
+                    </td>
+
+                    <%# Athlete %>
+                    <td>
+                      <div class="font-medium text-ismf-navy text-sm">
+                        <%= report.athlete_name.presence || (report.bib_number.present? ? "Bib ##{report.bib_number}" : "Number NN") %>
+                      </div>
+                      <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                        <% if report.athlete_gender.present? %>
+                          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold <%= gender_badge_class %>">
+                            <%= report.athlete_gender %>
+                          </span>
+                        <% end %>
+                        <% if report.athlete_country.present? %>
+                          <span class="text-xs text-gray-600 font-medium">
+                            <%= report.country_flag(report.athlete_country) %>
+                            <%= report.athlete_country %>
+                          </span>
+                        <% end %>
+                      </div>
+                    </td>
+
+                    <%# Location / Time %>
+                    <td class="text-ismf-gray text-sm">
+                      <div><%= report.race_location_name.presence || "Unknown" %></div>
+                      <div class="text-xs text-gray-500">
+                        <%= report.created_at.strftime("%H:%M:%S") %>
+                        <span class="text-gray-400">(<%= report.time_ago_display %>)</span>
+                      </div>
+                    </td>
+
+                    <%# Reporter %>
+                    <td class="text-ismf-gray text-sm">
+                      <%= report.user_name.presence || "Unknown" %>
+                    </td>
+
+                    <%# Status %>
+                    <td>
+                      <% if report.incident_penalties.present? && report.incident_penalties.any? %>
+                        <div class="space-y-1">
+                          <% report.incident_penalties.each do |penalty| %>
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-orange-100 text-orange-800 text-xs font-semibold"
+                                  title="<%= penalty[:name] %>">
+                              <%= penalty[:number] %>
+                            </span>
+                          <% end %>
+                        </div>
+                      <% else %>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= status_badge[:class] %>">
+                          <%= status_badge[:label] %>
+                        </span>
+                      <% end %>
+                    </td>
+
+                    <%# Videos %>
+                    <td>
+                      <% if report.videos_count.to_i > 0 %>
+                        <div class="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 rounded-full w-fit">
+                          <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          <span class="text-xs font-semibold text-blue-700"><%= report.videos_count %></span>
+                        </div>
+                      <% else %>
+                        <span class="text-xs text-gray-400">—</span>
+                      <% end %>
+                    </td>
+
+                    <%# Actions %>
+                    <td class="text-right">
+                      <%= link_to admin_race_report_path(race, report), class: "inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-ismf-blue hover:bg-blue-50 transition-all", title: "View" do %>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% else %>
+        <!-- Empty state -->
+        <div class="card">
+          <div class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-ismf-navy">No reports yet</h3>
+            <p class="mt-1 text-sm text-ismf-gray">Reports will appear here when created during races.</p>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <!-- Races section -->
+    <%= render "races/races" %>
+  <% end %>
 </div>
