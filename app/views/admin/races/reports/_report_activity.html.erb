@@ -188,15 +188,27 @@
             </button>
           <% end %>
 
-          <div class="mt-3 pt-3 border-t border-gray-200">
+          <div class="mt-3 pt-3 border-t border-gray-200 space-y-2">
+            <!-- Reject Incident & All Reports -->
+            <%= button_to reject_with_incident_admin_race_report_path(race, report),
+                          method: :post,
+                          data: { turbo_confirm: "Reject this incident and all #{incident.reports_count || 'linked'} reports? This cannot be undone." },
+                          class: "w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium text-sm transition-colors" do %>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Reject Incident & All Reports
+            <% end %>
+
+            <!-- Remove/Delete Incident (destructive) -->
             <%= button_to admin_race_incident_path(race, incident),
                           method: :delete,
-                          data: { turbo_confirm: "Remove this incident and all linked reports?" },
+                          data: { turbo_confirm: "Permanently DELETE this incident and all linked reports? This cannot be undone." },
                           class: "w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 font-medium text-sm border border-red-200 transition-colors" do %>
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
-              Remove Incident
+              Delete Incident
             <% end %>
           </div>
         <% else %>

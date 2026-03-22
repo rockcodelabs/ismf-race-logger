@@ -210,5 +210,17 @@
         Create Incident
       <% end %>
     <% end %>
+
+    <% if @report.linked_to_incident? && defined?(@incident) && @incident.present? && @incident.pending? %>
+      <%= button_to reject_with_incident_admin_race_report_path(@race, @report),
+          method: :post,
+          data: { turbo_confirm: "Reject this incident and all linked reports? This cannot be undone." },
+          class: "w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-red-500 text-white font-bold text-lg active:bg-red-600 transition" do %>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        Reject Incident & All Reports
+      <% end %>
+    <% end %>
   </div>
 </div>
