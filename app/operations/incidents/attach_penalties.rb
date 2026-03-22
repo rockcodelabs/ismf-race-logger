@@ -61,6 +61,10 @@ module Operations
               penalty_id: penalty_id
             )
           end
+
+          # Auto-confirm all pending reports linked to this incident
+          Report.where(incident_id: incident_id, status: "pending_review")
+                .update_all(status: "confirmed", updated_at: Time.current)
         end
 
         # Return updated struct from repo

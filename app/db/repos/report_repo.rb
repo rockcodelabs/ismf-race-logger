@@ -54,7 +54,8 @@ class ReportRepo < DB::Repo
 
     Report
       .where(race_id: race_ids)
-      .includes(:race_location, :user, :incident,
+      .includes(:race_location, :user,
+                { incident: { incident_penalties: :penalty } },
                 { race_participation: { athlete: [], team: [:athlete_1, :athlete_2] } },
                 { videos_attachments: :blob })
       .order(created_at: :desc)

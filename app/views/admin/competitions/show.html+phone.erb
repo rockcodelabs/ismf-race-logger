@@ -75,19 +75,19 @@
             <% video_url = @report_first_video_url&.dig(report.id) %>
 
             <% 
-              card_style = case report.incident_status
-                when "approved" then "bg-green-100 border-green-300"
-                when "rejected" then "bg-red-100 border-red-300"
+              card_style = case report.status
+                when "confirmed" then "bg-green-100 border-green-300"
+                when "rejected"  then "bg-red-100 border-red-300"
                 else "bg-white border-gray-200"
               end
-              text_style = case report.incident_status
-                when "approved" then "text-green-900"
-                when "rejected" then "text-red-900"
+              text_style = case report.status
+                when "confirmed" then "text-green-900"
+                when "rejected"  then "text-red-900"
                 else "text-ismf-navy"
               end
-              sub_text_style = case report.incident_status
-                when "approved" then "text-green-700"
-                when "rejected" then "text-red-700"
+              sub_text_style = case report.status
+                when "confirmed" then "text-green-700"
+                when "rejected"  then "text-red-700"
                 else "text-gray-500"
               end
             %>
@@ -98,14 +98,22 @@
                 <%= report.bib_number || "?" %>
               </span>
 
-              <%# Name + Country %>
+              <%# Name + Country + Penalties %>
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold truncate <%= text_style %>">
                   <%= report.athlete_name.presence || "Unknown" %>
                 </p>
-                <% if report.athlete_country.present? %>
-                  <p class="text-xs <%= sub_text_style %>"><%= report.athlete_country %></p>
-                <% end %>
+                <div class="flex items-center gap-1 flex-wrap mt-0.5">
+                  <% if report.athlete_country.present? %>
+                    <p class="text-xs <%= sub_text_style %>"><%= report.athlete_country %></p>
+                  <% end %>
+                  <% report.incident_penalties.each do |penalty| %>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-800 border border-orange-200"
+                          title="<%= penalty[:name] %>">
+                      <%= penalty[:number] %>
+                    </span>
+                  <% end %>
+                </div>
               </div>
 
               <%# Video play button (opens phone player directly) %>
