@@ -86,7 +86,8 @@
             <% is_active_row = race.id == active_race_id %>
             <% row_bg = is_active_row ? "bg-blue-50 hover:bg-blue-100" : "hover:bg-gray-50" %>
 
-            <%= link_to admin_competition_race_path(race.competition_id, race),
+            <% race_path = race.completed? ? admin_race_reports_path(race) : admin_competition_race_path(race.competition_id, race) %>
+            <%= link_to race_path,
                   class: "flex items-center gap-3 px-3 py-2 rounded-lg #{row_bg} transition-colors group" do %>
 
               <%# Status dot %>
