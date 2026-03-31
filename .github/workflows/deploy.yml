@@ -17,7 +17,7 @@ jobs:
       DOCKER_BUILDKIT: 1
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       # Install Bitwarden Secrets Manager CLI
       - name: Install Bitwarden Secrets Manager CLI
